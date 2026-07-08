@@ -9,7 +9,7 @@ use crate::lexicon::{
 };
 use crate::pages::AppPage;
 use crate::utils::dictionary::{
-    SingleEntryDraft, parse_part_of_speech, validate_and_prepare_single_entry,
+    SingleEntryDraft, draft_from_word_entry, parse_part_of_speech, validate_and_prepare_single_entry,
 };
 
 #[component]
@@ -45,6 +45,8 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (single_adverb_superlative, set_single_adverb_superlative) = signal(String::new());
 
     let (bulk_input, set_bulk_input) = signal(String::new());
+    let (bulk_errors, set_bulk_errors) = signal(Vec::<String>::new());
+    let (bulk_success_message, set_bulk_success_message) = signal(String::new());
     Effect::new(move |_| {
         let set_status = set_status;
         let set_entries = set_entries;
@@ -152,22 +154,70 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
     let add_bulk_entries = move |ev: SubmitEvent| {
         ev.prevent_default();
+        set_bulk_errors.set(Vec::new());
+        set_bulk_success_message.set(String::new());
+
         let content = bulk_input.get();
         if content.trim().is_empty() {
             set_status.set("多条添加失败：文本框不能为空。".to_string());
+            set_bulk_errors.set(vec!["输入不能为空。请粘贴带表头的 CSV 文本。".to_string()]);
             return;
         }
 
         match parse_word_bank_csv(&content) {
-            Ok(mut parsed) => {
-                let add_count = parsed.len();
-                set_entries.update(|list| list.append(&mut parsed));
+            Ok(parsed) => {
+                if parsed.is_empty() {
+                    set_status.set("多条添加失败：未检测到可导入条目。".to_string());
+                    set_bulk_errors.set(vec!["CSV 中没有可导入的数据行。".to_string()]);
+                    return;
+                }
+
+                let mut simulated_entries = entries.get_untracked();
+                let mut validated_entries = Vec::with_capacity(parsed.len());
+                let mut errors = Vec::new();
+
+                for (index, row) in parsed.into_iter().enumerate() {
+                    let line_no = index + 2;
+                    let base_form_label = if row.base_form.trim().is_empty() {
+                        "（原型为空）".to_string()
+                    } else {
+                        format!("（原型：{}）", row.base_form.trim())
+                    };
+
+                    let draft = match draft_from_word_entry(&row) {
+                        Ok(draft) => draft,
+                        Err(err) => {
+                            errors.push(format!("第 {line_no} 行 {base_form_label}：{err}"));
+                            continue;
+                        }
+                    };
+
+                    match validate_and_prepare_single_entry(draft, &simulated_entries) {
+                        Ok(valid_entry) => {
+                            simulated_entries.push(valid_entry.clone());
+                            validated_entries.push(valid_entry);
+                        }
+                        Err(err) => {
+                            errors.push(format!("第 {line_no} 行 {base_form_label}：{err}"));
+                        }
+                    }
+                }
+
+                if !errors.is_empty() {
+                    set_bulk_errors.set(errors);
+                    set_status.set("批量添加失败：存在不合法条目，请先修正红字错误。".to_string());
+                    return;
+                }
+
+                let add_count = validated_entries.len();
+                set_entries.update(|list| list.extend(validated_entries));
                 set_data_version.update(|ver| *ver += 1);
                 set_status.set(format!("批量添加成功，新增 {} 条。", add_count));
-                set_bulk_input.set(String::new());
+                set_bulk_success_message.set("成功导入".to_string());
             }
             Err(err) => {
                 set_status.set(format!("多条添加失败：请输入带表头的 CSV 文本。{err}"));
+                set_bulk_errors.set(vec![format!("CSV 解析失败：{err}")]);
             }
         }
     };
@@ -395,9 +445,38 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     <textarea
                         placeholder="粘贴 CSV 文本（含表头），数组字段用 | 分隔"
                         prop:value=move || bulk_input.get()
-                        on:input=move |ev| set_bulk_input.set(event_target_value(&ev))
+                        on:input=move |ev| {
+                            set_bulk_input.set(event_target_value(&ev));
+                            set_bulk_errors.set(Vec::new());
+                            set_bulk_success_message.set(String::new());
+                        }
                         class="min-h-40 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                     ></textarea>
+                    {move || {
+                        let errors = bulk_errors.get();
+                        if errors.is_empty() {
+                            view! { <></> }.into_any()
+                        } else {
+                            view! {
+                                <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-red-400">
+                                    {errors
+                                        .into_iter()
+                                        .map(|item| view! { <li>{item}</li> })
+                                        .collect_view()}
+                                </ul>
+                            }
+                                .into_any()
+                        }
+                    }}
+                    {move || {
+                        let message = bulk_success_message.get();
+                        if message.is_empty() {
+                            view! { <></> }.into_any()
+                        } else {
+                            view! { <p class="mt-3 text-sm font-medium text-emerald-400">{message}</p> }
+                                .into_any()
+                        }
+                    }}
                     <button
                         type="submit"
                         class="mt-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"

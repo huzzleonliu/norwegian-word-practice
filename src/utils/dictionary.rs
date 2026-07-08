@@ -31,6 +31,9 @@ pub fn validate_and_prepare_single_entry(
     if base_form.is_empty() {
         return Err("原型不能为空。".to_string());
     }
+    if existing_entries.iter().any(|entry| entry.base_form.trim() == base_form) {
+        return Err(format!("原型 `{base_form}` 已存在，不能重复插入。"));
+    }
 
     validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)?;
 
@@ -65,6 +68,30 @@ pub fn validate_and_prepare_single_entry(
         adjective_superlative_definite: normalize_optional(draft.adjective_superlative_definite),
         adverb_comparative: normalize_optional(draft.adverb_comparative),
         adverb_superlative: normalize_optional(draft.adverb_superlative),
+    })
+}
+
+pub fn draft_from_word_entry(entry: &WordEntry) -> Result<SingleEntryDraft, String> {
+    Ok(SingleEntryDraft {
+        id: entry.id.clone(),
+        selected: entry.selected,
+        part_of_speech: parse_part_of_speech(&entry.part_of_speech)?,
+        tags: entry.tags.clone(),
+        english: entry.english.clone(),
+        chinese: entry.chinese.clone(),
+        base_form: entry.base_form.clone(),
+        past_tense: entry.past_tense.clone(),
+        imperative: entry.imperative.clone(),
+        plural: entry.plural.clone(),
+        singular_definite: entry.singular_definite.clone(),
+        plural_definite: entry.plural_definite.clone(),
+        neuter_form: entry.neuter_form.clone(),
+        plural_form: entry.plural_form.clone(),
+        adjective_comparative: entry.adjective_comparative.clone(),
+        adjective_superlative_indefinite: entry.adjective_superlative_indefinite.clone(),
+        adjective_superlative_definite: entry.adjective_superlative_definite.clone(),
+        adverb_comparative: entry.adverb_comparative.clone(),
+        adverb_superlative: entry.adverb_superlative.clone(),
     })
 }
 

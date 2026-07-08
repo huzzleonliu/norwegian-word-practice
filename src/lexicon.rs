@@ -59,7 +59,21 @@ struct CsvWordEntry {
 }
 
 pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordEntry>, String> {
+    let has_header = detect_word_bank_header(content);
+    parse_word_bank_csv_inner(content, has_header)
+}
+
+fn detect_word_bank_header(content: &str) -> bool {
+    let Some(first_non_empty_line) = content.lines().find(|line| !line.trim().is_empty()) else {
+        return false;
+    };
+    let normalized = first_non_empty_line.trim().to_ascii_lowercase();
+    normalized.starts_with("id,selected,part_of_speech,")
+}
+
+fn parse_word_bank_csv_inner(content: &str, has_headers: bool) -> Result<Vec<WordEntry>, String> {
     let mut reader = csv::ReaderBuilder::new()
+        .has_headers(has_headers)
         .trim(csv::Trim::All)
         .flexible(true)
         .from_reader(content.as_bytes());
