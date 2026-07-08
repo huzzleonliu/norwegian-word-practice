@@ -11,6 +11,7 @@ COPY src ./src
 COPY data ./data
 COPY style ./style
 COPY package.json package-lock.json ./
+COPY tailwind.config.js ./
 
 RUN npm ci
 RUN trunk build --release

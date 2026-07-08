@@ -4,8 +4,3 @@ dist = "dist"
 
 [watch]
 watch = ["src", "index.html", "style"]
-
-[[hooks]]
-stage = "pre_build"
-command = "npm"
-command_arguments = ["run", "build:css"]
