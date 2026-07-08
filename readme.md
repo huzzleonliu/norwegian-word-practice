@@ -108,7 +108,7 @@
     - tailwind
     
 - 词库存储
-    - JSON
+    - CSV
 
 - 容器
     - podman

@@ -1,0 +1,5 @@
+id,part_of_speech,norwegian_base,chinese,english,tags
+book-001,noun,bok,书,book,daily|basic
+eat-001,verb,spise,吃,eat,daily|verb
+fast-001,adjective,rask,快的,fast|quick,basic|adjective
+often-001,adverb,ofte,经常,often,frequency
