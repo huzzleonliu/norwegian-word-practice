@@ -213,6 +213,14 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     </button>
                 </form>
 
+                <section class="mt-4">
+                    <h2 class="mb-3 text-lg font-semibold">"词库浏览器"</h2>
+                    <p class="mb-3 text-sm text-slate-400">
+                        "以表格形式查看、直接修改并删除词条（类似 Excel）。"
+                    </p>
+                    <p class="mb-3 text-xs text-slate-500">"拖拽表头右侧边界可调整列宽（更像 Excel）。"</p>
+                </section>
+
                 <LexiconBrowser
                     entries=entries
                     set_entries=set_entries

@@ -12,6 +12,7 @@ pub fn LexiconBrowser(
     let (col_widths, set_col_widths) = signal(vec![140_u16, 110, 150, 220, 220, 180, 220]);
     let (baseline_entries, set_baseline_entries) = signal(entries.get_untracked());
     let (row_undo, set_row_undo) = signal(vec![None::<WordEntry>; entries.get_untracked().len()]);
+    let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
 
     Effect::new(move |_| {
         let _ = data_version.get();
@@ -27,75 +28,48 @@ pub fn LexiconBrowser(
             .enumerate()
             .collect::<Vec<(usize, WordEntry)>>()
     };
+    let min_width_for = |idx: usize| -> u16 {
+        match idx {
+            0 => 80,
+            1 => 80,
+            2 => 100,
+            3 => 120,
+            4 => 120,
+            5 => 120,
+            _ => 160,
+        }
+    };
+    let start_resize = move |idx: usize, ev: leptos::ev::MouseEvent| {
+        ev.prevent_default();
+        let start_x = ev.client_x();
+        let start_w = col_widths.get_untracked().get(idx).copied().unwrap_or(120);
+        set_resize_state.set(Some((idx, start_x, start_w)));
+    };
+    let on_mouse_move = move |ev: leptos::ev::MouseEvent| {
+        if let Some((idx, start_x, start_w)) = resize_state.get() {
+            let delta = ev.client_x() - start_x;
+            let min = i32::from(min_width_for(idx));
+            let next = (i32::from(start_w) + delta).max(min).min(900) as u16;
+            set_col_widths.update(|cols| {
+                if let Some(col) = cols.get_mut(idx) {
+                    *col = next;
+                }
+            });
+        }
+    };
+    let stop_resize = move |_| {
+        if resize_state.get_untracked().is_some() {
+            set_resize_state.set(None);
+        }
+    };
 
     view! {
-        <section class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-            <h2 class="mb-3 text-lg font-semibold">"词库浏览器"</h2>
-            <p class="mb-3 text-sm text-slate-400">
-                "以表格形式查看、直接修改并删除词条（类似 Excel）。"
-            </p>
-
-            <div class="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3 text-xs">
-                <span class="text-slate-300">"列宽自定义(px):"</span>
-                <div class="flex items-center gap-1">
-                    <span class="text-slate-400">"id"</span>
-                    <input
-                        type="number"
-                        min="80"
-                        max="600"
-                        prop:value=move || col_widths.get().first().copied().unwrap_or(140).to_string()
-                        on:input=move |ev| {
-                            if let Ok(width) = event_target_value(&ev).parse::<u16>() {
-                                set_col_widths.update(|cols| {
-                                    if cols.len() >= 1 {
-                                        cols[0] = width.clamp(80, 600);
-                                    }
-                                });
-                            }
-                        }
-                        class="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
-                    />
-                </div>
-                <div class="flex items-center gap-1">
-                    <span class="text-slate-400">"中文"</span>
-                    <input
-                        type="number"
-                        min="120"
-                        max="800"
-                        prop:value=move || col_widths.get().get(3).copied().unwrap_or(220).to_string()
-                        on:input=move |ev| {
-                            if let Ok(width) = event_target_value(&ev).parse::<u16>() {
-                                set_col_widths.update(|cols| {
-                                    if cols.len() >= 4 {
-                                        cols[3] = width.clamp(120, 800);
-                                    }
-                                });
-                            }
-                        }
-                        class="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
-                    />
-                </div>
-                <div class="flex items-center gap-1">
-                    <span class="text-slate-400">"英文"</span>
-                    <input
-                        type="number"
-                        min="120"
-                        max="800"
-                        prop:value=move || col_widths.get().get(4).copied().unwrap_or(220).to_string()
-                        on:input=move |ev| {
-                            if let Ok(width) = event_target_value(&ev).parse::<u16>() {
-                                set_col_widths.update(|cols| {
-                                    if cols.len() >= 5 {
-                                        cols[4] = width.clamp(120, 800);
-                                    }
-                                });
-                            }
-                        }
-                        class="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
-                    />
-                </div>
-            </div>
-
+        <section
+            class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4"
+            on:mousemove=on_mouse_move
+            on:mouseup=stop_resize
+            on:mouseleave=stop_resize
+        >
             <div class="max-h-[420px] overflow-auto pr-1">
                 <table class="w-full border-collapse text-sm table-fixed">
                     <colgroup>
@@ -109,13 +83,34 @@ pub fn LexiconBrowser(
                     </colgroup>
                     <thead>
                         <tr class="sticky top-0 z-10 bg-slate-900/95 text-left text-slate-300">
-                            <th class="border border-slate-800 px-2 py-2">"id"</th>
-                            <th class="border border-slate-800 px-2 py-2">"词性"</th>
-                            <th class="border border-slate-800 px-2 py-2">"原型"</th>
-                            <th class="border border-slate-800 px-2 py-2">"中文（|）"</th>
-                            <th class="border border-slate-800 px-2 py-2">"英文（|）"</th>
-                            <th class="border border-slate-800 px-2 py-2">"tags（|）"</th>
-                            <th class="border border-slate-800 px-2 py-2">"操作（恢复/撤销/删除）"</th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "id"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(0, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "词性"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(1, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "原型"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(2, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "中文（|）"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(3, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "英文（|）"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(4, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "tags（|）"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(5, ev)></div>
+                            </th>
+                            <th class="relative border border-slate-800 px-2 py-2">
+                                "操作（恢复/撤销/删除）"
+                                <div class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80" on:mousedown=move |ev| start_resize(6, ev)></div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
