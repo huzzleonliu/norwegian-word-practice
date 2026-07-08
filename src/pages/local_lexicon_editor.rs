@@ -4,7 +4,9 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::components::lexicon_browser::LexiconBrowser;
-use crate::lexicon::{WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv};
+use crate::lexicon::{
+    PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
+};
 use crate::pages::AppPage;
 
 #[component]
@@ -15,11 +17,30 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (status, set_status) = signal("正在下载词库...".to_string());
 
     let (single_id, set_single_id) = signal(String::new());
-    let (single_pos, set_single_pos) = signal(String::new());
+    let (single_selected, set_single_selected) = signal(true);
+    let (single_pos, set_single_pos) = signal("noun".to_string());
     let (single_norwegian, set_single_norwegian) = signal(String::new());
     let (single_chinese, set_single_chinese) = signal(String::new());
     let (single_english, set_single_english) = signal(String::new());
     let (single_tags, set_single_tags) = signal(String::new());
+    let (single_past_tense, set_single_past_tense) = signal(String::new());
+    let (single_imperative, set_single_imperative) = signal(String::new());
+    let (single_plural, set_single_plural) = signal(String::new());
+    let (single_singular_definite, set_single_singular_definite) = signal(String::new());
+    let (single_plural_definite, set_single_plural_definite) = signal(String::new());
+    let (single_neuter_form, set_single_neuter_form) = signal(String::new());
+    let (single_plural_form, set_single_plural_form) = signal(String::new());
+    let (single_adjective_comparative, set_single_adjective_comparative) = signal(String::new());
+    let (
+        single_adjective_superlative_indefinite,
+        set_single_adjective_superlative_indefinite,
+    ) = signal(String::new());
+    let (
+        single_adjective_superlative_definite,
+        set_single_adjective_superlative_definite,
+    ) = signal(String::new());
+    let (single_adverb_comparative, set_single_adverb_comparative) = signal(String::new());
+    let (single_adverb_superlative, set_single_adverb_superlative) = signal(String::new());
 
     let (bulk_input, set_bulk_input) = signal(String::new());
     Effect::new(move |_| {
@@ -63,11 +84,28 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
         let new_entry = WordEntry {
             id: single_id.get().trim().to_string(),
+            selected: single_selected.get(),
             part_of_speech: single_pos.get().trim().to_string(),
-            norwegian_base: single_norwegian.get().trim().to_string(),
+            base_form: single_norwegian.get().trim().to_string(),
             chinese: parse_csv_list(&single_chinese.get()),
             english: parse_csv_list(&single_english.get()),
             tags: parse_csv_list(&single_tags.get()),
+            past_tense: parse_optional_input(&single_past_tense.get()),
+            imperative: parse_optional_input(&single_imperative.get()),
+            plural: parse_optional_input(&single_plural.get()),
+            singular_definite: parse_optional_input(&single_singular_definite.get()),
+            plural_definite: parse_optional_input(&single_plural_definite.get()),
+            neuter_form: parse_optional_input(&single_neuter_form.get()),
+            plural_form: parse_optional_input(&single_plural_form.get()),
+            adjective_comparative: parse_optional_input(&single_adjective_comparative.get()),
+            adjective_superlative_indefinite: parse_optional_input(
+                &single_adjective_superlative_indefinite.get(),
+            ),
+            adjective_superlative_definite: parse_optional_input(
+                &single_adjective_superlative_definite.get(),
+            ),
+            adverb_comparative: parse_optional_input(&single_adverb_comparative.get()),
+            adverb_superlative: parse_optional_input(&single_adverb_superlative.get()),
         };
 
         set_entries.update(|list| list.push(new_entry));
@@ -75,11 +113,24 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_status.set(format!("已添加 1 条，当前共 {} 条。", entries.get_untracked().len()));
 
         set_single_id.set(String::new());
-        set_single_pos.set(String::new());
+        set_single_selected.set(true);
+        set_single_pos.set("noun".to_string());
         set_single_norwegian.set(String::new());
         set_single_chinese.set(String::new());
         set_single_english.set(String::new());
         set_single_tags.set(String::new());
+        set_single_past_tense.set(String::new());
+        set_single_imperative.set(String::new());
+        set_single_plural.set(String::new());
+        set_single_singular_definite.set(String::new());
+        set_single_plural_definite.set(String::new());
+        set_single_neuter_form.set(String::new());
+        set_single_plural_form.set(String::new());
+        set_single_adjective_comparative.set(String::new());
+        set_single_adjective_superlative_indefinite.set(String::new());
+        set_single_adjective_superlative_definite.set(String::new());
+        set_single_adverb_comparative.set(String::new());
+        set_single_adverb_superlative.set(String::new());
     };
 
     let add_bulk_entries = move |ev: SubmitEvent| {
@@ -150,16 +201,27 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                             on:input=move |ev| set_single_id.set(event_target_value(&ev))
                             class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                         />
-                        <input
-                            type="text"
-                            placeholder="词性 part_of_speech"
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm">
+                            <input
+                                type="checkbox"
+                                prop:checked=move || single_selected.get()
+                                on:change=move |ev| set_single_selected.set(event_target_checked(&ev))
+                            />
+                            <span>"selected"</span>
+                        </label>
+                        <select
                             prop:value=move || single_pos.get()
-                            on:input=move |ev| set_single_pos.set(event_target_value(&ev))
+                            on:change=move |ev| set_single_pos.set(event_target_value(&ev))
                             class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
+                        >
+                            {PART_OF_SPEECH_OPTIONS
+                                .iter()
+                                .map(|option| view! { <option value=*option>{*option}</option> })
+                                .collect_view()}
+                        </select>
                         <input
                             type="text"
-                            placeholder="原型 norwegian_base"
+                            placeholder="base_form (norwegian_base)"
                             prop:value=move || single_norwegian.get()
                             on:input=move |ev| set_single_norwegian.set(event_target_value(&ev))
                             class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -183,6 +245,90 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                             placeholder="tags（| 分隔）"
                             prop:value=move || single_tags.get()
                             on:input=move |ev| set_single_tags.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="past_tense（可空）"
+                            prop:value=move || single_past_tense.get()
+                            on:input=move |ev| set_single_past_tense.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="imperative（可空）"
+                            prop:value=move || single_imperative.get()
+                            on:input=move |ev| set_single_imperative.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="plural（可空）"
+                            prop:value=move || single_plural.get()
+                            on:input=move |ev| set_single_plural.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="singular_definite（可空）"
+                            prop:value=move || single_singular_definite.get()
+                            on:input=move |ev| set_single_singular_definite.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="plural_definite（可空）"
+                            prop:value=move || single_plural_definite.get()
+                            on:input=move |ev| set_single_plural_definite.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="neuter_form（可空）"
+                            prop:value=move || single_neuter_form.get()
+                            on:input=move |ev| set_single_neuter_form.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="plural_form（可空）"
+                            prop:value=move || single_plural_form.get()
+                            on:input=move |ev| set_single_plural_form.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="adjective_comparative（可空）"
+                            prop:value=move || single_adjective_comparative.get()
+                            on:input=move |ev| set_single_adjective_comparative.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="adjective_superlative_indefinite（可空）"
+                            prop:value=move || single_adjective_superlative_indefinite.get()
+                            on:input=move |ev| set_single_adjective_superlative_indefinite.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="adjective_superlative_definite（可空）"
+                            prop:value=move || single_adjective_superlative_definite.get()
+                            on:input=move |ev| set_single_adjective_superlative_definite.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="adverb_comparative（可空）"
+                            prop:value=move || single_adverb_comparative.get()
+                            on:input=move |ev| set_single_adverb_comparative.set(event_target_value(&ev))
+                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                        />
+                        <input
+                            type="text"
+                            placeholder="adverb_superlative（可空）"
+                            prop:value=move || single_adverb_superlative.get()
+                            on:input=move |ev| set_single_adverb_superlative.set(event_target_value(&ev))
                             class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                         />
                     </div>
@@ -257,6 +403,15 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
 fn parse_csv_list(raw: &str) -> Vec<String> {
     parse_pipe_list(raw)
+}
+
+fn parse_optional_input(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 fn import_csv_from_file(
