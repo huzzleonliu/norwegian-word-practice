@@ -1,0 +1,20 @@
+FROM docker.io/library/rust:1.90-slim
+
+WORKDIR /app
+
+RUN rustup target add wasm32-unknown-unknown
+RUN cargo install trunk
+
+COPY Cargo.toml Cargo.lock index.html Trunk.toml ./
+COPY src ./src
+COPY data ./data
+COPY style ./style
+COPY package.json ./package.json
+
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+RUN npm install
+RUN npm run build:css
+
+EXPOSE 8080
+
+CMD ["trunk", "serve", "--address", "0.0.0.0", "--port", "8080"]

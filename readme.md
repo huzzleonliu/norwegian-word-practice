@@ -102,32 +102,14 @@
         - 这里要提示“练习结果不能保存到云端，只能保存在本地
         - 文件名为”【日期】.pracresult”
 
-## 部署
-- 使用```cargo generate --git <git 仓库> --branch <branch 名>```配置项目
-    - 参考部署命令```cargo generate --git ssh://git@github.com/huzzleonliu/leptos-ssr-example.git```
-- 配置后，进入word-memory-practice目录，并执行
-    - ```npm install```可选，因为部署过程中应该已经完成了
-    - ```cargo leptos build --release```编译ssr网页，否则podman-compose无法部署
-- 之后返回根目录
-    - ```podman-compose up -d```运行容器
-    
-- 容器运行后进入word-memory-practice目录，并执行
-    - ```diesel migration run```导入数据库表格结构
-    
-- 注意，如果是需要编译prod版本，一定要先停掉dev容器，否则会出现wasm和后端程序不统一的问题
-
 ## 技术栈
 - 网站
-    - leptos-ssr
-    - axum
+    - leptos-csr
     - tailwind
-    - daisyui 
-    - diesel
     
-- 数据库
-    - postgresql:latest
-- 打包
-    - cargo-generate
+- 词库存储
+    - JSON
+
 - 容器
     - podman
     - podman-compose

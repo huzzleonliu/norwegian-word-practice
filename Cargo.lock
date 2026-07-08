@@ -879,6 +879,8 @@ name = "norwegian-word-practice"
 version = "0.1.0"
 dependencies = [
  "leptos",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
