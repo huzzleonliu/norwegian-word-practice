@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use std::cmp::Ordering;
 
 use crate::lexicon::{PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list};
+use crate::utils::dictionary::validate_existing_entry;
 
 #[component]
 pub fn LexiconBrowser(
@@ -16,24 +17,32 @@ pub fn LexiconBrowser(
         160, 160, 210,
     ]);
     let (baseline_entries, set_baseline_entries) = signal(entries.get_untracked());
+    let (draft_entries, set_draft_entries) = signal(entries.get_untracked());
     let (row_undo, set_row_undo) = signal(vec![None::<WordEntry>; entries.get_untracked().len()]);
     let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
     let (search_text, set_search_text) = signal(String::new());
     let (search_query, set_search_query) = signal(String::new());
     let (search_columns, set_search_columns) = signal(vec![true; DATA_COLUMN_COUNT]);
+    let (confirm_error, set_confirm_error) = signal(String::new());
+    let (confirm_success, set_confirm_success) = signal(String::new());
+    let set_committed_entries = set_entries;
+    let set_entries = set_draft_entries;
 
     Effect::new(move |_| {
         let _ = data_version.get();
         let current = entries.get();
         set_baseline_entries.set(current.clone());
+        set_draft_entries.set(current.clone());
         set_row_undo.set(vec![None; current.len()]);
+        set_confirm_error.set(String::new());
+        set_confirm_success.set(String::new());
     });
 
     let row_items = move || {
         let query = search_query.get();
         let columns = search_columns.get();
-        entries
+        draft_entries
             .get()
             .into_iter()
             .enumerate()
@@ -98,7 +107,7 @@ pub fn LexiconBrowser(
             sort_rules = vec![(col_idx, true)];
         }
 
-        let current_entries = entries.get_untracked();
+        let current_entries = draft_entries.get_untracked();
         if current_entries.len() <= 1 {
             set_sort_state.set(sort_rules);
             return;
@@ -130,7 +139,7 @@ pub fn LexiconBrowser(
             .map(|idx| current_undo.get(*idx).cloned().unwrap_or(None))
             .collect::<Vec<_>>();
 
-        set_entries.set(sorted_entries);
+        set_draft_entries.set(sorted_entries);
         set_baseline_entries.set(sorted_baseline);
         set_row_undo.set(sorted_undo);
         set_sort_state.set(sort_rules.clone());
@@ -142,16 +151,43 @@ pub fn LexiconBrowser(
         set_search_query.set(query.clone());
 
         if query.is_empty() {
-            set_status.set(format!("已显示全部条目，共 {} 条。", entries.get_untracked().len()));
+            set_status.set(format!("已显示全部条目，共 {} 条。", draft_entries.get_untracked().len()));
             return;
         }
 
-        let count = entries
+        let count = draft_entries
             .get_untracked()
             .iter()
             .filter(|entry| entry_matches_filter(entry, &query, &columns))
             .count();
         set_status.set(format!("查找完成：匹配 {} 条。", count));
+    };
+    let confirm_changes = move |_| {
+        set_confirm_error.set(String::new());
+        set_confirm_success.set(String::new());
+
+        let current_entries = draft_entries.get_untracked();
+
+        let mut errors = Vec::new();
+        for (idx, item) in current_entries.iter().enumerate() {
+            if let Err(err) = validate_existing_entry(item, &current_entries, idx) {
+                errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err));
+            }
+        }
+
+        if !errors.is_empty() {
+            let message = errors.join("；");
+            set_confirm_error.set(message.clone());
+            set_status.set("确认失败：存在不合法修改。".to_string());
+            return;
+        }
+
+        set_committed_entries.set(current_entries.clone());
+        set_draft_entries.set(current_entries.clone());
+        set_baseline_entries.set(current_entries.clone());
+        set_row_undo.set(vec![None; current_entries.len()]);
+        set_confirm_success.set("修改成功".to_string());
+        set_status.set("词库修改已确认并应用。".to_string());
     };
 
     view! {
@@ -450,6 +486,26 @@ pub fn LexiconBrowser(
                         />
                     </tbody>
                 </table>
+            </div>
+            <div class="mt-3 flex items-center justify-between gap-3">
+                <div class="min-h-6 text-sm">
+                    {move || {
+                        if !confirm_error.get().is_empty() {
+                            view! { <p class="text-red-400">{confirm_error.get()}</p> }.into_any()
+                        } else if !confirm_success.get().is_empty() {
+                            view! { <p class="text-emerald-400">{confirm_success.get()}</p> }.into_any()
+                        } else {
+                            view! { <p class="text-slate-500">""</p> }.into_any()
+                        }
+                    }}
+                </div>
+                <button
+                    type="button"
+                    on:click=confirm_changes
+                    class="rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                >
+                    "确认修改"
+                </button>
             </div>
         </section>
     }

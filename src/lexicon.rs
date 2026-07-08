@@ -12,7 +12,7 @@ pub const PART_OF_SPEECH_OPTIONS: [&str; 9] = [
     "interrogative",
 ];
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct WordEntry {
     pub id: String,
     pub selected: bool,

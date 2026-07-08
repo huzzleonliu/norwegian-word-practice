@@ -71,6 +71,32 @@ pub fn validate_and_prepare_single_entry(
     })
 }
 
+pub fn validate_existing_entry(
+    entry: &WordEntry,
+    existing_entries: &[WordEntry],
+    self_index: usize,
+) -> Result<(), String> {
+    let base_form = entry.base_form.trim().to_string();
+    if base_form.is_empty() {
+        return Err("原型不能为空。".to_string());
+    }
+    if existing_entries
+        .iter()
+        .enumerate()
+        .any(|(idx, item)| idx != self_index && item.base_form.trim() == base_form)
+    {
+        return Err(format!("原型 `{base_form}` 已存在，不能重复。"));
+    }
+
+    let draft = draft_from_word_entry(entry)?;
+    let chinese = normalize_vec(draft.chinese.clone());
+    if chinese.is_empty() {
+        return Err("对应中文不能为空。".to_string());
+    }
+
+    validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)
+}
+
 pub fn draft_from_word_entry(entry: &WordEntry) -> Result<SingleEntryDraft, String> {
     Ok(SingleEntryDraft {
         id: entry.id.clone(),
