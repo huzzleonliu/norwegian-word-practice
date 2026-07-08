@@ -1,5 +1,5 @@
-id,part_of_speech,norwegian_base,chinese,english,tags
-book-001,noun,bok,书,book,daily|basic
-eat-001,verb,spise,吃,eat,daily|verb
-fast-001,adjective,rask,快的,fast|quick,basic|adjective
-often-001,adverb,ofte,经常,often,frequency
+id,selected,part_of_speech,tags,english,chinese,norwegian_base,past_tense,imperative,plural,singular_definite,plural_definite,neuter_form,plural_form,adjective_comparative,adjective_superlative_indefinite,adjective_superlative_definite,adverb_comparative,adverb_superlative
+book-001,true,noun,daily|basic,book,书,bok,,,bøker,boka,bøkene,,,,,,
+eat-001,true,verb,daily|verb,eat,吃,spise,spiste,spis,,,,,,,,,
+fast-001,true,adjective,basic|adjective,fast|quick,快的,rask,,,,,,raskt,raske,raskere,raskest,den raskeste,,
+often-001,true,adverb,frequency,often,经常,ofte,,,,,,,,,,,oftere,oftest
