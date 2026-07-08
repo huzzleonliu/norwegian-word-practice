@@ -1,8 +1,10 @@
 use leptos::prelude::*;
 use std::cmp::Ordering;
 
-use crate::lexicon::{PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list};
+use self::lexicon::{PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list};
 use crate::utils::dictionary::validate_existing_entry;
+
+pub mod lexicon;
 
 #[component]
 pub fn LexiconBrowser(

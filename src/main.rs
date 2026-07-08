@@ -1,7 +1,6 @@
 use leptos::prelude::*;
 
 mod components;
-mod lexicon;
 mod pages;
 mod structures;
 mod utils;

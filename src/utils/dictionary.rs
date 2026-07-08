@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::lexicon::{PART_OF_SPEECH_OPTIONS, WordEntry};
+use crate::components::lexicon_browser::lexicon::{PART_OF_SPEECH_OPTIONS, WordEntry};
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
 pub type SingleEntryDraft = WordBankEntry;
