@@ -3,6 +3,8 @@ use leptos::prelude::*;
 mod components;
 mod lexicon;
 mod pages;
+mod structures;
+mod utils;
 
 fn main() {
     leptos::mount::mount_to_body(App)

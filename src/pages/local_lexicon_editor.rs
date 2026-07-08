@@ -8,6 +8,9 @@ use crate::lexicon::{
     PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
 };
 use crate::pages::AppPage;
+use crate::utils::dictionary::{
+    SingleEntryDraft, parse_part_of_speech, validate_and_prepare_single_entry,
+};
 
 #[component]
 pub fn LocalLexiconEditorPage() -> impl IntoView {
@@ -16,7 +19,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (data_version, set_data_version) = signal(0_u64);
     let (status, set_status) = signal("正在下载词库...".to_string());
 
-    let (single_id, set_single_id) = signal(String::new());
     let (single_selected, set_single_selected) = signal(true);
     let (single_pos, set_single_pos) = signal("noun".to_string());
     let (single_norwegian, set_single_norwegian) = signal(String::new());
@@ -77,19 +79,20 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let add_single_entry = move |ev: SubmitEvent| {
         ev.prevent_default();
 
-        if single_id.get().trim().is_empty() || single_norwegian.get().trim().is_empty() {
-            set_status.set("单条添加失败：id 和原型不能为空。".to_string());
-            return;
-        }
-
-        let new_entry = WordEntry {
-            id: single_id.get().trim().to_string(),
+        let draft: SingleEntryDraft = SingleEntryDraft {
+            id: String::new(),
             selected: single_selected.get(),
-            part_of_speech: single_pos.get().trim().to_string(),
-            base_form: single_norwegian.get().trim().to_string(),
-            chinese: parse_csv_list(&single_chinese.get()),
-            english: parse_csv_list(&single_english.get()),
+            part_of_speech: match parse_part_of_speech(&single_pos.get()) {
+                Ok(value) => value,
+                Err(err) => {
+                    set_status.set(format!("单条添加失败：{err}"));
+                    return;
+                }
+            },
             tags: parse_csv_list(&single_tags.get()),
+            english: parse_csv_list(&single_english.get()),
+            chinese: parse_csv_list(&single_chinese.get()),
+            base_form: single_norwegian.get(),
             past_tense: parse_optional_input(&single_past_tense.get()),
             imperative: parse_optional_input(&single_imperative.get()),
             plural: parse_optional_input(&single_plural.get()),
@@ -107,12 +110,26 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             adverb_comparative: parse_optional_input(&single_adverb_comparative.get()),
             adverb_superlative: parse_optional_input(&single_adverb_superlative.get()),
         };
+        let existing_entries = entries.get_untracked();
+        let new_entry = match validate_and_prepare_single_entry(draft, &existing_entries) {
+            Ok(entry) => entry,
+            Err(err) => {
+                set_status.set(format!("单条添加失败：{err}"));
+                return;
+            }
+        };
 
-        set_entries.update(|list| list.push(new_entry));
+        let generated_id = new_entry.id.clone();
+        let mut total_after_add = existing_entries.len();
+        set_entries.update(|list| {
+            list.push(new_entry);
+            total_after_add = list.len();
+        });
         set_data_version.update(|ver| *ver += 1);
-        set_status.set(format!("已添加 1 条，当前共 {} 条。", entries.get_untracked().len()));
+        set_status.set(format!(
+            "已添加 1 条到本地缓存词库（id: {generated_id}），当前共 {total_after_add} 条。"
+        ));
 
-        set_single_id.set(String::new());
         set_single_selected.set(true);
         set_single_pos.set("noun".to_string());
         set_single_norwegian.set(String::new());
@@ -193,14 +210,10 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     class="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
                 >
                     <h2 class="mb-3 text-lg font-semibold">"单条添加"</h2>
+                    <p class="mb-3 text-xs text-slate-400">
+                        "序号会自动使用原型值生成；如重复将自动追加后缀（如 -2）。"
+                    </p>
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        <input
-                            type="text"
-                            placeholder="id"
-                            prop:value=move || single_id.get()
-                            on:input=move |ev| set_single_id.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
                         <label class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm">
                             <input
                                 type="checkbox"
@@ -247,90 +260,124 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                             on:input=move |ev| set_single_tags.set(event_target_value(&ev))
                             class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                         />
-                        <input
-                            type="text"
-                            placeholder="past_tense（可空）"
-                            prop:value=move || single_past_tense.get()
-                            on:input=move |ev| set_single_past_tense.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="imperative（可空）"
-                            prop:value=move || single_imperative.get()
-                            on:input=move |ev| set_single_imperative.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="plural（可空）"
-                            prop:value=move || single_plural.get()
-                            on:input=move |ev| set_single_plural.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="singular_definite（可空）"
-                            prop:value=move || single_singular_definite.get()
-                            on:input=move |ev| set_single_singular_definite.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="plural_definite（可空）"
-                            prop:value=move || single_plural_definite.get()
-                            on:input=move |ev| set_single_plural_definite.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="neuter_form（可空）"
-                            prop:value=move || single_neuter_form.get()
-                            on:input=move |ev| set_single_neuter_form.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="plural_form（可空）"
-                            prop:value=move || single_plural_form.get()
-                            on:input=move |ev| set_single_plural_form.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="adjective_comparative（可空）"
-                            prop:value=move || single_adjective_comparative.get()
-                            on:input=move |ev| set_single_adjective_comparative.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="adjective_superlative_indefinite（可空）"
-                            prop:value=move || single_adjective_superlative_indefinite.get()
-                            on:input=move |ev| set_single_adjective_superlative_indefinite.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="adjective_superlative_definite（可空）"
-                            prop:value=move || single_adjective_superlative_definite.get()
-                            on:input=move |ev| set_single_adjective_superlative_definite.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="adverb_comparative（可空）"
-                            prop:value=move || single_adverb_comparative.get()
-                            on:input=move |ev| set_single_adverb_comparative.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
-                        <input
-                            type="text"
-                            placeholder="adverb_superlative（可空）"
-                            prop:value=move || single_adverb_superlative.get()
-                            on:input=move |ev| set_single_adverb_superlative.set(event_target_value(&ev))
-                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                        />
+                        {move || {
+                            if single_pos.get() == "verb" {
+                                view! {
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="past_tense（必填）"
+                                            prop:value=move || single_past_tense.get()
+                                            on:input=move |ev| set_single_past_tense.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="imperative（必填）"
+                                            prop:value=move || single_imperative.get()
+                                            on:input=move |ev| set_single_imperative.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                    </>
+                                }
+                                    .into_any()
+                            } else if single_pos.get() == "noun" {
+                                view! {
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="plural（必填）"
+                                            prop:value=move || single_plural.get()
+                                            on:input=move |ev| set_single_plural.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="singular_definite（必填）"
+                                            prop:value=move || single_singular_definite.get()
+                                            on:input=move |ev| set_single_singular_definite.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="plural_definite（必填）"
+                                            prop:value=move || single_plural_definite.get()
+                                            on:input=move |ev| set_single_plural_definite.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                    </>
+                                }
+                                    .into_any()
+                            } else if single_pos.get() == "adjective" {
+                                view! {
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="neuter_form（必填）"
+                                            prop:value=move || single_neuter_form.get()
+                                            on:input=move |ev| set_single_neuter_form.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="plural_form（必填）"
+                                            prop:value=move || single_plural_form.get()
+                                            on:input=move |ev| set_single_plural_form.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="adjective_comparative（必填）"
+                                            prop:value=move || single_adjective_comparative.get()
+                                            on:input=move |ev| set_single_adjective_comparative.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="adjective_superlative_indefinite（必填）"
+                                            prop:value=move || single_adjective_superlative_indefinite.get()
+                                            on:input=move |ev| set_single_adjective_superlative_indefinite.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="adjective_superlative_definite（必填）"
+                                            prop:value=move || single_adjective_superlative_definite.get()
+                                            on:input=move |ev| set_single_adjective_superlative_definite.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                    </>
+                                }
+                                    .into_any()
+                            } else if single_pos.get() == "adverb" {
+                                view! {
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="adverb_comparative（必填）"
+                                            prop:value=move || single_adverb_comparative.get()
+                                            on:input=move |ev| set_single_adverb_comparative.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="adverb_superlative（必填）"
+                                            prop:value=move || single_adverb_superlative.get()
+                                            on:input=move |ev| set_single_adverb_superlative.set(event_target_value(&ev))
+                                            class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                        />
+                                    </>
+                                }
+                                    .into_any()
+                            } else {
+                                view! {
+                                    <p class="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400 md:col-span-3">
+                                        "当前词性只需要基础字段：selected、词性、中文、原型。"
+                                    </p>
+                                }
+                                    .into_any()
+                            }
+                        }}
                     </div>
                     <button
                         type="submit"
