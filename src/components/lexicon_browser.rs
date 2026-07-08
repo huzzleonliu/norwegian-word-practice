@@ -10,6 +10,7 @@ pub fn LexiconBrowser(
     set_status: WriteSignal<String>,
     data_version: ReadSignal<u64>,
 ) -> impl IntoView {
+    const DATA_COLUMN_COUNT: usize = 19;
     let (col_widths, set_col_widths) = signal(vec![
         120_u16, 90, 140, 160, 180, 180, 150, 120, 120, 120, 140, 140, 130, 130, 160, 210, 210,
         160, 160, 210,
@@ -18,6 +19,9 @@ pub fn LexiconBrowser(
     let (row_undo, set_row_undo) = signal(vec![None::<WordEntry>; entries.get_untracked().len()]);
     let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
+    let (search_text, set_search_text) = signal(String::new());
+    let (search_query, set_search_query) = signal(String::new());
+    let (search_columns, set_search_columns) = signal(vec![true; DATA_COLUMN_COUNT]);
 
     Effect::new(move |_| {
         let _ = data_version.get();
@@ -27,10 +31,13 @@ pub fn LexiconBrowser(
     });
 
     let row_items = move || {
+        let query = search_query.get();
+        let columns = search_columns.get();
         entries
             .get()
             .into_iter()
             .enumerate()
+            .filter(|(_, entry)| entry_matches_filter(entry, &query, &columns))
             .collect::<Vec<(usize, WordEntry)>>()
     };
     let min_width_for = |idx: usize| -> u16 {
@@ -64,7 +71,7 @@ pub fn LexiconBrowser(
         }
     };
     let sort_by_column = move |col_idx: usize, with_secondary: bool| {
-        if col_idx >= 19 {
+        if col_idx >= DATA_COLUMN_COUNT {
             return;
         }
 
@@ -129,6 +136,23 @@ pub fn LexiconBrowser(
         set_sort_state.set(sort_rules.clone());
         set_status.set(format!("已排序：{}", format_sort_rules(&sort_rules)));
     };
+    let apply_search = move |_| {
+        let query = search_text.get().trim().to_string();
+        let columns = search_columns.get_untracked();
+        set_search_query.set(query.clone());
+
+        if query.is_empty() {
+            set_status.set(format!("已显示全部条目，共 {} 条。", entries.get_untracked().len()));
+            return;
+        }
+
+        let count = entries
+            .get_untracked()
+            .iter()
+            .filter(|entry| entry_matches_filter(entry, &query, &columns))
+            .count();
+        set_status.set(format!("查找完成：匹配 {} 条。", count));
+    };
 
     view! {
         <section
@@ -137,6 +161,63 @@ pub fn LexiconBrowser(
             on:mouseup=stop_resize
             on:mouseleave=stop_resize
         >
+            <div class="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder="输入要查找的字符"
+                        prop:value=move || search_text.get()
+                        on:input=move |ev| set_search_text.set(event_target_value(&ev))
+                        class="min-w-60 flex-1 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+                    />
+                    <button
+                        type="button"
+                        on:click=apply_search
+                        class="rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"
+                    >
+                        "查找"
+                    </button>
+                    <button
+                        type="button"
+                        on:click=move |_| set_search_columns.set(vec![true; DATA_COLUMN_COUNT])
+                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
+                    >
+                        "全选列"
+                    </button>
+                    <button
+                        type="button"
+                        on:click=move |_| set_search_columns.set(vec![false; DATA_COLUMN_COUNT])
+                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
+                    >
+                        "全不选列"
+                    </button>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5">
+                    {(0..DATA_COLUMN_COUNT)
+                        .map(|idx| {
+                            view! {
+                                <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-xs text-slate-300">
+                                    <input
+                                        type="checkbox"
+                                        prop:checked=move || {
+                                            search_columns.get().get(idx).copied().unwrap_or(false)
+                                        }
+                                        on:change=move |ev| {
+                                            let checked = event_target_checked(&ev);
+                                            set_search_columns.update(|cols| {
+                                                if idx < cols.len() {
+                                                    cols[idx] = checked;
+                                                }
+                                            });
+                                        }
+                                    />
+                                    <span>{header_name(idx)}</span>
+                                </label>
+                            }
+                        })
+                        .collect_view()}
+                </div>
+            </div>
             <div class="max-h-[420px] overflow-auto pr-1">
                 <table class="w-full border-collapse text-sm table-fixed">
                     <colgroup>
@@ -385,6 +466,19 @@ fn compare_entries_by_rules(a: &WordEntry, b: &WordEntry, rules: &[(usize, bool)
     a.id.cmp(&b.id)
 }
 
+fn entry_matches_filter(entry: &WordEntry, query: &str, columns: &[bool]) -> bool {
+    let trimmed = query.trim();
+    if trimmed.is_empty() {
+        return true;
+    }
+    let query_lower = trimmed.to_lowercase();
+
+    (0..19).any(|idx| {
+        columns.get(idx).copied().unwrap_or(false)
+            && column_value_text(entry, idx).to_lowercase().contains(&query_lower)
+    })
+}
+
 fn compare_entries_by_column(a: &WordEntry, b: &WordEntry, col_idx: usize, ascending: bool) -> Ordering {
     let ordering = match col_idx {
         0 => a.id.cmp(&b.id),
@@ -416,6 +510,37 @@ fn compare_entries_by_column(a: &WordEntry, b: &WordEntry, col_idx: usize, ascen
         ordering
     } else {
         ordering.reverse()
+    }
+}
+
+fn column_value_text(entry: &WordEntry, col_idx: usize) -> String {
+    match col_idx {
+        0 => entry.id.clone(),
+        1 => {
+            if entry.selected {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        }
+        2 => entry.part_of_speech.clone(),
+        3 => entry.tags.join("|"),
+        4 => entry.english.join("|"),
+        5 => entry.chinese.join("|"),
+        6 => entry.base_form.clone(),
+        7 => entry.past_tense.clone().unwrap_or_default(),
+        8 => entry.imperative.clone().unwrap_or_default(),
+        9 => entry.plural.clone().unwrap_or_default(),
+        10 => entry.singular_definite.clone().unwrap_or_default(),
+        11 => entry.plural_definite.clone().unwrap_or_default(),
+        12 => entry.neuter_form.clone().unwrap_or_default(),
+        13 => entry.plural_form.clone().unwrap_or_default(),
+        14 => entry.adjective_comparative.clone().unwrap_or_default(),
+        15 => entry.adjective_superlative_indefinite.clone().unwrap_or_default(),
+        16 => entry.adjective_superlative_definite.clone().unwrap_or_default(),
+        17 => entry.adverb_comparative.clone().unwrap_or_default(),
+        18 => entry.adverb_superlative.clone().unwrap_or_default(),
+        _ => String::new(),
     }
 }
 
