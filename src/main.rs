@@ -16,6 +16,10 @@ fn App() -> impl IntoView {
     let (word_bank_entries, set_word_bank_entries) = signal(Vec::new());
     let (word_bank_data_version, set_word_bank_data_version) = signal(0_u64);
     let (word_bank_source_name, set_word_bank_source_name) = signal("尚未加载词库".to_string());
+    let (selected_word_entry_ids, set_selected_word_entry_ids) = signal(Vec::<String>::new());
+    let (practice_result, set_practice_result) = signal(structures::pracresult::PracticeResult::default());
+    let (temp_practice_result, set_temp_practice_result) =
+        signal(structures::pracresult::PracticeResult::default());
 
     provide_context(set_current_page);
     provide_context(app_state::WordBankState {
@@ -25,6 +29,12 @@ fn App() -> impl IntoView {
         set_data_version: set_word_bank_data_version,
         source_name: word_bank_source_name,
         set_source_name: set_word_bank_source_name,
+        selected_word_entry_ids,
+        set_selected_word_entry_ids,
+        practice_result,
+        set_practice_result,
+        temp_practice_result,
+        set_temp_practice_result,
     });
 
     view! {
@@ -35,6 +45,9 @@ fn App() -> impl IntoView {
             }
             pages::AppPage::LexiconMode => {
                 view! { <pages::lexicon_mode::LexiconModePage/> }.into_any()
+            }
+            pages::AppPage::LexiconPractice => {
+                view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
             }
             pages::AppPage::LocalLexiconEditor => {
                 view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()

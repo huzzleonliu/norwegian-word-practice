@@ -1,4 +1,5 @@
 use gloo_net::http::Request;
+use leptos::ev::Event;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -6,6 +7,7 @@ use crate::app_state::WordBankState;
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::pages::AppPage;
+use crate::structures::pracresult::PracticeResult;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -50,6 +52,23 @@ pub fn HomePage() -> impl IntoView {
         });
     };
 
+    let import_pracresult_change = move |ev: Event| {
+        import_pracresult_from_file(ev, set_status, word_bank_state.set_practice_result);
+    };
+
+    let direct_start_practice_click = move |_| {
+        let mut practice_result = word_bank_state.practice_result.get_untracked();
+        if practice_result.selected_word_entry_ids.is_empty() {
+            practice_result.selected_word_entry_ids =
+                word_bank_state.selected_word_entry_ids.get_untracked();
+        }
+        word_bank_state.set_practice_result.set(practice_result);
+        word_bank_state
+            .set_temp_practice_result
+            .set(PracticeResult::default());
+        set_current_page.set(AppPage::PracticeModeSelect);
+    };
+
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
             <section class="w-full max-w-2xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
@@ -75,6 +94,7 @@ pub fn HomePage() -> impl IntoView {
                     type="file"
                     accept=".pracresult"
                     class="hidden"
+                    on:change=import_pracresult_change
                 />
 
                 <div class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
@@ -115,7 +135,7 @@ pub fn HomePage() -> impl IntoView {
 
                     <button
                         type="button"
-                        on:click=move |_| set_current_page.set(AppPage::PracticeModeSelect)
+                        on:click=direct_start_practice_click
                         class="inline-flex items-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                     >
                         "直接开始练习"
@@ -123,5 +143,70 @@ pub fn HomePage() -> impl IntoView {
                 </div>
             </section>
         </main>
+    }
+}
+
+fn import_pracresult_from_file(
+    ev: Event,
+    set_status: WriteSignal<String>,
+    set_practice_result: WriteSignal<PracticeResult>,
+) {
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::JsCast;
+
+        let Some(target) = ev.target() else {
+            set_status.set("导入失败：无法获取文件输入目标。".to_string());
+            return;
+        };
+        let Ok(input) = target.dyn_into::<web_sys::HtmlInputElement>() else {
+            set_status.set("导入失败：文件输入类型不正确。".to_string());
+            return;
+        };
+        let Some(files) = input.files() else {
+            set_status.set("导入失败：未找到文件列表。".to_string());
+            return;
+        };
+        let Some(file) = files.get(0) else {
+            set_status.set("导入已取消。".to_string());
+            return;
+        };
+
+        let file: web_sys::File = file;
+        let file_name = file.name();
+        input.set_value("");
+
+        spawn_local(async move {
+            let content = match wasm_bindgen_futures::JsFuture::from(file.text()).await {
+                Ok(js_value) => match js_value.as_string() {
+                    Some(content) => content,
+                    None => {
+                        set_status.set("导入失败：文件内容不是文本。".to_string());
+                        return;
+                    }
+                },
+                Err(err) => {
+                    set_status.set(format!("导入失败：读取文件失败，{err:?}"));
+                    return;
+                }
+            };
+
+            match serde_json::from_str::<PracticeResult>(&content) {
+                Ok(result) => {
+                    set_practice_result.set(result);
+                    set_status.set(format!("练习结果导入成功：{file_name}"));
+                }
+                Err(err) => {
+                    set_status.set(format!("导入失败：练习结果格式不合法，{err}"));
+                }
+            }
+        });
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = ev;
+        let _ = set_practice_result;
+        set_status.set("导入仅在浏览器环境可用。".to_string());
     }
 }

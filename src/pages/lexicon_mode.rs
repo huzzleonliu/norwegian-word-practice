@@ -1,8 +1,9 @@
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode};
+use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode, WordEntry};
 use crate::pages::AppPage;
+use crate::utils::shuffle::shuffle_strings;
 
 #[component]
 pub fn LexiconModePage() -> impl IntoView {
@@ -10,6 +11,7 @@ pub fn LexiconModePage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
     let entries = word_bank_state.entries;
     let set_entries = word_bank_state.set_entries;
+    let set_selected_word_entry_ids = word_bank_state.set_selected_word_entry_ids;
     let data_version = word_bank_state.data_version;
     let (status, set_status) = signal(String::new());
 
@@ -17,17 +19,30 @@ pub fn LexiconModePage() -> impl IntoView {
         let _ = data_version.get();
         let count = entries.get().len();
         let source = word_bank_state.source_name.get();
+        let prepared_count = word_bank_state.selected_word_entry_ids.get().len();
         if count == 0 {
             set_status.set("当前词库为空，请先回到首页加载或导入词库。".to_string());
-        } else {
+        } else if prepared_count == 0 {
             set_status.set(format!(
                 "请选择想要练习的单词（词库：{source}，共 {count} 条）"
+            ));
+        } else {
+            set_status.set(format!(
+                "请选择想要练习的单词（词库：{source}，共 {count} 条，已准备 {prepared_count} 条）"
             ));
         }
     });
 
     let start_practice_click = move |_| {
-        set_status.set("开始练习功能建设中。".to_string());
+        let mut selected_ids = collect_selected_entry_ids(&entries.get_untracked());
+        if selected_ids.is_empty() {
+            set_status.set("请先选择至少 1 条词条，再开始练习。".to_string());
+            return;
+        }
+
+        shuffle_strings(&mut selected_ids);
+        set_selected_word_entry_ids.set(selected_ids);
+        set_current_page.set(AppPage::LexiconPractice);
     };
 
     view! {
@@ -65,4 +80,12 @@ pub fn LexiconModePage() -> impl IntoView {
             </section>
         </main>
     }
+}
+
+fn collect_selected_entry_ids(entries: &[WordEntry]) -> Vec<String> {
+    entries
+        .iter()
+        .filter(|entry| entry.selected)
+        .map(|entry| entry.id.clone())
+        .collect()
 }
