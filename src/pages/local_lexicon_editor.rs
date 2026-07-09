@@ -7,6 +7,7 @@ use crate::components::lexicon_browser::{
     LexiconBrowser, LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, parse_pipe_list,
     parse_word_bank_csv, serialize_word_bank_csv,
 };
+use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::utils::dictionary::{
     SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
@@ -15,7 +16,6 @@ use crate::utils::dictionary::{
 
 #[component]
 pub fn LocalLexiconEditorPage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
     let entries = word_bank_state.entries;
     let set_entries = word_bank_state.set_entries;
@@ -215,16 +215,10 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <header class="mb-6 flex items-center justify-between gap-4">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+                <ReturnButton target_page=AppPage::PracticeModeSelect/>
+                <header class="mb-6 flex items-center gap-4">
                     <h1 class="text-2xl font-bold tracking-tight">"本地词库修改器"</h1>
-                    <button
-                        type="button"
-                        on:click=move |_| set_current_page.set(AppPage::PracticeModeSelect)
-                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
-                    >
-                        "返回练习模式页"
-                    </button>
                 </header>
 
                 <p class="mb-4 text-sm text-slate-300">{move || status.get()}</p>
@@ -491,13 +485,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                         class="inline-flex items-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                     >
                         "导出词库 CSV"
-                    </button>
-                    <button
-                        type="button"
-                        on:click=move |_| set_current_page.set(AppPage::PracticeModeSelect)
-                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
-                    >
-                        "返回练习模式页"
                     </button>
                 </div>
             </section>

@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
+use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{
     AnswerStats, MAX_WRONG_ANSWERS_PER_FORM, PracticeResult, PracticedWordEntryResult,
@@ -221,16 +222,10 @@ pub fn LexiconPracticePage() -> impl IntoView {
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <header class="mb-6 flex items-center justify-between gap-4">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+                <ReturnButton target_page=AppPage::LexiconMode/>
+                <header class="mb-6 flex items-center gap-4">
                     <h1 class="text-2xl font-bold tracking-tight">"词库练习"</h1>
-                    <button
-                        type="button"
-                        on:click=move |_| set_current_page.set(AppPage::LexiconMode)
-                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
-                    >
-                        "返回选词页面"
-                    </button>
                 </header>
 
                 <p class="mb-2 text-sm text-slate-300">

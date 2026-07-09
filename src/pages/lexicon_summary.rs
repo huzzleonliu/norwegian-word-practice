@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
+use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{AnswerStats, PracticeResult, PracticedWordEntryResult};
 use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
@@ -16,14 +17,6 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     let continue_practice_click = move |_| {
         set_temp_practice_result.set(PracticeResult::default());
         set_current_page.set(AppPage::LexiconPractice);
-    };
-    let back_lexicon_mode_click = move |_| {
-        set_temp_practice_result.set(PracticeResult::default());
-        set_current_page.set(AppPage::LexiconMode);
-    };
-    let back_practice_mode_click = move |_| {
-        set_temp_practice_result.set(PracticeResult::default());
-        set_current_page.set(AppPage::PracticeModeSelect);
     };
     let export_result_click = move |_| {
         let practice_result = word_bank_state.practice_result.get_untracked();
@@ -43,7 +36,8 @@ pub fn LexiconSummaryPage() -> impl IntoView {
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+                <ReturnButton target_page=AppPage::LexiconPractice/>
                 <h1 class="text-2xl font-bold tracking-tight">"练习总结"</h1>
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
@@ -153,20 +147,6 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                             class="rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                         >
                             "继续练习"
-                        </button>
-                        <button
-                            type="button"
-                            on:click=back_lexicon_mode_click
-                            class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
-                        >
-                            "返回选词页面"
-                        </button>
-                        <button
-                            type="button"
-                            on:click=back_practice_mode_click
-                            class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
-                        >
-                            "返回练习模式页"
                         </button>
                     </div>
                 </section>

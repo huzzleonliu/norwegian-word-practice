@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
+use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
 #[component]
@@ -10,7 +11,8 @@ pub fn PracticeModePage() -> impl IntoView {
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-            <section class="w-full max-w-2xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+            <section class="relative w-full max-w-2xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+                <ReturnButton target_page=AppPage::Home/>
                 <h1 class="text-3xl font-bold tracking-tight">"请选择练习模式"</h1>
                 <p class="mt-4 text-slate-300">
                     {move || {
