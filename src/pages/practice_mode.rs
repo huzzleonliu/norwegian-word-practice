@@ -47,6 +47,7 @@ pub fn PracticeModePage() -> impl IntoView {
                 <div class="mt-6 flex flex-wrap items-center gap-3">
                     <button
                         type="button"
+                        on:click=move |_| set_current_page.set(AppPage::LexiconMode)
                         class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
                     >
                         "词库模式"

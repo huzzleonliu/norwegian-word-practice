@@ -1,4 +1,5 @@
 pub mod home;
+pub mod lexicon_mode;
 pub mod local_lexicon_editor;
 pub mod practice_mode;
 
@@ -6,5 +7,6 @@ pub mod practice_mode;
 pub enum AppPage {
     Home,
     PracticeModeSelect,
+    LexiconMode,
     LocalLexiconEditor,
 }

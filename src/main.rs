@@ -20,6 +20,9 @@ fn App() -> impl IntoView {
             pages::AppPage::PracticeModeSelect => {
                 view! { <pages::practice_mode::PracticeModePage/> }.into_any()
             }
+            pages::AppPage::LexiconMode => {
+                view! { <pages::lexicon_mode::LexiconModePage/> }.into_any()
+            }
             pages::AppPage::LocalLexiconEditor => {
                 view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()
             }
