@@ -188,6 +188,9 @@ pub fn LexiconPracticePage() -> impl IntoView {
         word_bank_state.set_practice_result.update(|global_result| {
             merge_practice_result(global_result, &temp_snapshot);
         });
+        word_bank_state
+            .set_last_completed_practice_result
+            .set(temp_snapshot.clone());
 
         shuffle_strings(&mut selected_ids);
         word_bank_state.set_selected_word_entry_ids.set(selected_ids.clone());
@@ -199,7 +202,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
         set_active_question_ids.set(Vec::new());
         set_solved_question_ids.set(Vec::new());
         set_answer_inputs.set(HashMap::new());
-        set_status.set("已将临时记录合并到全局记录，并打乱题目顺序。".to_string());
+        set_current_page.set(AppPage::LexiconSummary);
     };
 
     let restart_click = move |_| {

@@ -20,6 +20,8 @@ fn App() -> impl IntoView {
     let (practice_result, set_practice_result) = signal(structures::pracresult::PracticeResult::default());
     let (temp_practice_result, set_temp_practice_result) =
         signal(structures::pracresult::PracticeResult::default());
+    let (last_completed_practice_result, set_last_completed_practice_result) =
+        signal(structures::pracresult::PracticeResult::default());
 
     provide_context(set_current_page);
     provide_context(app_state::WordBankState {
@@ -35,6 +37,8 @@ fn App() -> impl IntoView {
         set_practice_result,
         temp_practice_result,
         set_temp_practice_result,
+        last_completed_practice_result,
+        set_last_completed_practice_result,
     });
 
     view! {
@@ -48,6 +52,9 @@ fn App() -> impl IntoView {
             }
             pages::AppPage::LexiconPractice => {
                 view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
+            }
+            pages::AppPage::LexiconSummary => {
+                view! { <pages::lexicon_summary::LexiconSummaryPage/> }.into_any()
             }
             pages::AppPage::LocalLexiconEditor => {
                 view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()

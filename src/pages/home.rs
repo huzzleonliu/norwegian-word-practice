@@ -8,6 +8,8 @@ use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
+#[cfg(target_arch = "wasm32")]
+use crate::utils::pracresult_crypto::parse_practice_result_from_import;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -53,7 +55,13 @@ pub fn HomePage() -> impl IntoView {
     };
 
     let import_pracresult_change = move |ev: Event| {
-        import_pracresult_from_file(ev, set_status, word_bank_state.set_practice_result);
+        import_pracresult_from_file(
+            ev,
+            set_status,
+            set_current_page,
+            word_bank_state.set_practice_result,
+            word_bank_state.set_selected_word_entry_ids,
+        );
     };
 
     let direct_start_practice_click = move |_| {
@@ -149,7 +157,9 @@ pub fn HomePage() -> impl IntoView {
 fn import_pracresult_from_file(
     ev: Event,
     set_status: WriteSignal<String>,
+    set_current_page: WriteSignal<AppPage>,
     set_practice_result: WriteSignal<PracticeResult>,
+    set_selected_word_entry_ids: WriteSignal<Vec<String>>,
 ) {
     #[cfg(target_arch = "wasm32")]
     {
@@ -191,13 +201,15 @@ fn import_pracresult_from_file(
                 }
             };
 
-            match serde_json::from_str::<PracticeResult>(&content) {
+            match parse_practice_result_from_import(&content) {
                 Ok(result) => {
+                    set_selected_word_entry_ids.set(result.selected_word_entry_ids.clone());
                     set_practice_result.set(result);
                     set_status.set(format!("练习结果导入成功：{file_name}"));
+                    set_current_page.set(AppPage::PracticeModeSelect);
                 }
                 Err(err) => {
-                    set_status.set(format!("导入失败：练习结果格式不合法，{err}"));
+                    set_status.set(format!("导入失败：练习结果解密或解析失败，{err}"));
                 }
             }
         });
@@ -206,7 +218,9 @@ fn import_pracresult_from_file(
     #[cfg(not(target_arch = "wasm32"))]
     {
         let _ = ev;
+        let _ = set_current_page;
         let _ = set_practice_result;
+        let _ = set_selected_word_entry_ids;
         set_status.set("导入仅在浏览器环境可用。".to_string());
     }
 }

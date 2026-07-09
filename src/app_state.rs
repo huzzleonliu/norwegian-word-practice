@@ -17,4 +17,6 @@ pub struct WordBankState {
     pub set_practice_result: WriteSignal<PracticeResult>,
     pub temp_practice_result: ReadSignal<PracticeResult>,
     pub set_temp_practice_result: WriteSignal<PracticeResult>,
+    pub last_completed_practice_result: ReadSignal<PracticeResult>,
+    pub set_last_completed_practice_result: WriteSignal<PracticeResult>,
 }
