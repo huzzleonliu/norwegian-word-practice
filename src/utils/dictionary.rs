@@ -31,7 +31,10 @@ pub fn validate_and_prepare_single_entry(
     if base_form.is_empty() {
         return Err("原型不能为空。".to_string());
     }
-    if existing_entries.iter().any(|entry| entry.base_form.trim() == base_form) {
+    if existing_entries
+        .iter()
+        .any(|entry| entry.base_form.trim() == base_form)
+    {
         return Err(format!("原型 `{base_form}` 已存在，不能重复插入。"));
     }
 
@@ -64,7 +67,9 @@ pub fn validate_and_prepare_single_entry(
         neuter_form: normalize_optional(draft.neuter_form),
         plural_form: normalize_optional(draft.plural_form),
         adjective_comparative: normalize_optional(draft.adjective_comparative),
-        adjective_superlative_indefinite: normalize_optional(draft.adjective_superlative_indefinite),
+        adjective_superlative_indefinite: normalize_optional(
+            draft.adjective_superlative_indefinite,
+        ),
         adjective_superlative_definite: normalize_optional(draft.adjective_superlative_definite),
         adverb_comparative: normalize_optional(draft.adverb_comparative),
         adverb_superlative: normalize_optional(draft.adverb_superlative),
@@ -121,7 +126,10 @@ pub fn draft_from_word_entry(entry: &WordEntry) -> Result<SingleEntryDraft, Stri
     })
 }
 
-fn validate_forms_by_part_of_speech(pos: &PartOfSpeech, draft: &SingleEntryDraft) -> Result<(), String> {
+fn validate_forms_by_part_of_speech(
+    pos: &PartOfSpeech,
+    draft: &SingleEntryDraft,
+) -> Result<(), String> {
     match pos {
         PartOfSpeech::Verb => {
             require_option("过去式", &draft.past_tense)?;

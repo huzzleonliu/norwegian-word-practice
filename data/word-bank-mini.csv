@@ -3,11 +3,3 @@ book-001,true,noun,daily|basic,book,书,bok,,,bøker,boka,bøkene,,,,,,,
 eat-001,true,verb,daily|verb,eat,吃,spise,spiste,spis,,,,,,,,,,
 fast-001,true,adjective,basic|adjective,fast|quick,快的,rask,,,,,,raskt,raske,raskere,raskest,den raskeste,,
 often-001,true,adverb,frequency,often,经常,ofte,,,,,,,,,,,oftere,oftest
-run-001,true,verb,daily|verb,run,跑,løpe,løp,løp,,,,,,,,,,
-write-001,true,verb,daily|verb,write,写,skrive,skrev,skriv,,,,,,,,,,
-house-001,true,noun,daily|home,house,房子,hus,,,hus,huset,husene,,,,,,,
-car-001,true,noun,daily|transport,car,汽车,bil,,,biler,bilen,bilene,,,,,,,
-small-001,true,adjective,basic|adjective,small,小的,liten,,,,,,lite,små,mindre,minst,den minste,,
-slow-001,true,adverb,basic|adverb,slowly,慢慢地,sakte,,,,,,,,,,,saktere,saktest
-january-001,true,month,calendar,january,一月,januar,,,,,,,,,,,,
-who-001,true,interrogative,question,who,谁,hvem,,,,,,,,,,,,

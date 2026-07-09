@@ -2,8 +2,8 @@ use leptos::prelude::*;
 
 use super::structures::{LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, WordEntry};
 use super::utils::{
-    compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name, input_to_option,
-    option_to_input, parse_pipe_list,
+    compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name,
+    input_to_option, option_to_input, parse_pipe_list,
 };
 use crate::utils::dictionary::validate_existing_entry;
 
@@ -156,7 +156,10 @@ pub fn LexiconBrowser(
         set_search_query.set(query.clone());
 
         if query.is_empty() {
-            set_status.set(format!("已显示全部条目，共 {} 条。", draft_entries.get_untracked().len()));
+            set_status.set(format!(
+                "已显示全部条目，共 {} 条。",
+                draft_entries.get_untracked().len()
+            ));
             return;
         }
 

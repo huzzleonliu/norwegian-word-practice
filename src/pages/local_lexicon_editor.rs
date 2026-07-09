@@ -1,23 +1,35 @@
-use gloo_net::http::Request;
-use leptos::ev::{Event, SubmitEvent};
+use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
+use crate::app_state::WordBankState;
+use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode,
-    PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
+    LexiconBrowser, LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, parse_pipe_list,
+    parse_word_bank_csv, serialize_word_bank_csv,
 };
 use crate::pages::AppPage;
 use crate::utils::dictionary::{
-    SingleEntryDraft, draft_from_word_entry, parse_part_of_speech, validate_and_prepare_single_entry,
+    SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
+    validate_and_prepare_single_entry,
 };
 
 #[component]
 pub fn LocalLexiconEditorPage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (entries, set_entries) = signal(Vec::<WordEntry>::new());
-    let (data_version, set_data_version) = signal(0_u64);
-    let (status, set_status) = signal("正在下载词库...".to_string());
+    let word_bank_state = expect_context::<WordBankState>();
+    let entries = word_bank_state.entries;
+    let set_entries = word_bank_state.set_entries;
+    let data_version = word_bank_state.data_version;
+    let set_data_version = word_bank_state.set_data_version;
+    let (status, set_status) = signal({
+        let count = entries.get_untracked().len();
+        let source = word_bank_state.source_name.get_untracked();
+        if count == 0 {
+            "当前词库为空，请先回到首页加载或导入词库。".to_string()
+        } else {
+            format!("当前词库：{source}（共 {count} 条）。")
+        }
+    });
 
     let (single_selected, set_single_selected) = signal(true);
     let (single_pos, set_single_pos) = signal("noun".to_string());
@@ -33,51 +45,16 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (single_neuter_form, set_single_neuter_form) = signal(String::new());
     let (single_plural_form, set_single_plural_form) = signal(String::new());
     let (single_adjective_comparative, set_single_adjective_comparative) = signal(String::new());
-    let (
-        single_adjective_superlative_indefinite,
-        set_single_adjective_superlative_indefinite,
-    ) = signal(String::new());
-    let (
-        single_adjective_superlative_definite,
-        set_single_adjective_superlative_definite,
-    ) = signal(String::new());
+    let (single_adjective_superlative_indefinite, set_single_adjective_superlative_indefinite) =
+        signal(String::new());
+    let (single_adjective_superlative_definite, set_single_adjective_superlative_definite) =
+        signal(String::new());
     let (single_adverb_comparative, set_single_adverb_comparative) = signal(String::new());
     let (single_adverb_superlative, set_single_adverb_superlative) = signal(String::new());
 
     let (bulk_input, set_bulk_input) = signal(String::new());
     let (bulk_errors, set_bulk_errors) = signal(Vec::<String>::new());
     let (bulk_success_message, set_bulk_success_message) = signal(String::new());
-    Effect::new(move |_| {
-        let set_status = set_status;
-        let set_entries = set_entries;
-        let set_data_version = set_data_version;
-        spawn_local(async move {
-            let result = async {
-                let response = Request::get("/data/word-bank.csv")
-                    .send()
-                    .await
-                    .map_err(|err| format!("下载失败: {err}"))?;
-                let csv_text = response
-                    .text()
-                    .await
-                    .map_err(|err| format!("读取响应失败: {err}"))?;
-                parse_word_bank_csv(&csv_text)
-            }
-            .await;
-
-            match result {
-                Ok(word_list) => {
-                    set_status.set(format!("词库加载完成，共 {} 条。", word_list.len()));
-                    set_entries.set(word_list);
-                    set_data_version.update(|ver| *ver += 1);
-                }
-                Err(err) => {
-                    set_status.set(format!("词库加载失败：{err}"));
-                }
-            }
-        });
-    });
-
     let add_single_entry = move |ev: SubmitEvent| {
         ev.prevent_default();
 
@@ -220,9 +197,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 set_bulk_errors.set(vec![format!("CSV 解析失败：{err}")]);
             }
         }
-    };
-    let import_csv_click = move |ev: Event| {
-        import_csv_from_file(ev, set_entries, set_status, set_data_version);
     };
     let export_csv_click = move |_| {
         let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
@@ -502,19 +476,15 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 />
 
                 <div class="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-800 pt-4">
-                    <input
-                        id="lexicon-import-csv-input"
-                        type="file"
-                        accept=".csv,text/csv"
-                        class="hidden"
-                        on:change=import_csv_click
+                    <ImportCsvButton
+                        input_id="lexicon-import-csv-input".to_string()
+                        label="导入词库 CSV".to_string()
+                        class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700".to_string()
+                        set_entries=set_entries
+                        set_status=set_status
+                        set_data_version=set_data_version
+                        set_source_name=word_bank_state.set_source_name
                     />
-                    <label
-                        for="lexicon-import-csv-input"
-                        class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"
-                    >
-                        "导入词库 CSV"
-                    </label>
                     <button
                         type="button"
                         on:click=export_csv_click
@@ -548,72 +518,6 @@ fn parse_optional_input(raw: &str) -> Option<String> {
     }
 }
 
-fn import_csv_from_file(
-    ev: Event,
-    set_entries: WriteSignal<Vec<WordEntry>>,
-    set_status: WriteSignal<String>,
-    set_data_version: WriteSignal<u64>,
-) {
-    #[cfg(target_arch = "wasm32")]
-    {
-        use wasm_bindgen::JsCast;
-
-        let Some(target) = ev.target() else {
-            set_status.set("导入失败：无法获取文件输入目标。".to_string());
-            return;
-        };
-        let Ok(input) = target.dyn_into::<web_sys::HtmlInputElement>() else {
-            set_status.set("导入失败：文件输入类型不正确。".to_string());
-            return;
-        };
-        let Some(files) = input.files() else {
-            set_status.set("导入失败：未找到文件列表。".to_string());
-            return;
-        };
-        let Some(file) = files.get(0) else {
-            set_status.set("导入已取消。".to_string());
-            return;
-        };
-
-        let file: web_sys::File = file;
-        input.set_value("");
-
-        spawn_local(async move {
-            let content = match wasm_bindgen_futures::JsFuture::from(file.text()).await {
-                Ok(js_value) => match js_value.as_string() {
-                    Some(content) => content,
-                    None => {
-                        set_status.set("导入失败：文件内容不是文本。".to_string());
-                        return;
-                    }
-                },
-                Err(err) => {
-                    set_status.set(format!("导入失败：读取文件失败，{err:?}"));
-                    return;
-                }
-            };
-
-            match parse_word_bank_csv(&content) {
-                Ok(word_list) => {
-                    let count = word_list.len();
-                    set_entries.set(word_list);
-                    set_data_version.update(|ver| *ver += 1);
-                    set_status.set(format!("词库导入成功，共 {} 条。", count));
-                }
-                Err(err) => set_status.set(format!("导入失败：{err}")),
-            }
-        });
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let _ = ev;
-        let _ = set_entries;
-        let _ = set_data_version;
-        set_status.set("导入仅在浏览器环境可用。".to_string());
-    }
-}
-
 fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
     #[cfg(target_arch = "wasm32")]
     {
@@ -621,8 +525,8 @@ fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
 
         let parts = js_sys::Array::new();
         parts.push(&JsValue::from_str(content));
-        let blob =
-            web_sys::Blob::new_with_str_sequence(&parts).map_err(|_| "无法创建 CSV Blob".to_string())?;
+        let blob = web_sys::Blob::new_with_str_sequence(&parts)
+            .map_err(|_| "无法创建 CSV Blob".to_string())?;
         let object_url = web_sys::Url::create_object_url_with_blob(&blob)
             .map_err(|_| "无法创建下载 URL".to_string())?;
 
@@ -647,8 +551,7 @@ fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
         anchor.click();
         anchor.remove();
 
-        web_sys::Url::revoke_object_url(&object_url)
-            .map_err(|_| "无法释放下载 URL".to_string())?;
+        web_sys::Url::revoke_object_url(&object_url).map_err(|_| "无法释放下载 URL".to_string())?;
         Ok(())
     }
 

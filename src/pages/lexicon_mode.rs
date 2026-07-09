@@ -1,48 +1,29 @@
-use gloo_net::http::Request;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode, WordEntry, parse_word_bank_csv,
-};
+use crate::app_state::WordBankState;
+use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode};
 use crate::pages::AppPage;
 
 #[component]
 pub fn LexiconModePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (entries, set_entries) = signal(Vec::<WordEntry>::new());
-    let (data_version, set_data_version) = signal(0_u64);
-    let (status, set_status) = signal("正在下载词库...".to_string());
+    let word_bank_state = expect_context::<WordBankState>();
+    let entries = word_bank_state.entries;
+    let set_entries = word_bank_state.set_entries;
+    let data_version = word_bank_state.data_version;
+    let (status, set_status) = signal(String::new());
 
     Effect::new(move |_| {
-        let set_status = set_status;
-        let set_entries = set_entries;
-        let set_data_version = set_data_version;
-        spawn_local(async move {
-            let result = async {
-                let response = Request::get("/data/word-bank.csv")
-                    .send()
-                    .await
-                    .map_err(|err| format!("下载失败: {err}"))?;
-                let csv_text = response
-                    .text()
-                    .await
-                    .map_err(|err| format!("读取响应失败: {err}"))?;
-                parse_word_bank_csv(&csv_text)
-            }
-            .await;
-
-            match result {
-                Ok(word_list) => {
-                    set_entries.set(word_list.clone());
-                    set_data_version.update(|ver| *ver += 1);
-                    set_status.set(format!("请选择想要练习的单词（共 {} 条）", word_list.len()));
-                }
-                Err(err) => {
-                    set_status.set(format!("词库加载失败：{err}"));
-                }
-            }
-        });
+        let _ = data_version.get();
+        let count = entries.get().len();
+        let source = word_bank_state.source_name.get();
+        if count == 0 {
+            set_status.set("当前词库为空，请先回到首页加载或导入词库。".to_string());
+        } else {
+            set_status.set(format!(
+                "请选择想要练习的单词（词库：{source}，共 {count} 条）"
+            ));
+        }
     });
 
     let start_practice_click = move |_| {

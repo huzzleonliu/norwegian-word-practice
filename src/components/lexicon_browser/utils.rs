@@ -78,7 +78,11 @@ pub fn parse_pipe_list(raw: &str) -> Vec<String> {
         .collect()
 }
 
-pub(super) fn compare_entries_by_rules(a: &WordEntry, b: &WordEntry, rules: &[(usize, bool)]) -> Ordering {
+pub(super) fn compare_entries_by_rules(
+    a: &WordEntry,
+    b: &WordEntry,
+    rules: &[(usize, bool)],
+) -> Ordering {
     for (col_idx, asc) in rules {
         let ordering = compare_entries_by_column(a, b, *col_idx, *asc);
         if ordering != Ordering::Equal {
@@ -98,7 +102,9 @@ pub(super) fn entry_matches_filter(entry: &WordEntry, query: &str, columns: &[bo
 
     (0..19).any(|idx| {
         columns.get(idx).copied().unwrap_or(false)
-            && column_value_text(entry, idx).to_lowercase().contains(&query_lower)
+            && column_value_text(entry, idx)
+                .to_lowercase()
+                .contains(&query_lower)
     })
 }
 
@@ -185,7 +191,12 @@ fn parse_word_bank_csv_inner(content: &str, has_headers: bool) -> Result<Vec<Wor
     Ok(entries)
 }
 
-fn compare_entries_by_column(a: &WordEntry, b: &WordEntry, col_idx: usize, ascending: bool) -> Ordering {
+fn compare_entries_by_column(
+    a: &WordEntry,
+    b: &WordEntry,
+    col_idx: usize,
+    ascending: bool,
+) -> Ordering {
     let ordering = match col_idx {
         0 => a.id.cmp(&b.id),
         1 => a.selected.cmp(&b.selected),
@@ -206,7 +217,10 @@ fn compare_entries_by_column(a: &WordEntry, b: &WordEntry, col_idx: usize, ascen
             &a.adjective_superlative_indefinite,
             &b.adjective_superlative_indefinite,
         ),
-        16 => opt_cmp(&a.adjective_superlative_definite, &b.adjective_superlative_definite),
+        16 => opt_cmp(
+            &a.adjective_superlative_definite,
+            &b.adjective_superlative_definite,
+        ),
         17 => opt_cmp(&a.adverb_comparative, &b.adverb_comparative),
         18 => opt_cmp(&a.adverb_superlative, &b.adverb_superlative),
         _ => Ordering::Equal,
@@ -242,8 +256,14 @@ fn column_value_text(entry: &WordEntry, col_idx: usize) -> String {
         12 => entry.neuter_form.clone().unwrap_or_default(),
         13 => entry.plural_form.clone().unwrap_or_default(),
         14 => entry.adjective_comparative.clone().unwrap_or_default(),
-        15 => entry.adjective_superlative_indefinite.clone().unwrap_or_default(),
-        16 => entry.adjective_superlative_definite.clone().unwrap_or_default(),
+        15 => entry
+            .adjective_superlative_indefinite
+            .clone()
+            .unwrap_or_default(),
+        16 => entry
+            .adjective_superlative_definite
+            .clone()
+            .unwrap_or_default(),
         17 => entry.adverb_comparative.clone().unwrap_or_default(),
         18 => entry.adverb_superlative.clone().unwrap_or_default(),
         _ => String::new(),

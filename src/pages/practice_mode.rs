@@ -1,48 +1,28 @@
-use gloo_net::http::Request;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::parse_word_bank_csv;
+use crate::app_state::WordBankState;
 use crate::pages::AppPage;
 
 #[component]
 pub fn PracticeModePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (download_status, set_download_status) = signal("正在下载词库...".to_string());
-
-    Effect::new(move |_| {
-        let set_download_status = set_download_status;
-        spawn_local(async move {
-            let result = async {
-                let response = Request::get("/data/word-bank.csv")
-                    .send()
-                    .await
-                    .map_err(|err| format!("下载失败: {err}"))?;
-                let csv_text = response
-                    .text()
-                    .await
-                    .map_err(|err| format!("读取响应失败: {err}"))?;
-                parse_word_bank_csv(&csv_text)
-            }
-            .await;
-
-            match result {
-                Ok(entries) => {
-                    set_download_status
-                        .set(format!("词库下载完成，共 {} 条词条。", entries.len()));
-                }
-                Err(err) => {
-                    set_download_status.set(format!("词库下载失败：{err}"));
-                }
-            }
-        });
-    });
+    let word_bank_state = expect_context::<WordBankState>();
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
             <section class="w-full max-w-2xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
                 <h1 class="text-3xl font-bold tracking-tight">"请选择练习模式"</h1>
-                <p class="mt-4 text-slate-300">{move || download_status.get()}</p>
+                <p class="mt-4 text-slate-300">
+                    {move || {
+                        let count = word_bank_state.entries.get().len();
+                        let source = word_bank_state.source_name.get();
+                        if count == 0 {
+                            "尚未加载词库，请先回到首页选择词库或导入词库 CSV。".to_string()
+                        } else {
+                            format!("当前词库：{source}（共 {count} 条词条）。")
+                        }
+                    }}
+                </p>
 
                 <div class="mt-6 flex flex-wrap items-center gap-3">
                     <button
