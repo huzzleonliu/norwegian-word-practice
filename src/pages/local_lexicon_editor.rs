@@ -3,8 +3,8 @@ use leptos::ev::{Event, SubmitEvent};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::LexiconBrowser;
-use crate::components::lexicon_browser::lexicon::{
+use crate::components::lexicon_browser::{
+    LexiconBrowser,
     PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
 };
 use crate::pages::AppPage;

@@ -2,7 +2,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::lexicon::parse_word_bank_csv;
+use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::pages::AppPage;
 
 #[component]
