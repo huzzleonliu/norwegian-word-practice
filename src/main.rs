@@ -48,7 +48,7 @@ fn App() -> impl IntoView {
                 view! { <pages::practice_mode::PracticeModePage/> }.into_any()
             }
             pages::AppPage::LexiconMode => {
-                view! { <pages::lexicon_mode::LexiconModePage/> }.into_any()
+                view! { <pages::lexicon_select::LexiconSelectPage/> }.into_any()
             }
             pages::AppPage::LexiconPractice => {
                 view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()

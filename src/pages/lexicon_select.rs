@@ -7,7 +7,7 @@ use crate::pages::AppPage;
 use crate::utils::shuffle::shuffle_strings;
 
 #[component]
-pub fn LexiconModePage() -> impl IntoView {
+pub fn LexiconSelectPage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
     let entries = word_bank_state.entries;

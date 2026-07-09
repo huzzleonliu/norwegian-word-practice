@@ -1,11 +1,9 @@
-use gloo_net::http::Request;
 use leptos::ev::Event;
 use leptos::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use leptos::task::spawn_local;
 
 use crate::app_state::WordBankState;
-use crate::components::import_csv::ImportCsvButton;
-use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
 #[cfg(target_arch = "wasm32")]
@@ -15,44 +13,7 @@ use crate::utils::pracresult_crypto::parse_practice_result_from_import;
 pub fn HomePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
-    let (selected_word_bank, set_selected_word_bank) = signal("word-bank.csv".to_string());
     let (status, set_status) = signal(String::new());
-
-    let choose_word_bank_click = move |_| {
-        let selected_file = selected_word_bank.get_untracked();
-        let word_bank_state = word_bank_state;
-        set_status.set(format!("正在加载内置词库：{selected_file} ..."));
-
-        spawn_local(async move {
-            let result = async {
-                let response = Request::get(&format!("/data/{selected_file}"))
-                    .send()
-                    .await
-                    .map_err(|err| format!("下载失败: {err}"))?;
-                let csv_text = response
-                    .text()
-                    .await
-                    .map_err(|err| format!("读取响应失败: {err}"))?;
-                parse_word_bank_csv(&csv_text)
-            }
-            .await;
-
-            match result {
-                Ok(word_list) => {
-                    let count = word_list.len();
-                    word_bank_state.set_entries.set(word_list);
-                    word_bank_state.set_data_version.update(|ver| *ver += 1);
-                    word_bank_state
-                        .set_source_name
-                        .set(format!("内置词库：{selected_file}"));
-                    set_status.set(format!("词库切换成功（已覆盖），共 {count} 条。"));
-                }
-                Err(err) => {
-                    set_status.set(format!("词库切换失败：{err}"));
-                }
-            }
-        });
-    };
 
     let import_pracresult_change = move |ev: Event| {
         import_pracresult_from_file(
@@ -105,35 +66,7 @@ pub fn HomePage() -> impl IntoView {
                     on:change=import_pracresult_change
                 />
 
-                <div class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                    <select
-                        prop:value=move || selected_word_bank.get()
-                        on:change=move |ev| set_selected_word_bank.set(event_target_value(&ev))
-                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
-                    >
-                        <option value="word-bank-mini.csv">"word-bank-mini.csv"</option>
-                        <option value="word-bank.csv">"word-bank.csv"</option>
-                        <option value="word-bank-full.csv">"word-bank-full.csv"</option>
-                    </select>
-                    <button
-                        type="button"
-                        on:click=choose_word_bank_click
-                        class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
-                    >
-                        "选择词库"
-                    </button>
-                    <ImportCsvButton
-                        input_id="home-import-csv-input".to_string()
-                        label="导入词库 CSV".to_string()
-                        class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700".to_string()
-                        set_entries=word_bank_state.set_entries
-                        set_status=set_status
-                        set_data_version=word_bank_state.set_data_version
-                        set_source_name=word_bank_state.set_source_name
-                    />
-                </div>
-
-                <div class="mt-3 flex flex-wrap items-center gap-3">
+                <div class="mt-6 flex flex-wrap items-center gap-3">
                     <label
                         for="pracresult-input"
                         class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
