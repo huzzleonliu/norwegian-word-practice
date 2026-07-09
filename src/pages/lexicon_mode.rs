@@ -2,10 +2,14 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::{LexiconBrowser, WordEntry, parse_word_bank_csv};
+use crate::components::lexicon_browser::{
+    LexiconBrowser, LexiconBrowserMode, WordEntry, parse_word_bank_csv,
+};
+use crate::pages::AppPage;
 
 #[component]
 pub fn LexiconModePage() -> impl IntoView {
+    let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let (entries, set_entries) = signal(Vec::<WordEntry>::new());
     let (data_version, set_data_version) = signal(0_u64);
     let (status, set_status) = signal("正在下载词库...".to_string());
@@ -48,7 +52,16 @@ pub fn LexiconModePage() -> impl IntoView {
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <h1 class="text-2xl font-bold tracking-tight">"请选择想要练习的单词"</h1>
+                <header class="flex items-center justify-between gap-4">
+                    <h1 class="text-2xl font-bold tracking-tight">"请选择想要练习的单词"</h1>
+                    <button
+                        type="button"
+                        on:click=move |_| set_current_page.set(AppPage::PracticeModeSelect)
+                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
+                    >
+                        "返回"
+                    </button>
+                </header>
                 <p class="mt-3 text-sm text-slate-300">{move || status.get()}</p>
 
                 <LexiconBrowser
@@ -56,6 +69,7 @@ pub fn LexiconModePage() -> impl IntoView {
                     set_entries=set_entries
                     set_status=set_status
                     data_version=data_version
+                    mode=LexiconBrowserMode::Query
                 />
 
                 <div class="mt-6 flex justify-center">

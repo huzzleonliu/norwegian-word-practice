@@ -35,6 +35,12 @@ pub struct WordEntry {
     pub adverb_superlative: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LexiconBrowserMode {
+    Edit,
+    Query,
+}
+
 #[derive(Debug, Deserialize)]
 pub(super) struct CsvWordEntry {
     pub(super) id: String,

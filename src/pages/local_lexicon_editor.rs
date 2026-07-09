@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::components::lexicon_browser::{
-    LexiconBrowser,
+    LexiconBrowser, LexiconBrowserMode,
     PART_OF_SPEECH_OPTIONS, WordEntry, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
 };
 use crate::pages::AppPage;
@@ -498,6 +498,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_entries=set_entries
                     set_status=set_status
                     data_version=data_version
+                    mode=LexiconBrowserMode::Edit
                 />
 
                 <div class="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-800 pt-4">

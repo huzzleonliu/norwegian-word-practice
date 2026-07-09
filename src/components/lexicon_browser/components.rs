@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::structures::{PART_OF_SPEECH_OPTIONS, WordEntry};
+use super::structures::{LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, WordEntry};
 use super::utils::{
     compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name, input_to_option,
     option_to_input, parse_pipe_list,
@@ -13,8 +13,10 @@ pub fn LexiconBrowser(
     set_entries: WriteSignal<Vec<WordEntry>>,
     set_status: WriteSignal<String>,
     data_version: ReadSignal<u64>,
+    mode: LexiconBrowserMode,
 ) -> impl IntoView {
     const DATA_COLUMN_COUNT: usize = 19;
+    let is_query_mode = mode == LexiconBrowserMode::Query;
     let (col_widths, set_col_widths) = signal(vec![
         120_u16, 90, 140, 160, 180, 180, 150, 120, 120, 120, 140, 140, 130, 130, 160, 210, 210,
         160, 160, 210,
@@ -192,6 +194,54 @@ pub fn LexiconBrowser(
         set_confirm_success.set("修改成功".to_string());
         set_status.set("词库修改已确认并应用。".to_string());
     };
+    let set_visible_selected = move |checked: bool| {
+        let query = search_query.get_untracked();
+        let columns = search_columns.get_untracked();
+        let current = draft_entries.get_untracked();
+        let visible_indices = current
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, entry)| {
+                if entry_matches_filter(entry, &query, &columns) {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if visible_indices.is_empty() {
+            set_status.set("当前没有可操作的显示条目。".to_string());
+            return;
+        }
+
+        let snapshots = visible_indices
+            .iter()
+            .filter_map(|idx| current.get(*idx).cloned().map(|entry| (*idx, entry)))
+            .collect::<Vec<_>>();
+        set_row_undo.update(|undo| {
+            if undo.len() < current.len() {
+                undo.resize(current.len(), None);
+            }
+            for (idx, entry) in &snapshots {
+                undo[*idx] = Some(entry.clone());
+            }
+        });
+
+        set_entries.update(|list| {
+            for idx in &visible_indices {
+                if let Some(item) = list.get_mut(*idx) {
+                    item.selected = checked;
+                }
+            }
+        });
+        set_status.set(format!(
+            "已将当前显示的 {} 条词条设置为 {}。",
+            visible_indices.len(),
+            if checked { "选中" } else { "不选中" }
+        ));
+    };
+    let select_visible_click = move |_| set_visible_selected(true);
+    let unselect_visible_click = move |_| set_visible_selected(false);
 
     view! {
         <section
@@ -260,16 +310,19 @@ pub fn LexiconBrowser(
             <div class="max-h-[420px] overflow-auto pr-1">
                 <table class="w-full border-collapse text-sm table-fixed">
                     <colgroup>
-                        {move || (0..20)
-                            .map(|idx| {
-                                view! {
-                                    <col style=format!(
-                                        "width:{}px",
-                                        col_widths.get().get(idx).copied().unwrap_or(140)
-                                    ) />
-                                }
-                            })
-                            .collect_view()}
+                        {move || {
+                            let total_columns = if is_query_mode { DATA_COLUMN_COUNT } else { 20 };
+                            (0..total_columns)
+                                .map(|idx| {
+                                    view! {
+                                        <col style=format!(
+                                            "width:{}px",
+                                            col_widths.get().get(idx).copied().unwrap_or(140)
+                                        ) />
+                                    }
+                                })
+                                .collect_view()
+                        }}
                     </colgroup>
                     <thead>
                         <tr class="sticky top-0 z-10 bg-slate-900/95 text-left text-slate-300">
@@ -294,8 +347,16 @@ pub fn LexiconBrowser(
                                     "adjective_superlative_definite",
                                     "adverb_comparative",
                                     "adverb_superlative",
-                                    "操作",
                                 ];
+                                let op_header = if is_query_mode {
+                                    Vec::new()
+                                } else {
+                                    vec!["操作"]
+                                };
+                                let headers = headers
+                                    .into_iter()
+                                    .chain(op_header)
+                                    .collect::<Vec<_>>();
 
                                 let current_sort = sort_state.get();
                                 headers
@@ -347,10 +408,59 @@ pub fn LexiconBrowser(
                     <tbody>
                         <For
                             each=row_items
-                            key=|(idx, entry)| format!("{}-{}", idx, entry.id)
+                            key=|(idx, entry)| format!("{}-{}-{}", idx, entry.id, entry.selected)
                             children=move |(idx, entry)| {
-                                view! {
-                                    <tr class="align-top">
+                                if is_query_mode {
+                                    view! {
+                                        <tr class="align-top">
+                                            <td class="border border-slate-800 p-2">{entry.id.clone()}</td>
+                                            <td class="border border-slate-800 p-1 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    prop:checked=entry.selected
+                                                    on:change=move |ev| {
+                                                        let checked = event_target_checked(&ev);
+                                                        set_entries.update(|list| {
+                                                            if let Some(item) = list.get_mut(idx) {
+                                                                set_row_undo.update(|undo| {
+                                                                    if undo.len() <= idx {
+                                                                        undo.resize(idx + 1, None);
+                                                                    }
+                                                                    undo[idx] = Some(item.clone());
+                                                                });
+                                                                item.selected = checked;
+                                                            }
+                                                        });
+                                                    }
+                                                />
+                                            </td>
+                                            <td class="border border-slate-800 p-2">{entry.part_of_speech.clone()}</td>
+                                            <td class="border border-slate-800 p-2">{entry.tags.join(" | ")}</td>
+                                            <td class="border border-slate-800 p-2">{entry.english.join(" | ")}</td>
+                                            <td class="border border-slate-800 p-2">{entry.chinese.join(" | ")}</td>
+                                            <td class="border border-slate-800 p-2">{entry.base_form.clone()}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.past_tense)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.imperative)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.plural)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.singular_definite)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.plural_definite)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.neuter_form)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.plural_form)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.adjective_comparative)}</td>
+                                            <td class="border border-slate-800 p-2">
+                                                {option_to_input(&entry.adjective_superlative_indefinite)}
+                                            </td>
+                                            <td class="border border-slate-800 p-2">
+                                                {option_to_input(&entry.adjective_superlative_definite)}
+                                            </td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.adverb_comparative)}</td>
+                                            <td class="border border-slate-800 p-2">{option_to_input(&entry.adverb_superlative)}</td>
+                                        </tr>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! {
+                                        <tr class="align-top">
                                         <td class="border border-slate-800 p-1">
                                             <input
                                                 type="text"
@@ -485,13 +595,31 @@ pub fn LexiconBrowser(
                                         </td>
                                     </tr>
                                 }
+                                    .into_any()
+                                }
                             }
                         />
                     </tbody>
                 </table>
             </div>
-            <div class="mt-3 flex items-center justify-between gap-3">
-                <div class="min-h-6 text-sm">
+            <div class="mt-3 flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        on:click=select_visible_click
+                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
+                    >
+                        "全选"
+                    </button>
+                    <button
+                        type="button"
+                        on:click=unselect_visible_click
+                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
+                    >
+                        "全不选"
+                    </button>
+                </div>
+                <div class="min-h-6 flex-1 text-sm">
                     {move || {
                         if !confirm_error.get().is_empty() {
                             view! { <p class="text-red-400">{confirm_error.get()}</p> }.into_any()
