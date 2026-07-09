@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
+use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{
@@ -228,16 +229,24 @@ pub fn LexiconPracticePage() -> impl IntoView {
                     <h1 class="text-2xl font-bold tracking-tight">"词库练习"</h1>
                 </header>
 
-                <p class="mb-2 text-sm text-slate-300">
-                    {move || {
+                <MiniConsole
+                    message=Signal::derive(move || {
                         let selected_count = word_bank_state.selected_word_entry_ids.get().len();
                         let temp_entries = word_bank_state.temp_practice_result.get().practiced_word_entries.len();
-                        format!(
+                        let overview = format!(
                             "当前可练习词条（selected=true）：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
-                        )
-                    }}
-                </p>
-                <p class="mb-4 min-h-5 text-sm text-slate-300">{move || status.get()}</p>
+                        );
+                        let status_line = {
+                            let s = status.get();
+                            if s.trim().is_empty() {
+                                "等待作答并点击检查...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{overview}\n{status_line}")
+                    })
+                />
 
                 <section class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"第一部分：练习设置"</h2>

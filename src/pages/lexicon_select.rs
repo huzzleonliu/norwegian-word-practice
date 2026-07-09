@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode, WordEntry};
+use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::utils::shuffle::shuffle_strings;
@@ -18,9 +19,9 @@ pub fn LexiconSelectPage() -> impl IntoView {
 
     Effect::new(move |_| {
         let _ = data_version.get();
-        let count = entries.get().len();
-        let source = word_bank_state.source_name.get();
-        let prepared_count = word_bank_state.selected_word_entry_ids.get().len();
+        let count = entries.get_untracked().len();
+        let source = word_bank_state.source_name.get_untracked();
+        let prepared_count = word_bank_state.selected_word_entry_ids.get_untracked().len();
         if count == 0 {
             set_status.set("当前词库为空，请先回到首页加载或导入词库。".to_string());
         } else if prepared_count == 0 {
@@ -53,7 +54,26 @@ pub fn LexiconSelectPage() -> impl IntoView {
                 <header class="flex items-center gap-4">
                     <h1 class="text-2xl font-bold tracking-tight">"请选择想要练习的单词"</h1>
                 </header>
-                <p class="mt-3 text-sm text-slate-300">{move || status.get()}</p>
+                <MiniConsole
+                    message=Signal::derive(move || {
+                        let count = entries.get().len();
+                        let source = word_bank_state.source_name.get();
+                        let source_line = if count == 0 {
+                            format!("当前词库为空（来源：{source}）。")
+                        } else {
+                            format!("当前词库：{source}（共 {count} 条词条）。")
+                        };
+                        let status_line = {
+                            let s = status.get();
+                            if s.trim().is_empty() {
+                                "等待选词并开始练习...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{source_line}\n{status_line}")
+                    })
+                />
 
                 <LexiconBrowser
                     entries=entries

@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
+use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{AnswerStats, PracticeResult, PracticedWordEntryResult};
@@ -39,6 +40,26 @@ pub fn LexiconSummaryPage() -> impl IntoView {
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::LexiconPractice/>
                 <h1 class="text-2xl font-bold tracking-tight">"练习总结"</h1>
+                <MiniConsole
+                    message=Signal::derive(move || {
+                        let session_result = word_bank_state.last_completed_practice_result.get();
+                        let (session_correct, session_wrong) = aggregate_score(&session_result);
+                        let session_total = session_correct + session_wrong;
+                        let summary_line = format!(
+                            "本次结果：准确率 {}（{session_correct}/{session_total}）",
+                            format_accuracy(session_correct, session_total)
+                        );
+                        let flow_line = {
+                            let s = flow_status.get();
+                            if s.trim().is_empty() {
+                                "等待导出或继续下一步...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{summary_line}\n{flow_line}")
+                    })
+                />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"练习总结部分"</h2>
@@ -132,7 +153,6 @@ pub fn LexiconSummaryPage() -> impl IntoView {
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"流程控制部分"</h2>
-                    <p class="mt-2 min-h-5 text-sm text-slate-300">{move || flow_status.get()}</p>
                     <div class="mt-4 flex flex-wrap items-center gap-3">
                         <button
                             type="button"

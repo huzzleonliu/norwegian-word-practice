@@ -7,6 +7,7 @@ use crate::components::lexicon_browser::{
     LexiconBrowser, LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, parse_pipe_list,
     parse_word_bank_csv, serialize_word_bank_csv,
 };
+use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::utils::dictionary::{
@@ -221,7 +222,19 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     <h1 class="text-2xl font-bold tracking-tight">"本地词库修改器"</h1>
                 </header>
 
-                <p class="mb-4 text-sm text-slate-300">{move || status.get()}</p>
+                <MiniConsole
+                    message=Signal::derive(move || {
+                        let status_line = {
+                            let s = status.get();
+                            if s.trim().is_empty() {
+                                "等待词库编辑操作...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{status_line}\n编辑后请点击“确认修改”再导出。")
+                    })
+                />
 
                 <form
                     on:submit=add_single_entry

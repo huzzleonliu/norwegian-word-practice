@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 use crate::app_state::WordBankState;
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
+use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
@@ -56,18 +57,26 @@ pub fn PracticeModePage() -> impl IntoView {
             <section class="relative w-full max-w-5xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
                 <ReturnButton target_page=AppPage::Home/>
                 <h1 class="text-3xl font-bold tracking-tight">"请选择练习模式"</h1>
-                <p class="mt-4 text-slate-300">
-                    {move || {
+                <MiniConsole
+                    message=Signal::derive(move || {
                         let count = word_bank_state.entries.get().len();
                         let source = word_bank_state.source_name.get();
-                        if count == 0 {
+                        let source_line = if count == 0 {
                             "尚未加载词库，请先在本页选择词库或导入词库 CSV。".to_string()
                         } else {
                             format!("当前词库：{source}（共 {count} 条词条）。")
-                        }
-                    }}
-                </p>
-                <p class="mt-1 min-h-5 text-sm text-slate-300">{move || status.get()}</p>
+                        };
+                        let status_line = {
+                            let s = status.get();
+                            if s.trim().is_empty() {
+                                "等待词库操作...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{source_line}\n{status_line}")
+                    })
+                />
 
                 <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <section class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">

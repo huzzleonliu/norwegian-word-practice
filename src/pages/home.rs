@@ -4,6 +4,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::WordBankState;
+use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
 #[cfg(target_arch = "wasm32")]
@@ -42,21 +43,29 @@ pub fn HomePage() -> impl IntoView {
         <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
             <section class="w-full max-w-2xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
                 <h1 class="text-3xl font-bold tracking-tight">"Norwegian Word Practice"</h1>
+                <MiniConsole
+                    message=Signal::derive(move || {
+                        let count = word_bank_state.entries.get().len();
+                        let source = word_bank_state.source_name.get();
+                        let source_line = if count == 0 {
+                            format!("当前词库：{source}。")
+                        } else {
+                            format!("当前词库：{source}（共 {count} 条词条）。")
+                        };
+                        let status_line = {
+                            let s = status.get();
+                            if s.trim().is_empty() {
+                                "等待操作...".to_string()
+                            } else {
+                                s
+                            }
+                        };
+                        format!("{source_line}\n{status_line}")
+                    })
+                />
                 <p class="mt-4 text-slate-300">
                     "导入你的练习结果（.pracresult）后开始练习。"
                 </p>
-                <p class="mt-2 text-sm text-slate-400">
-                    {move || {
-                        let count = word_bank_state.entries.get().len();
-                        let source = word_bank_state.source_name.get();
-                        if count == 0 {
-                            format!("当前词库：{source}。")
-                        } else {
-                            format!("当前词库：{source}（共 {count} 条）。")
-                        }
-                    }}
-                </p>
-                <p class="mt-1 min-h-5 text-sm text-slate-300">{move || status.get()}</p>
 
                 <input
                     id="pracresult-input"
