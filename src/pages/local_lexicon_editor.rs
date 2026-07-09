@@ -521,6 +521,13 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     >
                         "导出词库 CSV"
                     </button>
+                    <button
+                        type="button"
+                        on:click=move |_| set_current_page.set(AppPage::PracticeModeSelect)
+                        class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
+                    >
+                        "返回练习模式页"
+                    </button>
                 </div>
             </section>
         </main>
