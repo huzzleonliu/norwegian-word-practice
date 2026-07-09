@@ -193,18 +193,20 @@ pub fn LexiconBrowser(
 
         let current_entries = draft_entries.get_untracked();
 
-        let mut errors = Vec::new();
-        for (idx, item) in current_entries.iter().enumerate() {
-            if let Err(err) = validate_existing_entry(item, &current_entries, idx) {
-                errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err));
+        if !is_query_mode {
+            let mut errors = Vec::new();
+            for (idx, item) in current_entries.iter().enumerate() {
+                if let Err(err) = validate_existing_entry(item, &current_entries, idx) {
+                    errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err));
+                }
             }
-        }
 
-        if !errors.is_empty() {
-            let message = errors.join("；");
-            set_confirm_error.set(message.clone());
-            set_status.set("确认失败：存在不合法修改。".to_string());
-            return;
+            if !errors.is_empty() {
+                let message = errors.join("；");
+                set_confirm_error.set(message.clone());
+                set_status.set("确认失败：存在不合法修改。".to_string());
+                return;
+            }
         }
 
         set_committed_entries.set(current_entries.clone());
@@ -212,7 +214,11 @@ pub fn LexiconBrowser(
         set_baseline_entries.set(current_entries.clone());
         set_row_undo.set(vec![None; current_entries.len()]);
         set_confirm_success.set("修改成功".to_string());
-        set_status.set("词库修改已确认并应用。".to_string());
+        if is_query_mode {
+            set_status.set("词库选择已确认并应用。".to_string());
+        } else {
+            set_status.set("词库修改已确认并应用。".to_string());
+        }
     };
     let set_visible_selected = move |checked: bool| {
         let query = search_query.get_untracked();
