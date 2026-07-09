@@ -21,7 +21,10 @@ pub fn LexiconSelectPage() -> impl IntoView {
         let _ = data_version.get();
         let count = entries.get_untracked().len();
         let source = word_bank_state.source_name.get_untracked();
-        let prepared_count = word_bank_state.selected_word_entry_ids.get_untracked().len();
+        let prepared_count = word_bank_state
+            .selected_word_entry_ids
+            .get_untracked()
+            .len();
         if count == 0 {
             set_status.set("当前词库为空，请先回到首页加载或导入词库。".to_string());
         } else if prepared_count == 0 {

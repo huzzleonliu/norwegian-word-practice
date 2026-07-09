@@ -64,7 +64,8 @@ fn decrypt_payload(payload: EncryptedPracticeResultFile) -> Result<PracticeResul
         .decode(payload.practiced_word_entries.trim())
         .map_err(|err| format!("练习结果密文解析失败：{err}"))?;
 
-    let practiced_word_entries = decrypt_practiced_entries(&encrypted_entries, &public_key, &nonce)?;
+    let practiced_word_entries =
+        decrypt_practiced_entries(&encrypted_entries, &public_key, &nonce)?;
 
     Ok(PracticeResult {
         username: payload.username,

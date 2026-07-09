@@ -2,4 +2,7 @@ pub mod import_csv;
 pub mod lexicon_browser;
 #[path = "mini-console.rs"]
 pub mod mini_console;
+pub mod practice_buttons;
+pub mod practice_entry;
+pub mod practice_settings;
 pub mod return_button;

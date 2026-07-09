@@ -335,7 +335,10 @@ fn practiced_entry_stats_with_labels(
         ("plural_definite", &practiced_entry.plural_definite),
         ("neuter_form", &practiced_entry.neuter_form),
         ("plural_form", &practiced_entry.plural_form),
-        ("adjective_comparative", &practiced_entry.adjective_comparative),
+        (
+            "adjective_comparative",
+            &practiced_entry.adjective_comparative,
+        ),
         (
             "adjective_superlative_indefinite",
             &practiced_entry.adjective_superlative_indefinite,

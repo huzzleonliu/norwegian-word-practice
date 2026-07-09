@@ -5,8 +5,7 @@ use leptos::prelude::*;
 use crate::app_state::WordBankState;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    PracticeButtons, RestartTempBehavior, create_temp_practice_result, normalize_for_compare,
-    record_field_check_result,
+    PracticeButtons, RestartTempBehavior, normalize_for_compare, record_field_check_result,
 };
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
@@ -15,20 +14,14 @@ use crate::components::practice_settings::PracticeSettings;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
+use super::initialize_temp_practice_result;
+
 #[component]
-pub fn LexiconPracticePage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+pub fn NumberSerisePracticePage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
+    initialize_temp_practice_result(word_bank_state);
 
-    let selected_ids_on_enter = word_bank_state.selected_word_entry_ids.get_untracked();
-    let base_practice_result = word_bank_state.practice_result.get_untracked();
-    word_bank_state
-        .set_temp_practice_result
-        .set(create_temp_practice_result(
-            &base_practice_result,
-            &selected_ids_on_enter,
-        ));
-
+    let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let (questions_per_page, set_questions_per_page) = signal(10_usize);
     let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
     let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
@@ -146,17 +139,18 @@ pub fn LexiconPracticePage() -> impl IntoView {
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::LexiconMode/>
-                <header class="mb-6 flex items-center gap-4">
-                    <h1 class="text-2xl font-bold tracking-tight">"词库练习"</h1>
-                </header>
-
+                <ReturnButton target_page=AppPage::SeriseSelect/>
+                <h1 class="text-3xl font-bold tracking-tight">"数词系列练习"</h1>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let selected_count = word_bank_state.selected_word_entry_ids.get().len();
-                        let temp_entries = word_bank_state.temp_practice_result.get().practiced_word_entries.len();
+                        let temp_entries = word_bank_state
+                            .temp_practice_result
+                            .get()
+                            .practiced_word_entries
+                            .len();
                         let overview = format!(
-                            "当前可练习词条（selected=true）：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
+                            "当前可练习词条：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
                         );
                         let status_line = {
                             let s = status.get();
@@ -170,7 +164,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                     })
                 />
 
-                <section class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"第一部分：练习设置"</h2>
                     <PracticeSettings
                         questions_per_page=questions_per_page
@@ -206,7 +200,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         set_current_page=set_current_page
                         set_status=set_status
                         finish_target_page=AppPage::LexiconSummary
-                        abort_target_page=AppPage::LexiconMode
+                        abort_target_page=AppPage::SeriseSelect
                         restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
                         restart_temp_behavior=RestartTempBehavior::Keep
                     />

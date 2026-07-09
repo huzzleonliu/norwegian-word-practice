@@ -1,0 +1,7 @@
+id,selected,part_of_speech,tags,english,chinese,norwegian_base,past_tense,imperative,plural,singular_definite,plural_definite,neuter_form,plural_form,adjective_comparative,adjective_superlative_indefinite,adjective_superlative_definite,adverb_comparative,adverb_superlative
+interrogative-001,true,interrogative,series,what,什么,hva,,,,,,,,,,,,
+interrogative-002,true,interrogative,series,where,哪里,hvor,,,,,,,,,,,,
+interrogative-003,true,interrogative,series,why,为什么,hvorfor,,,,,,,,,,,,
+interrogative-004,true,interrogative,series,when,什么时候,når,,,,,,,,,,,,
+interrogative-005,true,interrogative,series,who,谁,hvem,,,,,,,,,,,,
+interrogative-006,true,interrogative,series,which,哪个,hvilken,,,,,,,,,,,,

@@ -23,7 +23,7 @@ pub fn PracticeModePage() -> impl IntoView {
 
         spawn_local(async move {
             let result = async {
-                let response = Request::get(&format!("/data/{selected_file}"))
+                let response = Request::get(&format!("/data/lexicon-word-bank/{selected_file}"))
                     .send()
                     .await
                     .map_err(|err| format!("下载失败: {err}"))?;
@@ -126,6 +126,7 @@ pub fn PracticeModePage() -> impl IntoView {
                         <div class="mt-4">
                             <button
                                 type="button"
+                                on:click=move |_| set_current_page.set(AppPage::SeriseSelect)
                                 class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
                             >
                                 "单词系列模式"
