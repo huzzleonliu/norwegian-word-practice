@@ -25,6 +25,7 @@ pub fn LexiconBrowser(
     let (draft_entries, set_draft_entries) = signal(entries.get_untracked());
     let (row_undo, set_row_undo) = signal(vec![None::<WordEntry>; entries.get_untracked().len()]);
     let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
+    let (selection_drag_target, set_selection_drag_target) = signal(None::<bool>);
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
     let (search_text, set_search_text) = signal(String::new());
     let (search_query, set_search_query) = signal(String::new());
@@ -82,6 +83,22 @@ pub fn LexiconBrowser(
     let stop_resize = move |_| {
         if resize_state.get_untracked().is_some() {
             set_resize_state.set(None);
+        }
+        if selection_drag_target.get_untracked().is_some() {
+            set_selection_drag_target.set(None);
+        }
+    };
+    let begin_selected_drag = move |idx: usize, current_selected: bool| {
+        let target_checked = !current_selected;
+        set_selection_drag_target.set(Some(target_checked));
+        update_selected_cell(idx, target_checked, set_entries, set_row_undo);
+    };
+    let drag_over_selected = move |idx: usize, ev: leptos::ev::MouseEvent| {
+        if ev.buttons() & 1 != 1 {
+            return;
+        }
+        if let Some(target_checked) = selection_drag_target.get_untracked() {
+            update_selected_cell(idx, target_checked, set_entries, set_row_undo);
         }
     };
     let sort_by_column = move |col_idx: usize, with_secondary: bool| {
@@ -417,24 +434,22 @@ pub fn LexiconBrowser(
                                     view! {
                                         <tr class="align-top">
                                             <td class="border border-slate-800 p-2">{entry.id.clone()}</td>
-                                            <td class="border border-slate-800 p-1 text-center">
+                                            <td
+                                                class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
+                                                on:mousedown=move |ev: leptos::ev::MouseEvent| {
+                                                    if ev.button() == 0 {
+                                                        ev.prevent_default();
+                                                        begin_selected_drag(idx, entry.selected);
+                                                    }
+                                                }
+                                                on:mouseover=move |ev: leptos::ev::MouseEvent| {
+                                                    drag_over_selected(idx, ev);
+                                                }
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     prop:checked=entry.selected
-                                                    on:change=move |ev| {
-                                                        let checked = event_target_checked(&ev);
-                                                        set_entries.update(|list| {
-                                                            if let Some(item) = list.get_mut(idx) {
-                                                                set_row_undo.update(|undo| {
-                                                                    if undo.len() <= idx {
-                                                                        undo.resize(idx + 1, None);
-                                                                    }
-                                                                    undo[idx] = Some(item.clone());
-                                                                });
-                                                                item.selected = checked;
-                                                            }
-                                                        });
-                                                    }
+                                                    class="pointer-events-none"
                                                 />
                                             </td>
                                             <td class="border border-slate-800 p-2">{entry.part_of_speech.clone()}</td>
@@ -485,24 +500,22 @@ pub fn LexiconBrowser(
                                                 class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"
                                             />
                                         </td>
-                                        <td class="border border-slate-800 p-1 text-center">
+                                        <td
+                                            class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
+                                            on:mousedown=move |ev: leptos::ev::MouseEvent| {
+                                                if ev.button() == 0 {
+                                                    ev.prevent_default();
+                                                    begin_selected_drag(idx, entry.selected);
+                                                }
+                                            }
+                                            on:mouseover=move |ev: leptos::ev::MouseEvent| {
+                                                drag_over_selected(idx, ev);
+                                            }
+                                        >
                                             <input
                                                 type="checkbox"
                                                 prop:checked=entry.selected
-                                                on:change=move |ev| {
-                                                    let checked = event_target_checked(&ev);
-                                                    set_entries.update(|list| {
-                                                        if let Some(item) = list.get_mut(idx) {
-                                                            set_row_undo.update(|undo| {
-                                                                if undo.len() <= idx {
-                                                                    undo.resize(idx + 1, None);
-                                                                }
-                                                                undo[idx] = Some(item.clone());
-                                                            });
-                                                            item.selected = checked;
-                                                        }
-                                                    });
-                                                }
+                                                class="pointer-events-none"
                                             />
                                         </td>
                                         <td class="border border-slate-800 p-1">
@@ -643,4 +656,27 @@ pub fn LexiconBrowser(
             </div>
         </section>
     }
+}
+
+fn update_selected_cell(
+    idx: usize,
+    checked: bool,
+    set_entries: WriteSignal<Vec<WordEntry>>,
+    set_row_undo: WriteSignal<Vec<Option<WordEntry>>>,
+) {
+    set_entries.update(|list| {
+        if let Some(item) = list.get_mut(idx) {
+            if item.selected == checked {
+                return;
+            }
+            let snapshot = item.clone();
+            set_row_undo.update(|undo| {
+                if undo.len() <= idx {
+                    undo.resize(idx + 1, None);
+                }
+                undo[idx] = Some(snapshot);
+            });
+            item.selected = checked;
+        }
+    });
 }
