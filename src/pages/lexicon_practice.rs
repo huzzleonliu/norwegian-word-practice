@@ -5,9 +5,8 @@ use leptos::prelude::*;
 use crate::app_state::WordBankState;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
-    RestartTempBehavior, create_temp_practice_result, normalize_for_compare,
-    record_field_check_result,
+    AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
+    create_temp_practice_result, normalize_for_compare, record_field_check_result,
 };
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
@@ -200,6 +199,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"第二部分：练习题"</h2>
                     <PracticeEntry
+                        on_check=check_click
                         active_question_ids=active_question_ids
                         entries=word_bank_state.entries
                         prompt_field_a=prompt_field_a
@@ -212,8 +212,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"第三部分：流程控制"</h2>
-                    <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <CheckPracticeButton on_check=check_click/>
+                    <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
                             word_bank_state=word_bank_state
                             set_current_page=set_current_page

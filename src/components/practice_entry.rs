@@ -6,7 +6,28 @@ use crate::components::lexicon_browser::WordEntry;
 use crate::components::practice_settings::NONE_FIELD_KEY;
 
 #[component]
+pub fn CheckPracticeButton(
+    on_check: Callback<()>,
+    #[prop(optional)] label: Option<String>,
+    #[prop(optional)] class: Option<String>,
+) -> impl IntoView {
+    let check_click = move |_| on_check.run(());
+    let label = label.unwrap_or_else(|| "检查".to_string());
+    let class = class.unwrap_or_else(|| {
+        "rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
+            .to_string()
+    });
+
+    view! {
+        <button type="button" on:click=check_click class=class>
+            {label}
+        </button>
+    }
+}
+
+#[component]
 pub fn PracticeEntry(
+    on_check: Callback<()>,
     active_question_ids: ReadSignal<Vec<String>>,
     entries: ReadSignal<Vec<WordEntry>>,
     prompt_field_a: ReadSignal<String>,
@@ -136,6 +157,10 @@ pub fn PracticeEntry(
                 view! { <></> }.into_any()
             }
         }}
+
+        <div class="mt-4 flex justify-center">
+            <CheckPracticeButton on_check=on_check/>
+        </div>
     }
 }
 

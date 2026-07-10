@@ -14,26 +14,6 @@ pub enum RestartTempBehavior {
 }
 
 #[component]
-pub fn CheckPracticeButton(
-    on_check: Callback<()>,
-    #[prop(optional)] label: Option<String>,
-    #[prop(optional)] class: Option<String>,
-) -> impl IntoView {
-    let check_click = move |_| on_check.run(());
-    let label = label.unwrap_or_else(|| "检查".to_string());
-    let class = class.unwrap_or_else(|| {
-        "rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
-            .to_string()
-    });
-
-    view! {
-        <button type="button" on:click=check_click class=class>
-            {label}
-        </button>
-    }
-}
-
-#[component]
 pub fn FinishPracticeButton(
     word_bank_state: WordBankState,
     set_current_page: WriteSignal<AppPage>,

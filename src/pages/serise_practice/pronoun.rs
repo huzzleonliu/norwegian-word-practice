@@ -6,10 +6,10 @@ use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
-    RestartTempBehavior, normalize_for_compare, record_field_check_result,
+    AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
+    normalize_for_compare, record_field_check_result,
 };
-use crate::components::practice_entry::answer_input_key;
+use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
