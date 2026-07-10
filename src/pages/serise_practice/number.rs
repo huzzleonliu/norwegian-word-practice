@@ -1,20 +1,64 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
+use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    PracticeButtons, RestartTempBehavior, normalize_for_compare, record_field_check_result,
+    RestartTempBehavior, handle_abort_click, handle_finish_click, handle_restart_click,
+    normalize_for_compare, record_field_check_result,
 };
-use crate::components::practice_entry::{
-    PracticeEntry, answer_input_key, build_question_items, entry_field_value,
-};
-use crate::components::practice_settings::PracticeSettings;
+use crate::components::practice_entry::answer_input_key;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
 use super::initialize_temp_practice_result;
+
+#[derive(Clone, Copy)]
+struct NumberGroupConfig {
+    key: &'static str,
+    title: &'static str,
+    hint: &'static str,
+    numbers: &'static [u32],
+}
+
+#[derive(Clone)]
+struct NumberQuestionRow {
+    number: u32,
+    cardinal_entry_id: String,
+    ordinal_entry_id: String,
+    cardinal_expected: String,
+    ordinal_expected: String,
+}
+
+const GROUP_1_NUMBERS: &[u32] = &[
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+];
+const GROUP_2_NUMBERS: &[u32] = &[21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+const GROUP_3_NUMBERS: &[u32] = &[
+    40, 50, 60, 70, 80, 90, 100, 200, 300, 500, 1000, 5000, 100000,
+];
+const NUMBER_GROUPS: [NumberGroupConfig; 3] = [
+    NumberGroupConfig {
+        key: "group-1-20",
+        title: "第一块：1-20",
+        hint: "每个数字填写两个词：左侧基数词，右侧序数词。",
+        numbers: GROUP_1_NUMBERS,
+    },
+    NumberGroupConfig {
+        key: "group-21-30",
+        title: "第二块：21-30",
+        hint: "继续按数字顺序填写基数词与序数词。",
+        numbers: GROUP_2_NUMBERS,
+    },
+    NumberGroupConfig {
+        key: "group-selected-large",
+        title: "第三块：40-100000（精选）",
+        hint: "本块按 readme 精选数字出题，不是连续每个数字都出题。",
+        numbers: GROUP_3_NUMBERS,
+    },
+];
 
 #[component]
 pub fn NumberSerisePracticePage() -> impl IntoView {
@@ -22,119 +66,37 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (questions_per_page, set_questions_per_page) = signal(10_usize);
-    let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
-    let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
-    let (answer_fields, set_answer_fields) = signal(vec!["base_form".to_string()]);
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
-    let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
-    let (solved_question_ids, set_solved_question_ids) = signal(Vec::<String>::new());
-
-    Effect::new(move |_| {
-        let selected_ids = word_bank_state.selected_word_entry_ids.get();
-        let solved_ids = solved_question_ids.get();
-        let page_size = questions_per_page.get().max(1);
-        let current_active = active_question_ids.get_untracked();
-        let next_active =
-            refill_active_question_ids(&selected_ids, &current_active, &solved_ids, page_size);
-        if next_active != current_active {
-            set_active_question_ids.set(next_active);
-        }
-    });
-
-    let check_click = Callback::new(move |_| {
-        let selected_answer_fields = answer_fields.get_untracked();
-        if selected_answer_fields.is_empty() {
-            set_status.set("请先勾选至少 1 个“回答”项。".to_string());
-            return;
-        }
-
-        let active_ids = active_question_ids.get_untracked();
-        let entries = word_bank_state.entries.get_untracked();
-        let current_questions = build_question_items(&active_ids, &entries);
-        if current_questions.is_empty() {
-            set_status.set("当前没有可检查的题目。".to_string());
-            return;
-        }
-
-        let answers = answer_inputs.get_untracked();
-        let mut field_results = Vec::<(String, String, bool, String)>::new();
-        let mut newly_solved_ids = Vec::<String>::new();
-        let mut total_fields = 0_usize;
-        let mut correct_fields = 0_usize;
-
-        for (_, entry) in &current_questions {
-            let mut all_correct_for_entry = true;
-            for field in &selected_answer_fields {
-                let expected = entry_field_value(entry, field);
-                let key = answer_input_key(&entry.id, field);
-                let actual = answers.get(&key).cloned().unwrap_or_default();
-                let is_correct = normalize_for_compare(&actual) == normalize_for_compare(&expected);
-
-                total_fields += 1;
-                if is_correct {
-                    correct_fields += 1;
-                } else {
-                    all_correct_for_entry = false;
-                }
-
-                field_results.push((entry.id.clone(), field.clone(), is_correct, actual));
-            }
-
-            if all_correct_for_entry {
-                newly_solved_ids.push(entry.id.clone());
-            }
-        }
-
-        word_bank_state
-            .set_temp_practice_result
-            .update(|temp_result| {
-                for (entry_id, field, is_correct, actual) in &field_results {
-                    record_field_check_result(temp_result, entry_id, field, *is_correct, actual);
-                }
-            });
-
-        if !newly_solved_ids.is_empty() {
-            let solved_set = newly_solved_ids
-                .iter()
-                .cloned()
-                .collect::<HashSet<String>>();
-
-            set_solved_question_ids.update(|solved_ids| {
-                for entry_id in &newly_solved_ids {
-                    if !solved_ids.iter().any(|existing| existing == entry_id) {
-                        solved_ids.push(entry_id.clone());
-                    }
-                }
-            });
-
-            set_answer_inputs.update(|inputs| {
-                inputs.retain(|key, _| {
-                    !solved_set
-                        .iter()
-                        .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
-                });
-            });
-        }
-
-        if newly_solved_ids.is_empty() {
-            set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，暂无整题通过。"
-            ));
-        } else {
-            set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，本轮完成 {} 条，已自动补充新题。",
-                newly_solved_ids.len()
-            ));
-        }
-    });
+    let (group_statuses, set_group_statuses) = signal(HashMap::<String, String>::new());
 
     let restart_ui_click = Callback::new(move |_| {
-        set_solved_question_ids.set(Vec::new());
         set_answer_inputs.set(HashMap::new());
-        set_active_question_ids.set(Vec::new());
+        set_group_statuses.set(HashMap::new());
     });
+
+    let finish_click = move |_| {
+        handle_finish_click(
+            word_bank_state,
+            set_current_page,
+            set_status,
+            AppPage::LexiconSummary,
+        );
+    };
+
+    let restart_click = move |_| {
+        handle_restart_click(
+            word_bank_state,
+            set_status,
+            restart_ui_click,
+            "已重新开始本轮练习（临时记录继续累加）。",
+            RestartTempBehavior::Keep,
+        );
+    };
+
+    let abort_click = move |_| {
+        handle_abort_click(word_bank_state, set_current_page, AppPage::SeriseSelect);
+    };
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
@@ -155,7 +117,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待作答并点击检查...".to_string()
+                                "等待分组作答并点击对应分组检查按钮...".to_string()
                             } else {
                                 s
                             }
@@ -165,76 +127,367 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第一部分：练习设置"</h2>
-                    <PracticeSettings
-                        questions_per_page=questions_per_page
-                        set_questions_per_page=set_questions_per_page
-                        prompt_field_a=prompt_field_a
-                        set_prompt_field_a=set_prompt_field_a
-                        prompt_field_b=prompt_field_b
-                        set_prompt_field_b=set_prompt_field_b
-                        answer_fields=answer_fields
-                        set_answer_fields=set_answer_fields
-                    />
+                    <h2 class="text-lg font-semibold">"请写出以下数字的基数词和序数词"</h2>
+                    <p class="mt-2 text-sm text-slate-400">
+                        "每行左侧输入基数词，右侧输入序数词。每个输入框都会映射到对应词条的 base_form。"
+                    </p>
                 </section>
 
-                <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第二部分：练习题"</h2>
-                    <PracticeEntry
-                        active_question_ids=active_question_ids
-                        entries=word_bank_state.entries
-                        prompt_field_a=prompt_field_a
-                        prompt_field_b=prompt_field_b
-                        answer_fields=answer_fields
-                        answer_inputs=answer_inputs
-                        set_answer_inputs=set_answer_inputs
-                    />
-                </section>
+                {NUMBER_GROUPS
+                    .iter()
+                    .map(|group| {
+                        let group_key_for_check = group.key.to_string();
+                        let group_key_for_msg = group.key.to_string();
+                        let numbers = group.numbers;
+                        let group_title = group.title;
+                        let group_hint = group.hint;
+
+                        let check_group_click = move |_| {
+                            let entries = word_bank_state.entries.get_untracked();
+                            let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
+                            if rows.is_empty() {
+                                let no_data_message = "当前分组没有可检查题目，请先确认系列词库加载正常。".to_string();
+                                set_group_statuses.update(|messages| {
+                                    messages.insert(group_key_for_check.clone(), no_data_message.clone());
+                                });
+                                set_status.set(no_data_message);
+                                return;
+                            }
+
+                            let answers = answer_inputs.get_untracked();
+                            let mut total_fields = 0_usize;
+                            let mut correct_fields = 0_usize;
+                            let mut fully_correct_rows = 0_usize;
+                            let mut field_results = Vec::<(String, bool, String)>::new();
+
+                            for row in &rows {
+                                let cardinal_key = answer_input_key(&row.cardinal_entry_id, "base_form");
+                                let ordinal_key = answer_input_key(&row.ordinal_entry_id, "base_form");
+                                let cardinal_actual = answers.get(&cardinal_key).cloned().unwrap_or_default();
+                                let ordinal_actual = answers.get(&ordinal_key).cloned().unwrap_or_default();
+
+                                let cardinal_correct = normalize_for_compare(&cardinal_actual)
+                                    == normalize_for_compare(&row.cardinal_expected);
+                                let ordinal_correct = normalize_for_compare(&ordinal_actual)
+                                    == normalize_for_compare(&row.ordinal_expected);
+
+                                total_fields += 2;
+                                if cardinal_correct {
+                                    correct_fields += 1;
+                                }
+                                if ordinal_correct {
+                                    correct_fields += 1;
+                                }
+                                if cardinal_correct && ordinal_correct {
+                                    fully_correct_rows += 1;
+                                }
+
+                                field_results.push((
+                                    row.cardinal_entry_id.clone(),
+                                    cardinal_correct,
+                                    cardinal_actual,
+                                ));
+                                field_results.push((
+                                    row.ordinal_entry_id.clone(),
+                                    ordinal_correct,
+                                    ordinal_actual,
+                                ));
+                            }
+
+                            word_bank_state
+                                .set_temp_practice_result
+                                .update(|temp_result| {
+                                    for (entry_id, is_correct, actual) in &field_results {
+                                        record_field_check_result(
+                                            temp_result,
+                                            entry_id,
+                                            "base_form",
+                                            *is_correct,
+                                            actual,
+                                        );
+                                    }
+                                });
+
+                            let base_message = format!(
+                                "检查完成：字段正确 {correct_fields}/{total_fields}，整行全对 {fully_correct_rows}/{}。",
+                                rows.len()
+                            );
+                            let final_message = if missing_numbers.is_empty() {
+                                base_message
+                            } else {
+                                format!(
+                                    "{} 缺失题号：{}。",
+                                    base_message,
+                                    missing_numbers
+                                        .iter()
+                                        .map(|n| n.to_string())
+                                        .collect::<Vec<_>>()
+                                        .join("、")
+                                )
+                            };
+                            set_group_statuses.update(|messages| {
+                                messages.insert(group_key_for_check.clone(), final_message.clone());
+                            });
+                            set_status.set(format!("{group_title}：{final_message}"));
+                        };
+
+                        view! {
+                            <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <h3 class="text-lg font-semibold">{group_title}</h3>
+                                    <button
+                                        type="button"
+                                        on:click=check_group_click
+                                        class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+                                    >
+                                        "检查本组"
+                                    </button>
+                                </div>
+                                <p class="mt-2 text-sm text-slate-400">{group_hint}</p>
+
+                                <div class="mt-4 space-y-3">
+                                    {move || {
+                                        let entries = word_bank_state.entries.get();
+                                        let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
+                                        if rows.is_empty() {
+                                            return view! {
+                                                <p class="text-sm text-amber-300">
+                                                    "当前分组无可用题目。请检查词库数据是否完整。"
+                                                </p>
+                                            }
+                                                .into_any();
+                                        }
+
+                                        let rows_view = rows
+                                            .into_iter()
+                                            .map(|row| {
+                                                let cardinal_key_for_value = answer_input_key(
+                                                    &row.cardinal_entry_id,
+                                                    "base_form",
+                                                );
+                                                let cardinal_key_for_input = cardinal_key_for_value.clone();
+                                                let ordinal_key_for_value = answer_input_key(
+                                                    &row.ordinal_entry_id,
+                                                    "base_form",
+                                                );
+                                                let ordinal_key_for_input = ordinal_key_for_value.clone();
+
+                                                view! {
+                                                    <article class="grid grid-cols-1 gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 md:grid-cols-[90px_1fr_1fr] md:items-center">
+                                                        <div class="text-sm font-semibold text-slate-200">
+                                                            {format!("数字 {}", row.number)}
+                                                        </div>
+                                                        <label class="flex flex-col gap-1 text-xs text-slate-300">
+                                                            <span>"基数词（cardinal）"</span>
+                                                            <input
+                                                                type="text"
+                                                                prop:value=move || {
+                                                                    answer_inputs
+                                                                        .get()
+                                                                        .get(&cardinal_key_for_value)
+                                                                        .cloned()
+                                                                        .unwrap_or_default()
+                                                                }
+                                                                on:input=move |ev| {
+                                                                    let value = event_target_value(&ev);
+                                                                    set_answer_inputs.update(|inputs| {
+                                                                        inputs.insert(cardinal_key_for_input.clone(), value);
+                                                                    });
+                                                                }
+                                                                placeholder="填写基数词"
+                                                                class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                            />
+                                                        </label>
+                                                        <label class="flex flex-col gap-1 text-xs text-slate-300">
+                                                            <span>"序数词（ordinal）"</span>
+                                                            <input
+                                                                type="text"
+                                                                prop:value=move || {
+                                                                    answer_inputs
+                                                                        .get()
+                                                                        .get(&ordinal_key_for_value)
+                                                                        .cloned()
+                                                                        .unwrap_or_default()
+                                                                }
+                                                                on:input=move |ev| {
+                                                                    let value = event_target_value(&ev);
+                                                                    set_answer_inputs.update(|inputs| {
+                                                                        inputs.insert(ordinal_key_for_input.clone(), value);
+                                                                    });
+                                                                }
+                                                                placeholder="填写序数词"
+                                                                class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                            />
+                                                        </label>
+                                                    </article>
+                                                }
+                                            })
+                                            .collect_view();
+
+                                        if missing_numbers.is_empty() {
+                                            view! { {rows_view} }.into_any()
+                                        } else {
+                                            let missing_text = missing_numbers
+                                                .iter()
+                                                .map(|n| n.to_string())
+                                                .collect::<Vec<_>>()
+                                                .join("、");
+                                            view! {
+                                                <>
+                                                    {rows_view}
+                                                    <p class="text-xs text-amber-300">
+                                                        {format!("提示：以下题号未找到完整基数词/序数词词条：{missing_text}")}
+                                                    </p>
+                                                </>
+                                            }
+                                                .into_any()
+                                        }
+                                    }}
+                                </div>
+
+                                <p class="mt-3 min-h-5 text-sm text-slate-300">
+                                    {move || {
+                                        group_statuses
+                                            .get()
+                                            .get(&group_key_for_msg)
+                                            .cloned()
+                                            .unwrap_or_else(|| "待检查".to_string())
+                                    }}
+                                </p>
+                            </section>
+                        }
+                    })
+                    .collect_view()}
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第三部分：流程控制"</h2>
-                    <PracticeButtons
-                        on_check=check_click
-                        on_restart_ui=restart_ui_click
-                        word_bank_state=word_bank_state
-                        set_current_page=set_current_page
-                        set_status=set_status
-                        finish_target_page=AppPage::LexiconSummary
-                        abort_target_page=AppPage::SeriseSelect
-                        restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
-                        restart_temp_behavior=RestartTempBehavior::Keep
-                    />
+                    <h2 class="text-lg font-semibold">"流程控制"</h2>
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <button
+                            type="button"
+                            on:click=finish_click
+                            class="rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
+                        >
+                            "完成练习"
+                        </button>
+                        <button
+                            type="button"
+                            on:click=restart_click
+                            class="rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
+                        >
+                            "重新练习"
+                        </button>
+                        <button
+                            type="button"
+                            on:click=abort_click
+                            class="rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
+                        >
+                            "放弃练习并返回"
+                        </button>
+                    </div>
                 </section>
             </section>
         </main>
     }
 }
 
-fn refill_active_question_ids(
-    selected_ids: &[String],
-    current_active_ids: &[String],
-    solved_ids: &[String],
-    page_size: usize,
-) -> Vec<String> {
-    let solved_set = solved_ids.iter().cloned().collect::<HashSet<String>>();
-    let mut next_active = current_active_ids
-        .iter()
-        .filter(|id| !solved_set.contains(*id))
-        .cloned()
-        .collect::<Vec<_>>();
-    let mut used = next_active.iter().cloned().collect::<HashSet<String>>();
+fn build_number_question_rows(
+    entries: &[WordEntry],
+    numbers: &[u32],
+) -> (Vec<NumberQuestionRow>, Vec<u32>) {
+    let mut rows = Vec::new();
+    let mut missing_numbers = Vec::new();
 
-    for id in selected_ids {
-        if next_active.len() >= page_size {
-            break;
-        }
-        if solved_set.contains(id) || used.contains(id) {
+    for number in numbers {
+        let Some(cardinal_chinese) = number_to_cardinal_chinese(*number) else {
+            missing_numbers.push(*number);
             continue;
-        }
-        next_active.push(id.clone());
-        used.insert(id.clone());
+        };
+        let ordinal_chinese = format!("第{cardinal_chinese}");
+
+        let Some(cardinal_entry) =
+            find_entry_by_pos_and_chinese(entries, "cardinal_number", cardinal_chinese)
+        else {
+            missing_numbers.push(*number);
+            continue;
+        };
+        let Some(ordinal_entry) =
+            find_entry_by_pos_and_chinese(entries, "ordinal_number", &ordinal_chinese)
+        else {
+            missing_numbers.push(*number);
+            continue;
+        };
+
+        rows.push(NumberQuestionRow {
+            number: *number,
+            cardinal_entry_id: cardinal_entry.id.clone(),
+            ordinal_entry_id: ordinal_entry.id.clone(),
+            cardinal_expected: cardinal_entry.base_form.clone(),
+            ordinal_expected: ordinal_entry.base_form.clone(),
+        });
     }
 
-    next_active.truncate(page_size.min(selected_ids.len()));
-    next_active
+    (rows, missing_numbers)
+}
+
+fn find_entry_by_pos_and_chinese<'a>(
+    entries: &'a [WordEntry],
+    part_of_speech: &str,
+    chinese: &str,
+) -> Option<&'a WordEntry> {
+    entries.iter().find(|entry| {
+        entry.part_of_speech == part_of_speech
+            && entry
+                .chinese
+                .iter()
+                .any(|candidate| normalize_for_compare(candidate) == normalize_for_compare(chinese))
+    })
+}
+
+fn number_to_cardinal_chinese(number: u32) -> Option<&'static str> {
+    match number {
+        1 => Some("一"),
+        2 => Some("二"),
+        3 => Some("三"),
+        4 => Some("四"),
+        5 => Some("五"),
+        6 => Some("六"),
+        7 => Some("七"),
+        8 => Some("八"),
+        9 => Some("九"),
+        10 => Some("十"),
+        11 => Some("十一"),
+        12 => Some("十二"),
+        13 => Some("十三"),
+        14 => Some("十四"),
+        15 => Some("十五"),
+        16 => Some("十六"),
+        17 => Some("十七"),
+        18 => Some("十八"),
+        19 => Some("十九"),
+        20 => Some("二十"),
+        21 => Some("二十一"),
+        22 => Some("二十二"),
+        23 => Some("二十三"),
+        24 => Some("二十四"),
+        25 => Some("二十五"),
+        26 => Some("二十六"),
+        27 => Some("二十七"),
+        28 => Some("二十八"),
+        29 => Some("二十九"),
+        30 => Some("三十"),
+        40 => Some("四十"),
+        50 => Some("五十"),
+        60 => Some("六十"),
+        70 => Some("七十"),
+        80 => Some("八十"),
+        90 => Some("九十"),
+        100 => Some("一百"),
+        200 => Some("二百"),
+        300 => Some("三百"),
+        500 => Some("五百"),
+        1000 => Some("一千"),
+        5000 => Some("五千"),
+        100000 => Some("十万"),
+        _ => None,
+    }
 }
