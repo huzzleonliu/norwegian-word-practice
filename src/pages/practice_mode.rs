@@ -23,7 +23,11 @@ pub fn PracticeModePage() -> impl IntoView {
 
         spawn_local(async move {
             let result = async {
-                let response = Request::get(&format!("/data/lexicon-word-bank/{selected_file}"))
+                let request_url = format!(
+                    "/data/lexicon-word-bank/{selected_file}?v={}",
+                    js_sys::Date::now()
+                );
+                let response = Request::get(&request_url)
                     .send()
                     .await
                     .map_err(|err| format!("下载失败: {err}"))?;
