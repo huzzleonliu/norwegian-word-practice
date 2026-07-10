@@ -2,9 +2,10 @@ use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
+use crate::components::ai_researcher::AiResearcher;
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
-use crate::components::lexicon_editor_add_single::{AiResearcher, LexiconEditorAddSingle};
+use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
 use crate::components::lexicon_browser::{
     LexiconBrowser, LexiconBrowserMode, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
 };
@@ -279,6 +280,9 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
                 <AiResearcher
                     set_status=set_status
+                    set_bulk_input=set_bulk_input
+                    set_bulk_errors=set_bulk_errors
+                    set_bulk_success_message=set_bulk_success_message
                     set_single_pos=set_single_pos
                     single_norwegian=single_norwegian
                     set_single_norwegian=set_single_norwegian

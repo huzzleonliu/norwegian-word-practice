@@ -1,3 +1,4 @@
+pub mod ai_researcher;
 pub mod import_csv;
 pub mod lexicon_editor_add_multi;
 pub mod lexicon_editor_add_single;

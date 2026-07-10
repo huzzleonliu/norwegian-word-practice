@@ -2,6 +2,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::components::lexicon_browser::PART_OF_SPEECH_OPTIONS;
 
@@ -30,11 +31,7 @@ const WORD_FORM_HINT_OPTIONS: [(&str, &str); 22] = [
     ("interrogative-baseform", "interrogative-baseform"),
 ];
 
-const GEMINI_MODEL_CANDIDATES: [&str; 3] = [
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-1.5-flash",
-];
+const GEMINI_MODEL_CANDIDATES: [&str; 3] = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
@@ -83,6 +80,9 @@ struct GeminiPart {
 #[component]
 pub fn AiResearcher(
     set_status: WriteSignal<String>,
+    set_bulk_input: WriteSignal<String>,
+    set_bulk_errors: WriteSignal<Vec<String>>,
+    set_bulk_success_message: WriteSignal<String>,
     set_single_pos: WriteSignal<String>,
     single_norwegian: ReadSignal<String>,
     set_single_norwegian: WriteSignal<String>,
@@ -165,68 +165,86 @@ pub fn AiResearcher(
             let prompt = build_research_prompt(&word, &hint);
             let result = call_gemini_text(&token, &prompt).await;
             match result {
-                Ok(raw_text) => match parse_gemini_word_result(&raw_text) {
-                    Ok(parsed) => {
-                        if let Some(pos) = normalize_text_opt(parsed.part_of_speech) {
-                            if PART_OF_SPEECH_OPTIONS.iter().any(|item| *item == pos) {
-                                set_single_pos.set(pos);
+                Ok(raw_text) => match parse_gemini_word_results(&raw_text) {
+                    Ok(parsed_list) => {
+                        if parsed_list.is_empty() {
+                            set_status.set("查询失败：AI 返回了空数组。".to_string());
+                        } else if parsed_list.len() == 1 {
+                            let parsed = parsed_list.first().cloned().unwrap_or_default();
+                            let pos = normalize_part_of_speech(parsed.part_of_speech.clone(), &hint);
+                            set_single_pos.set(pos);
+
+                            if let Some(v) = normalize_text_opt(parsed.base_form) {
+                                set_if_blank(single_norwegian, set_single_norwegian, v);
+                            }
+                            if let Some(v) = join_pipe(parsed.chinese) {
+                                set_if_blank(single_chinese, set_single_chinese, v);
+                            }
+                            if let Some(v) = join_pipe(parsed.english) {
+                                set_if_blank(single_english, set_single_english, v);
+                            }
+                            if let Some(v) = join_pipe(parsed.tags) {
+                                set_if_blank(single_tags, set_single_tags, v);
+                            }
+
+                            maybe_set_opt(single_past_tense, set_single_past_tense, parsed.past_tense);
+                            maybe_set_opt(single_imperative, set_single_imperative, parsed.imperative);
+                            maybe_set_opt(single_plural, set_single_plural, parsed.plural);
+                            maybe_set_opt(
+                                single_singular_definite,
+                                set_single_singular_definite,
+                                parsed.singular_definite,
+                            );
+                            maybe_set_opt(
+                                single_plural_definite,
+                                set_single_plural_definite,
+                                parsed.plural_definite,
+                            );
+                            maybe_set_opt(single_neuter_form, set_single_neuter_form, parsed.neuter_form);
+                            maybe_set_opt(single_plural_form, set_single_plural_form, parsed.plural_form);
+                            maybe_set_opt(
+                                single_adjective_comparative,
+                                set_single_adjective_comparative,
+                                parsed.adjective_comparative,
+                            );
+                            maybe_set_opt(
+                                single_adjective_superlative_indefinite,
+                                set_single_adjective_superlative_indefinite,
+                                parsed.adjective_superlative_indefinite,
+                            );
+                            maybe_set_opt(
+                                single_adjective_superlative_definite,
+                                set_single_adjective_superlative_definite,
+                                parsed.adjective_superlative_definite,
+                            );
+                            maybe_set_opt(
+                                single_adverb_comparative,
+                                set_single_adverb_comparative,
+                                parsed.adverb_comparative,
+                            );
+                            maybe_set_opt(
+                                single_adverb_superlative,
+                                set_single_adverb_superlative,
+                                parsed.adverb_superlative,
+                            );
+
+                            set_status.set(format!("AI 查询成功：已填充“{word}”的单条结果。"));
+                        } else {
+                            match build_bulk_csv_from_results(&parsed_list, &hint) {
+                                Ok(csv_text) => {
+                                    set_bulk_input.set(csv_text);
+                                    set_bulk_errors.set(Vec::new());
+                                    set_bulk_success_message.set(String::new());
+                                    set_status.set(format!(
+                                        "AI 查询返回 {} 条结果，已写入“多条添加”输入框。",
+                                        parsed_list.len()
+                                    ));
+                                }
+                                Err(err) => {
+                                    set_status.set(format!("查询失败：多条结果转 CSV 失败。{err}"));
+                                }
                             }
                         }
-                        if let Some(v) = normalize_text_opt(parsed.base_form) {
-                            set_if_blank(single_norwegian, set_single_norwegian, v);
-                        }
-                        if let Some(v) = join_pipe(parsed.chinese) {
-                            set_if_blank(single_chinese, set_single_chinese, v);
-                        }
-                        if let Some(v) = join_pipe(parsed.english) {
-                            set_if_blank(single_english, set_single_english, v);
-                        }
-                        if let Some(v) = join_pipe(parsed.tags) {
-                            set_if_blank(single_tags, set_single_tags, v);
-                        }
-
-                        maybe_set_opt(single_past_tense, set_single_past_tense, parsed.past_tense);
-                        maybe_set_opt(single_imperative, set_single_imperative, parsed.imperative);
-                        maybe_set_opt(single_plural, set_single_plural, parsed.plural);
-                        maybe_set_opt(
-                            single_singular_definite,
-                            set_single_singular_definite,
-                            parsed.singular_definite,
-                        );
-                        maybe_set_opt(
-                            single_plural_definite,
-                            set_single_plural_definite,
-                            parsed.plural_definite,
-                        );
-                        maybe_set_opt(single_neuter_form, set_single_neuter_form, parsed.neuter_form);
-                        maybe_set_opt(single_plural_form, set_single_plural_form, parsed.plural_form);
-                        maybe_set_opt(
-                            single_adjective_comparative,
-                            set_single_adjective_comparative,
-                            parsed.adjective_comparative,
-                        );
-                        maybe_set_opt(
-                            single_adjective_superlative_indefinite,
-                            set_single_adjective_superlative_indefinite,
-                            parsed.adjective_superlative_indefinite,
-                        );
-                        maybe_set_opt(
-                            single_adjective_superlative_definite,
-                            set_single_adjective_superlative_definite,
-                            parsed.adjective_superlative_definite,
-                        );
-                        maybe_set_opt(
-                            single_adverb_comparative,
-                            set_single_adverb_comparative,
-                            parsed.adverb_comparative,
-                        );
-                        maybe_set_opt(
-                            single_adverb_superlative,
-                            set_single_adverb_superlative,
-                            parsed.adverb_superlative,
-                        );
-
-                        set_status.set(format!("AI 查询成功：已填充“{word}”的词形信息。"));
                     }
                     Err(err) => set_status.set(format!("查询失败：AI 返回无法解析。{err}")),
                 },
@@ -282,7 +300,7 @@ pub fn AiResearcher(
                     disabled=move || is_querying.get()
                     class="rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    {move || if is_querying.get() { "查询中..." } else { "查询并填充" }}
+                    {move || if is_querying.get() { "查询中..." } else { "查询并分流" }}
                 </button>
             </div>
         </section>
@@ -311,6 +329,10 @@ fn normalize_text_opt(value: Option<String>) -> Option<String> {
     }
 }
 
+fn normalize_text(raw: &str) -> String {
+    raw.trim().to_string()
+}
+
 fn join_pipe(values: Vec<String>) -> Option<String> {
     let list = values
         .into_iter()
@@ -324,13 +346,110 @@ fn join_pipe(values: Vec<String>) -> Option<String> {
     }
 }
 
+fn join_pipe_raw(values: &[String]) -> String {
+    values
+        .iter()
+        .map(|item| normalize_text(item))
+        .filter(|item| !item.is_empty())
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+fn hint_to_part_of_speech(hint: &str) -> Option<String> {
+    let prefix = hint.split('-').next().unwrap_or_default().trim();
+    if PART_OF_SPEECH_OPTIONS.contains(&prefix) {
+        Some(prefix.to_string())
+    } else {
+        None
+    }
+}
+
+fn normalize_part_of_speech(raw: Option<String>, hint: &str) -> String {
+    if let Some(pos) = normalize_text_opt(raw) {
+        if PART_OF_SPEECH_OPTIONS.contains(&pos.as_str()) {
+            return pos;
+        }
+    }
+    hint_to_part_of_speech(hint).unwrap_or_else(|| "noun".to_string())
+}
+
+fn build_bulk_csv_from_results(results: &[GeminiWordResult], hint: &str) -> Result<String, String> {
+    let mut writer = csv::Writer::from_writer(Vec::<u8>::new());
+    writer
+        .write_record([
+            "id",
+            "selected",
+            "part_of_speech",
+            "tags",
+            "english",
+            "chinese",
+            "norwegian_base",
+            "past_tense",
+            "imperative",
+            "plural",
+            "singular_definite",
+            "plural_definite",
+            "neuter_form",
+            "plural_form",
+            "adjective_comparative",
+            "adjective_superlative_indefinite",
+            "adjective_superlative_definite",
+            "adverb_comparative",
+            "adverb_superlative",
+        ])
+        .map_err(|err| format!("CSV 写入失败：{err}"))?;
+
+    for item in results {
+        writer
+            .write_record([
+                "",
+                "true",
+                normalize_part_of_speech(item.part_of_speech.clone(), hint).as_str(),
+                join_pipe_raw(&item.tags).as_str(),
+                join_pipe_raw(&item.english).as_str(),
+                join_pipe_raw(&item.chinese).as_str(),
+                normalize_text_opt(item.base_form.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.past_tense.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.imperative.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.plural.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.singular_definite.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.plural_definite.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.neuter_form.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.plural_form.clone()).unwrap_or_default().as_str(),
+                normalize_text_opt(item.adjective_comparative.clone())
+                    .unwrap_or_default()
+                    .as_str(),
+                normalize_text_opt(item.adjective_superlative_indefinite.clone())
+                    .unwrap_or_default()
+                    .as_str(),
+                normalize_text_opt(item.adjective_superlative_definite.clone())
+                    .unwrap_or_default()
+                    .as_str(),
+                normalize_text_opt(item.adverb_comparative.clone())
+                    .unwrap_or_default()
+                    .as_str(),
+                normalize_text_opt(item.adverb_superlative.clone())
+                    .unwrap_or_default()
+                    .as_str(),
+            ])
+            .map_err(|err| format!("CSV 行写入失败：{err}"))?;
+    }
+
+    let bytes = writer
+        .into_inner()
+        .map_err(|err| format!("CSV 构建失败：{}", err.error()))?;
+    String::from_utf8(bytes).map_err(|err| format!("CSV 编码失败：{err}"))
+}
+
 fn build_research_prompt(word: &str, hint: &str) -> String {
     format!(
         "你是挪威语词形助手。已知用户输入单词是：{word}；它的已知形式提示是：{hint}。\n\
 请输出该词在词库中的完整信息，并且只返回 JSON（不要 markdown，不要解释）。\n\
-JSON 结构严格如下（字段可为 null 或空数组）：\n\
+如果存在多个合理词条（例如同形异义、不同词性），请返回 JSON 数组。\n\
+如果只有一个词条，可返回单个 JSON 对象。\n\
+对象结构严格如下（字段可为 null 或空数组）：\n\
 {{\n\
-  \"part_of_speech\": \"noun|verb|adjective|adverb|cardinal_number|ordinal_number|month|pronoun|interrogative|unknown\",\n\
+  \"part_of_speech\": \"noun|verb|adjective|adverb|cardinal_number|ordinal_number|month|pronoun|interrogative\",\n\
   \"base_form\": \"\",\n\
   \"chinese\": [],\n\
   \"english\": [],\n\
@@ -351,20 +470,44 @@ JSON 结构严格如下（字段可为 null 或空数组）：\n\
     )
 }
 
-fn parse_gemini_word_result(raw_text: &str) -> Result<GeminiWordResult, String> {
-    let json_text = extract_json_object(raw_text)
-        .ok_or_else(|| "未提取到 JSON 对象。请检查 Gemini 返回格式。".to_string())?;
-    serde_json::from_str::<GeminiWordResult>(&json_text)
-        .map_err(|err| format!("JSON 解析失败：{err}"))
+fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {
+    let json_text = extract_json_payload(raw_text)
+        .ok_or_else(|| "未提取到 JSON 内容。请检查 Gemini 返回格式。".to_string())?;
+    let value = serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON 解析失败：{err}"))?;
+
+    if value.is_object() {
+        let one = serde_json::from_value::<GeminiWordResult>(value)
+            .map_err(|err| format!("单条对象解析失败：{err}"))?;
+        return Ok(vec![one]);
+    }
+    if value.is_array() {
+        return serde_json::from_value::<Vec<GeminiWordResult>>(value)
+            .map_err(|err| format!("数组解析失败：{err}"));
+    }
+    Err("JSON 根节点必须是对象或数组。".to_string())
 }
 
-fn extract_json_object(raw: &str) -> Option<String> {
-    let start = raw.find('{')?;
-    let end = raw.rfind('}')?;
-    if start > end {
-        return None;
+fn extract_json_payload(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if serde_json::from_str::<Value>(trimmed).is_ok() {
+        return Some(trimmed.to_string());
     }
-    Some(raw[start..=end].to_string())
+
+    let mut candidates = Vec::new();
+    if let (Some(start), Some(end)) = (raw.find('['), raw.rfind(']')) {
+        if start <= end {
+            candidates.push(raw[start..=end].to_string());
+        }
+    }
+    if let (Some(start), Some(end)) = (raw.find('{'), raw.rfind('}')) {
+        if start <= end {
+            candidates.push(raw[start..=end].to_string());
+        }
+    }
+
+    candidates
+        .into_iter()
+        .find(|candidate| serde_json::from_str::<Value>(candidate).is_ok())
 }
 
 async fn call_gemini_text(api_key: &str, prompt: &str) -> Result<String, String> {
