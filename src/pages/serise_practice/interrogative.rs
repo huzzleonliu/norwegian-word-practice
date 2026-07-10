@@ -5,7 +5,8 @@ use leptos::prelude::*;
 use crate::app_state::WordBankState;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    PracticeButtons, RestartTempBehavior, normalize_for_compare, record_field_check_result,
+    AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
+    RestartTempBehavior, normalize_for_compare, record_field_check_result,
 };
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
@@ -193,17 +194,27 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"第三部分：流程控制"</h2>
-                    <PracticeButtons
-                        on_check=check_click
-                        on_restart_ui=restart_ui_click
-                        word_bank_state=word_bank_state
-                        set_current_page=set_current_page
-                        set_status=set_status
-                        finish_target_page=AppPage::LexiconSummary
-                        abort_target_page=AppPage::SeriseSelect
-                        restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
-                        restart_temp_behavior=RestartTempBehavior::Keep
-                    />
+                    <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <CheckPracticeButton on_check=check_click/>
+                        <FinishPracticeButton
+                            word_bank_state=word_bank_state
+                            set_current_page=set_current_page
+                            set_status=set_status
+                            finish_target_page=AppPage::LexiconSummary
+                        />
+                        <RestartPracticeButton
+                            word_bank_state=word_bank_state
+                            set_status=set_status
+                            on_restart_ui=restart_ui_click
+                            restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
+                            restart_temp_behavior=RestartTempBehavior::Keep
+                        />
+                        <AbortPracticeButton
+                            word_bank_state=word_bank_state
+                            set_current_page=set_current_page
+                            abort_target_page=AppPage::SeriseSelect
+                        />
+                    </div>
                 </section>
             </section>
         </main>

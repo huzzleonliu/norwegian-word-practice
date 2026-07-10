@@ -14,19 +14,34 @@ pub enum RestartTempBehavior {
 }
 
 #[component]
-pub fn PracticeButtons(
+pub fn CheckPracticeButton(
     on_check: Callback<()>,
-    on_restart_ui: Callback<()>,
+    #[prop(optional)] label: Option<String>,
+    #[prop(optional)] class: Option<String>,
+) -> impl IntoView {
+    let check_click = move |_| on_check.run(());
+    let label = label.unwrap_or_else(|| "检查".to_string());
+    let class = class.unwrap_or_else(|| {
+        "rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
+            .to_string()
+    });
+
+    view! {
+        <button type="button" on:click=check_click class=class>
+            {label}
+        </button>
+    }
+}
+
+#[component]
+pub fn FinishPracticeButton(
     word_bank_state: WordBankState,
     set_current_page: WriteSignal<AppPage>,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
-    abort_target_page: AppPage,
-    restart_message: String,
-    restart_temp_behavior: RestartTempBehavior,
+    #[prop(optional)] label: Option<String>,
+    #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
-    let check_click = move |_| on_check.run(());
-
     let finish_click = move |_| {
         handle_finish_click(
             word_bank_state,
@@ -35,7 +50,29 @@ pub fn PracticeButtons(
             finish_target_page,
         );
     };
+    let label = label.unwrap_or_else(|| "完成练习".to_string());
+    let class = class.unwrap_or_else(|| {
+        "rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
+            .to_string()
+    });
 
+    view! {
+        <button type="button" on:click=finish_click class=class>
+            {label}
+        </button>
+    }
+}
+
+#[component]
+pub fn RestartPracticeButton(
+    word_bank_state: WordBankState,
+    set_status: WriteSignal<String>,
+    on_restart_ui: Callback<()>,
+    restart_message: String,
+    restart_temp_behavior: RestartTempBehavior,
+    #[prop(optional)] label: Option<String>,
+    #[prop(optional)] class: Option<String>,
+) -> impl IntoView {
     let restart_click = move |_| {
         handle_restart_click(
             word_bank_state,
@@ -45,42 +82,40 @@ pub fn PracticeButtons(
             restart_temp_behavior,
         );
     };
+    let label = label.unwrap_or_else(|| "重新练习".to_string());
+    let class = class.unwrap_or_else(|| {
+        "rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
+            .to_string()
+    });
 
+    view! {
+        <button type="button" on:click=restart_click class=class>
+            {label}
+        </button>
+    }
+}
+
+#[component]
+pub fn AbortPracticeButton(
+    word_bank_state: WordBankState,
+    set_current_page: WriteSignal<AppPage>,
+    abort_target_page: AppPage,
+    #[prop(optional)] label: Option<String>,
+    #[prop(optional)] class: Option<String>,
+) -> impl IntoView {
     let abort_click = move |_| {
         handle_abort_click(word_bank_state, set_current_page, abort_target_page);
     };
+    let label = label.unwrap_or_else(|| "放弃练习并返回".to_string());
+    let class = class.unwrap_or_else(|| {
+        "rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
+            .to_string()
+    });
 
     view! {
-        <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <button
-                type="button"
-                on:click=check_click
-                class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
-            >
-                "检查"
-            </button>
-            <button
-                type="button"
-                on:click=finish_click
-                class="rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
-            >
-                "完成练习"
-            </button>
-            <button
-                type="button"
-                on:click=restart_click
-                class="rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
-            >
-                "重新练习"
-            </button>
-            <button
-                type="button"
-                on:click=abort_click
-                class="rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
-            >
-                "放弃练习并返回"
-            </button>
-        </div>
+        <button type="button" on:click=abort_click class=class>
+            {label}
+        </button>
     }
 }
 

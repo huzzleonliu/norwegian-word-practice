@@ -6,8 +6,8 @@ use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
-    RestartTempBehavior, handle_abort_click, handle_finish_click, handle_restart_click,
-    normalize_for_compare, record_field_check_result,
+    AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
+    RestartTempBehavior, normalize_for_compare, record_field_check_result,
 };
 use crate::components::practice_entry::answer_input_key;
 use crate::components::return_button::ReturnButton;
@@ -75,29 +75,6 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
         set_group_statuses.set(HashMap::new());
     });
 
-    let finish_click = move |_| {
-        handle_finish_click(
-            word_bank_state,
-            set_current_page,
-            set_status,
-            AppPage::LexiconSummary,
-        );
-    };
-
-    let restart_click = move |_| {
-        handle_restart_click(
-            word_bank_state,
-            set_status,
-            restart_ui_click,
-            "已重新开始本轮练习（临时记录继续累加）。",
-            RestartTempBehavior::Keep,
-        );
-    };
-
-    let abort_click = move |_| {
-        handle_abort_click(word_bank_state, set_current_page, AppPage::SeriseSelect);
-    };
-
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -142,7 +119,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                         let group_title = group.title;
                         let group_hint = group.hint;
 
-                        let check_group_click = move |_| {
+                        let check_group_click = Callback::new(move |_| {
                             let entries = word_bank_state.entries.get_untracked();
                             let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                             if rows.is_empty() {
@@ -229,19 +206,17 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                 messages.insert(group_key_for_check.clone(), final_message.clone());
                             });
                             set_status.set(format!("{group_title}：{final_message}"));
-                        };
+                        });
 
                         view! {
                             <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <h3 class="text-lg font-semibold">{group_title}</h3>
-                                    <button
-                                        type="button"
-                                        on:click=check_group_click
-                                        class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
-                                    >
-                                        "检查本组"
-                                    </button>
+                                    <CheckPracticeButton
+                                        on_check=check_group_click
+                                        label="检查本组".to_string()
+                                        class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600".to_string()
+                                    />
                                 </div>
                                 <p class="mt-2 text-sm text-slate-400">{group_hint}</p>
 
@@ -362,27 +337,24 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">"流程控制"</h2>
                     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <button
-                            type="button"
-                            on:click=finish_click
-                            class="rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
-                        >
-                            "完成练习"
-                        </button>
-                        <button
-                            type="button"
-                            on:click=restart_click
-                            class="rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
-                        >
-                            "重新练习"
-                        </button>
-                        <button
-                            type="button"
-                            on:click=abort_click
-                            class="rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
-                        >
-                            "放弃练习并返回"
-                        </button>
+                        <FinishPracticeButton
+                            word_bank_state=word_bank_state
+                            set_current_page=set_current_page
+                            set_status=set_status
+                            finish_target_page=AppPage::LexiconSummary
+                        />
+                        <RestartPracticeButton
+                            word_bank_state=word_bank_state
+                            set_status=set_status
+                            on_restart_ui=restart_ui_click
+                            restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
+                            restart_temp_behavior=RestartTempBehavior::Keep
+                        />
+                        <AbortPracticeButton
+                            word_bank_state=word_bank_state
+                            set_current_page=set_current_page
+                            abort_target_page=AppPage::SeriseSelect
+                        />
                     </div>
                 </section>
             </section>
