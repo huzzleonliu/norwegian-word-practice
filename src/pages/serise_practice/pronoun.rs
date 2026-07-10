@@ -620,6 +620,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                             set_current_page=set_current_page
                             set_status=set_status
                             finish_target_page=AppPage::LexiconSummary
+                            summary_return_page=AppPage::SerisePronounPractice
                         />
                         <RestartPracticeButton
                             word_bank_state=word_bank_state

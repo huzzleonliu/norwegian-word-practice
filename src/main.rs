@@ -23,6 +23,7 @@ fn App() -> impl IntoView {
         signal(structures::pracresult::PracticeResult::default());
     let (last_completed_practice_result, set_last_completed_practice_result) =
         signal(structures::pracresult::PracticeResult::default());
+    let (summary_return_page, set_summary_return_page) = signal(pages::AppPage::LexiconPractice);
 
     provide_context(set_current_page);
     provide_context(app_state::WordBankState {
@@ -40,6 +41,8 @@ fn App() -> impl IntoView {
         set_temp_practice_result,
         last_completed_practice_result,
         set_last_completed_practice_result,
+        summary_return_page,
+        set_summary_return_page,
     });
 
     view! {

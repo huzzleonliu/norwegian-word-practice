@@ -39,10 +39,14 @@ pub fn FinishPracticeButton(
     set_current_page: WriteSignal<AppPage>,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
+    summary_return_page: AppPage,
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
     let finish_click = move |_| {
+        word_bank_state
+            .set_summary_return_page
+            .set(summary_return_page);
         handle_finish_click(
             word_bank_state,
             set_current_page,

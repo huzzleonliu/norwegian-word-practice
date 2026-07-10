@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use crate::components::lexicon_browser::WordEntry;
+use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
 
 #[derive(Clone, Copy)]
@@ -19,4 +20,6 @@ pub struct WordBankState {
     pub set_temp_practice_result: WriteSignal<PracticeResult>,
     pub last_completed_practice_result: ReadSignal<PracticeResult>,
     pub set_last_completed_practice_result: WriteSignal<PracticeResult>,
+    pub summary_return_page: ReadSignal<AppPage>,
+    pub set_summary_return_page: WriteSignal<AppPage>,
 }

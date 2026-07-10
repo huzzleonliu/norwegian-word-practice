@@ -190,6 +190,7 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
                             set_current_page=set_current_page
                             set_status=set_status
                             finish_target_page=AppPage::LexiconSummary
+                            summary_return_page=AppPage::SeriseMonthPractice
                         />
                         <RestartPracticeButton
                             word_bank_state=word_bank_state

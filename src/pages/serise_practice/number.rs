@@ -342,6 +342,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                             set_current_page=set_current_page
                             set_status=set_status
                             finish_target_page=AppPage::LexiconSummary
+                            summary_return_page=AppPage::SeriseNumberPractice
                         />
                         <RestartPracticeButton
                             word_bank_state=word_bank_state

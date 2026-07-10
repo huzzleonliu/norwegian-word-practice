@@ -3,7 +3,6 @@ use leptos::prelude::*;
 use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
-use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{AnswerStats, PracticeResult, PracticedWordEntryResult};
 use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
@@ -14,10 +13,15 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
     let set_temp_practice_result = word_bank_state.set_temp_practice_result;
     let (flow_status, set_flow_status) = signal(String::new());
+    let summary_return_page = word_bank_state.summary_return_page;
 
     let continue_practice_click = move |_| {
+        let target_page = summary_return_page.get_untracked();
         set_temp_practice_result.set(PracticeResult::default());
-        set_current_page.set(AppPage::LexiconPractice);
+        set_current_page.set(target_page);
+    };
+    let return_back_click = move |_| {
+        set_current_page.set(summary_return_page.get_untracked());
     };
     let export_result_click = move |_| {
         let practice_result = word_bank_state.practice_result.get_untracked();
@@ -38,7 +42,13 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::LexiconPractice/>
+                <button
+                    type="button"
+                    on:click=return_back_click
+                    class="absolute right-6 top-6 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+                >
+                    "返回上一级页面"
+                </button>
                 <h1 class="text-2xl font-bold tracking-tight">"练习总结"</h1>
                 <MiniConsole
                     message=Signal::derive(move || {
