@@ -11,8 +11,9 @@ use crate::components::practice_buttons::{
 };
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
+    is_answer_field_available,
 };
-use crate::components::practice_settings::PracticeSettings;
+use crate::components::practice_settings::{PracticeSettings, default_answer_fields};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
@@ -33,7 +34,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let (questions_per_page, set_questions_per_page) = signal(10_usize);
     let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
     let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
-    let (answer_fields, set_answer_fields) = signal(vec!["base_form".to_string()]);
+    let (answer_fields, set_answer_fields) = signal(default_answer_fields());
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
     let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
@@ -74,7 +75,13 @@ pub fn LexiconPracticePage() -> impl IntoView {
 
         for (_, entry) in &current_questions {
             let mut all_correct_for_entry = true;
+            let mut checked_any_field = false;
             for field in &selected_answer_fields {
+                if !is_answer_field_available(entry, field) {
+                    continue;
+                }
+                checked_any_field = true;
+
                 let expected = entry_field_value(entry, field);
                 let key = answer_input_key(&entry.id, field);
                 let actual = answers.get(&key).cloned().unwrap_or_default();
@@ -90,9 +97,14 @@ pub fn LexiconPracticePage() -> impl IntoView {
                 field_results.push((entry.id.clone(), field.clone(), is_correct, actual));
             }
 
-            if all_correct_for_entry {
+            if checked_any_field && all_correct_for_entry {
                 newly_solved_ids.push(entry.id.clone());
             }
+        }
+
+        if total_fields == 0 {
+            set_status.set("当前题目在已选回答项下没有可作答字段。".to_string());
+            return;
         }
 
         word_bank_state

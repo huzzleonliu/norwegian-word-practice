@@ -67,9 +67,21 @@ pub fn PracticeEntry(
                                         }
                                             .into_any()
                                     } else {
-                                        selected_answer_fields
+                                        let available_answer_fields = selected_answer_fields
                                             .into_iter()
-                                            .map(|field| {
+                                            .filter(|field| is_answer_field_available(&entry_for_answers, field))
+                                            .collect::<Vec<_>>();
+                                        if available_answer_fields.is_empty() {
+                                            view! {
+                                                <p class="text-xs text-slate-400">
+                                                    "该词条在当前回答项下没有可作答字段。"
+                                                </p>
+                                            }
+                                                .into_any()
+                                        } else {
+                                            available_answer_fields
+                                                .into_iter()
+                                                .map(|field| {
                                                 let entry_id = entry_for_answers.id.clone();
                                                 let field_for_label = field.clone();
                                                 let field_for_key = field.clone();
@@ -102,6 +114,7 @@ pub fn PracticeEntry(
                                             })
                                             .collect_view()
                                             .into_any()
+                                        }
                                     }
                                 }}
                             </div>
@@ -145,6 +158,10 @@ pub fn build_question_items(
 
 pub fn answer_input_key(entry_id: &str, field: &str) -> String {
     format!("{entry_id}::{field}")
+}
+
+pub fn is_answer_field_available(entry: &WordEntry, field: &str) -> bool {
+    !entry_field_value(entry, field).trim().is_empty()
 }
 
 pub fn entry_field_value(entry: &WordEntry, field: &str) -> String {

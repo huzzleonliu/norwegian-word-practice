@@ -307,27 +307,46 @@ pub fn LexiconBrowser(
                         "全不选列"
                     </button>
                 </div>
-                <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5">
-                    {(0..DATA_COLUMN_COUNT)
-                        .map(|idx| {
+                <div class="mt-3 space-y-3">
+                    {[
+                        ("基础组", vec![0, 1, 2, 3, 4, 5, 6]),
+                        ("名词变体组", vec![9, 10, 11]),
+                        ("动词变体组", vec![7, 8]),
+                        ("形容词变体组", vec![12, 13, 14, 15, 16]),
+                        ("副词变体组", vec![17, 18]),
+                    ]
+                        .into_iter()
+                        .map(|(group_name, indices)| {
                             view! {
-                                <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-xs text-slate-300">
-                                    <input
-                                        type="checkbox"
-                                        prop:checked=move || {
-                                            search_columns.get().get(idx).copied().unwrap_or(false)
-                                        }
-                                        on:change=move |ev| {
-                                            let checked = event_target_checked(&ev);
-                                            set_search_columns.update(|cols| {
-                                                if idx < cols.len() {
-                                                    cols[idx] = checked;
+                                <section class="rounded border border-slate-800 bg-slate-950/40 p-2">
+                                    <p class="mb-2 text-xs font-semibold text-slate-400">{group_name}</p>
+                                    <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5">
+                                        {indices
+                                            .into_iter()
+                                            .map(|idx| {
+                                                view! {
+                                                    <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-xs text-slate-300">
+                                                        <input
+                                                            type="checkbox"
+                                                            prop:checked=move || {
+                                                                search_columns.get().get(idx).copied().unwrap_or(false)
+                                                            }
+                                                            on:change=move |ev| {
+                                                                let checked = event_target_checked(&ev);
+                                                                set_search_columns.update(|cols| {
+                                                                    if idx < cols.len() {
+                                                                        cols[idx] = checked;
+                                                                    }
+                                                                });
+                                                            }
+                                                        />
+                                                        <span>{header_name(idx)}</span>
+                                                    </label>
                                                 }
-                                            });
-                                        }
-                                    />
-                                    <span>{header_name(idx)}</span>
-                                </label>
+                                            })
+                                            .collect_view()}
+                                    </div>
+                                </section>
                             }
                         })
                         .collect_view()}

@@ -53,6 +53,19 @@ const ANSWER_FIELD_OPTIONS: [(&str, &str); 15] = [
     ("adverb_superlative", "adverb_superlative"),
 ];
 
+pub fn default_answer_fields() -> Vec<String> {
+    ANSWER_FIELD_OPTIONS
+        .iter()
+        .filter_map(|(key, _)| {
+            if *key == "english" || *key == "chinese" {
+                None
+            } else {
+                Some((*key).to_string())
+            }
+        })
+        .collect()
+}
+
 #[component]
 pub fn PracticeSettings(
     questions_per_page: ReadSignal<usize>,
@@ -113,38 +126,57 @@ pub fn PracticeSettings(
 
         <div class="mt-4">
             <p class="mb-2 text-sm text-slate-300">"回答（勾选要回答的项）"</p>
-            <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
-                {ANSWER_FIELD_OPTIONS
-                    .iter()
-                    .map(|(key, label)| {
-                        let key_for_checked = (*key).to_string();
-                        let key_for_change = (*key).to_string();
+            <div class="space-y-3">
+                {[
+                    ("基础组", vec![0_usize, 1, 2]),
+                    ("名词变体组", vec![5, 6, 7]),
+                    ("动词变体组", vec![3, 4]),
+                    ("形容词变体组", vec![8, 9, 10, 11, 12]),
+                    ("副词变体组", vec![13, 14]),
+                ]
+                    .into_iter()
+                    .map(|(group_name, indices)| {
                         view! {
-                            <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300">
-                                <input
-                                    type="checkbox"
-                                    prop:checked=move || {
-                                        answer_fields
-                                            .get()
-                                            .iter()
-                                            .any(|field| field == &key_for_checked)
-                                    }
-                                    on:change=move |ev| {
-                                        let checked = event_target_checked(&ev);
-                                        let key_to_toggle = key_for_change.clone();
-                                        set_answer_fields.update(|fields| {
-                                            if checked {
-                                                if !fields.iter().any(|field| field == &key_to_toggle) {
-                                                    fields.push(key_to_toggle.clone());
-                                                }
-                                            } else {
-                                                fields.retain(|field| field != &key_to_toggle);
+                            <section class="rounded border border-slate-800 bg-slate-950/40 p-2">
+                                <p class="mb-2 text-xs font-semibold text-slate-400">{group_name}</p>
+                                <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
+                                    {indices
+                                        .into_iter()
+                                        .map(|idx| {
+                                            let (key, label) = ANSWER_FIELD_OPTIONS[idx];
+                                            let key_for_checked = key.to_string();
+                                            let key_for_change = key.to_string();
+                                            view! {
+                                                <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300">
+                                                    <input
+                                                        type="checkbox"
+                                                        prop:checked=move || {
+                                                            answer_fields
+                                                                .get()
+                                                                .iter()
+                                                                .any(|field| field == &key_for_checked)
+                                                        }
+                                                        on:change=move |ev| {
+                                                            let checked = event_target_checked(&ev);
+                                                            let key_to_toggle = key_for_change.clone();
+                                                            set_answer_fields.update(|fields| {
+                                                                if checked {
+                                                                    if !fields.iter().any(|field| field == &key_to_toggle) {
+                                                                        fields.push(key_to_toggle.clone());
+                                                                    }
+                                                                } else {
+                                                                    fields.retain(|field| field != &key_to_toggle);
+                                                                }
+                                                            });
+                                                        }
+                                                    />
+                                                    <span>{label}</span>
+                                                </label>
                                             }
-                                        });
-                                    }
-                                />
-                                <span>{*label}</span>
-                            </label>
+                                        })
+                                        .collect_view()}
+                                </div>
+                            </section>
                         }
                     })
                     .collect_view()}

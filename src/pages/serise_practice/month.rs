@@ -10,6 +10,7 @@ use crate::components::practice_buttons::{
 };
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
+    is_answer_field_available,
 };
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
@@ -70,7 +71,13 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
 
         for (_, entry) in &current_questions {
             let mut all_correct_for_entry = true;
+            let mut checked_any_field = false;
             for field in &selected_answer_fields {
+                if !is_answer_field_available(entry, field) {
+                    continue;
+                }
+                checked_any_field = true;
+
                 let expected = entry_field_value(entry, field);
                 let key = answer_input_key(&entry.id, field);
                 let actual = answers.get(&key).cloned().unwrap_or_default();
@@ -86,9 +93,14 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
                 field_results.push((entry.id.clone(), field.clone(), is_correct, actual));
             }
 
-            if all_correct_for_entry {
+            if checked_any_field && all_correct_for_entry {
                 newly_solved_ids.push(entry.id.clone());
             }
+        }
+
+        if total_fields == 0 {
+            set_status.set("当前题目在已选回答项下没有可作答字段。".to_string());
+            return;
         }
 
         word_bank_state
