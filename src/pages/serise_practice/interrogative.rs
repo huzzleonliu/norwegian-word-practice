@@ -11,7 +11,6 @@ use crate::components::practice_buttons::{
 use crate::components::practice_entry::{
     PracticeEntry, answer_input_key, build_question_items, entry_field_value,
 };
-use crate::components::practice_settings::PracticeSettings;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
@@ -19,14 +18,15 @@ use super::initialize_temp_practice_result;
 
 #[component]
 pub fn InterrogativeSerisePracticePage() -> impl IntoView {
+    const QUESTIONS_PER_PAGE: usize = 20;
+
     let word_bank_state = expect_context::<WordBankState>();
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (questions_per_page, set_questions_per_page) = signal(10_usize);
-    let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
-    let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
-    let (answer_fields, set_answer_fields) = signal(vec!["base_form".to_string()]);
+    let (prompt_field_a, _) = signal("chinese".to_string());
+    let (prompt_field_b, _) = signal("english".to_string());
+    let (answer_fields, _) = signal(vec!["base_form".to_string()]);
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
     let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
@@ -35,10 +35,13 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
     Effect::new(move |_| {
         let selected_ids = word_bank_state.selected_word_entry_ids.get();
         let solved_ids = solved_question_ids.get();
-        let page_size = questions_per_page.get().max(1);
         let current_active = active_question_ids.get_untracked();
-        let next_active =
-            refill_active_question_ids(&selected_ids, &current_active, &solved_ids, page_size);
+        let next_active = refill_active_question_ids(
+            &selected_ids,
+            &current_active,
+            &solved_ids,
+            QUESTIONS_PER_PAGE,
+        );
         if next_active != current_active {
             set_active_question_ids.set(next_active);
         }
@@ -166,21 +169,7 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第一部分：练习设置"</h2>
-                    <PracticeSettings
-                        questions_per_page=questions_per_page
-                        set_questions_per_page=set_questions_per_page
-                        prompt_field_a=prompt_field_a
-                        set_prompt_field_a=set_prompt_field_a
-                        prompt_field_b=prompt_field_b
-                        set_prompt_field_b=set_prompt_field_b
-                        answer_fields=answer_fields
-                        set_answer_fields=set_answer_fields
-                    />
-                </section>
-
-                <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第二部分：练习题"</h2>
+                    <h2 class="text-lg font-semibold">"第一部分：练习题"</h2>
                     <PracticeEntry
                         active_question_ids=active_question_ids
                         entries=word_bank_state.entries
@@ -193,7 +182,7 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                 </section>
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第三部分：流程控制"</h2>
+                    <h2 class="text-lg font-semibold">"第二部分：流程控制"</h2>
                     <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         <CheckPracticeButton on_check=check_click/>
                         <FinishPracticeButton

@@ -1,21 +1,384 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
+use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
     AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
     RestartTempBehavior, normalize_for_compare, record_field_check_result,
 };
-use crate::components::practice_entry::{
-    PracticeEntry, answer_input_key, build_question_items, entry_field_value,
-};
-use crate::components::practice_settings::PracticeSettings;
+use crate::components::practice_entry::answer_input_key;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
 use super::initialize_temp_practice_result;
+
+#[derive(Clone, Copy)]
+struct PronounFieldConfig {
+    label: &'static str,
+    chinese: &'static str,
+}
+
+#[derive(Clone, Copy)]
+struct PronounRowConfig {
+    prompt: &'static str,
+    fields: &'static [PronounFieldConfig],
+}
+
+#[derive(Clone, Copy)]
+struct PronounGroupConfig {
+    key: &'static str,
+    title: &'static str,
+    hint: &'static str,
+    rows: &'static [PronounRowConfig],
+}
+
+#[derive(Clone)]
+struct ResolvedPronounField {
+    label: String,
+    entry_id: String,
+    expected: String,
+}
+
+#[derive(Clone)]
+struct ResolvedPronounRow {
+    prompt: String,
+    fields: Vec<ResolvedPronounField>,
+}
+
+const CASE_MY: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "我（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "我（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "我的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "我的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "我的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "我自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "我自己的（反身物主）",
+    },
+];
+const CASE_YOUR_SG: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "你（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "你（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "你的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "你的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "你的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "你自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "你自己的（反身物主）",
+    },
+];
+const CASE_HIS: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "他（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "他（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "他的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "他的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "他的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "他自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "他自己的（反身物主）",
+    },
+];
+const CASE_HER: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "她（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "她（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "她的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "她的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "她的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "她自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "她自己的（反身物主）",
+    },
+];
+const CASE_OUR: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "我们（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "我们（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "我们的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "我们的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "我们的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "我们自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "我们自己的（反身物主）",
+    },
+];
+const CASE_YOUR_PL: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "你们（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "你们（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "你们的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "你们的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "你们的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "你们自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "你们自己的（反身物主）",
+    },
+];
+const CASE_THEIR_MALE: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "他们（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "他们（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "他们的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "他们的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "他们的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "他们自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "他们自己的（反身物主）",
+    },
+];
+const CASE_THEIR_FEMALE: &[PronounFieldConfig] = &[
+    PronounFieldConfig {
+        label: "主格",
+        chinese: "她们（主格）",
+    },
+    PronounFieldConfig {
+        label: "宾格",
+        chinese: "她们（宾格）",
+    },
+    PronounFieldConfig {
+        label: "所有格阴阳性",
+        chinese: "她们的（阴阳性）",
+    },
+    PronounFieldConfig {
+        label: "所有格中性",
+        chinese: "她们的（中性）",
+    },
+    PronounFieldConfig {
+        label: "所有格复数",
+        chinese: "她们的（复数）",
+    },
+    PronounFieldConfig {
+        label: "反身代词",
+        chinese: "她们自己（反身）",
+    },
+    PronounFieldConfig {
+        label: "反身物主代词",
+        chinese: "她们自己的（反身物主）",
+    },
+];
+const CASE_THIS: &[PronounFieldConfig] = &[PronounFieldConfig {
+    label: "指示代词",
+    chinese: "这",
+}];
+const CASE_THAT: &[PronounFieldConfig] = &[PronounFieldConfig {
+    label: "指示代词",
+    chinese: "那",
+}];
+const CASE_THESE: &[PronounFieldConfig] = &[PronounFieldConfig {
+    label: "指示代词",
+    chinese: "这些",
+}];
+const CASE_THOSE: &[PronounFieldConfig] = &[PronounFieldConfig {
+    label: "指示代词",
+    chinese: "那些",
+}];
+
+const GROUP_1_ROWS: &[PronounRowConfig] = &[
+    PronounRowConfig {
+        prompt: "我",
+        fields: CASE_MY,
+    },
+    PronounRowConfig {
+        prompt: "你",
+        fields: CASE_YOUR_SG,
+    },
+    PronounRowConfig {
+        prompt: "他",
+        fields: CASE_HIS,
+    },
+    PronounRowConfig {
+        prompt: "她",
+        fields: CASE_HER,
+    },
+];
+const GROUP_2_ROWS: &[PronounRowConfig] = &[
+    PronounRowConfig {
+        prompt: "我们",
+        fields: CASE_OUR,
+    },
+    PronounRowConfig {
+        prompt: "你们",
+        fields: CASE_YOUR_PL,
+    },
+    PronounRowConfig {
+        prompt: "他们",
+        fields: CASE_THEIR_MALE,
+    },
+    PronounRowConfig {
+        prompt: "她们",
+        fields: CASE_THEIR_FEMALE,
+    },
+];
+const GROUP_3_ROWS: &[PronounRowConfig] = &[
+    PronounRowConfig {
+        prompt: "这",
+        fields: CASE_THIS,
+    },
+    PronounRowConfig {
+        prompt: "那",
+        fields: CASE_THAT,
+    },
+    PronounRowConfig {
+        prompt: "这些",
+        fields: CASE_THESE,
+    },
+    PronounRowConfig {
+        prompt: "那些",
+        fields: CASE_THOSE,
+    },
+];
+const PRONOUN_GROUPS: [PronounGroupConfig; 3] = [
+    PronounGroupConfig {
+        key: "group-pronoun-1",
+        title: "第一块：我 / 你 / 他 / 她",
+        hint: "题面是人称，填写主格、宾格、所有格（阴阳/中性/复数）、反身、反身物主。",
+        rows: GROUP_1_ROWS,
+    },
+    PronounGroupConfig {
+        key: "group-pronoun-2",
+        title: "第二块：我们 / 你们 / 他们 / 她们",
+        hint: "同样填写 7 类形式；每行对应一个人称。",
+        rows: GROUP_2_ROWS,
+    },
+    PronounGroupConfig {
+        key: "group-pronoun-3",
+        title: "第三块：这 / 那 / 这些 / 那些",
+        hint: "指示代词按行填写对应原型。",
+        rows: GROUP_3_ROWS,
+    },
+];
 
 #[component]
 pub fn PronounSerisePracticePage() -> impl IntoView {
@@ -23,118 +386,13 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let (questions_per_page, set_questions_per_page) = signal(10_usize);
-    let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
-    let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
-    let (answer_fields, set_answer_fields) = signal(vec!["base_form".to_string()]);
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
-    let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
-    let (solved_question_ids, set_solved_question_ids) = signal(Vec::<String>::new());
-
-    Effect::new(move |_| {
-        let selected_ids = word_bank_state.selected_word_entry_ids.get();
-        let solved_ids = solved_question_ids.get();
-        let page_size = questions_per_page.get().max(1);
-        let current_active = active_question_ids.get_untracked();
-        let next_active =
-            refill_active_question_ids(&selected_ids, &current_active, &solved_ids, page_size);
-        if next_active != current_active {
-            set_active_question_ids.set(next_active);
-        }
-    });
-
-    let check_click = Callback::new(move |_| {
-        let selected_answer_fields = answer_fields.get_untracked();
-        if selected_answer_fields.is_empty() {
-            set_status.set("请先勾选至少 1 个“回答”项。".to_string());
-            return;
-        }
-
-        let active_ids = active_question_ids.get_untracked();
-        let entries = word_bank_state.entries.get_untracked();
-        let current_questions = build_question_items(&active_ids, &entries);
-        if current_questions.is_empty() {
-            set_status.set("当前没有可检查的题目。".to_string());
-            return;
-        }
-
-        let answers = answer_inputs.get_untracked();
-        let mut field_results = Vec::<(String, String, bool, String)>::new();
-        let mut newly_solved_ids = Vec::<String>::new();
-        let mut total_fields = 0_usize;
-        let mut correct_fields = 0_usize;
-
-        for (_, entry) in &current_questions {
-            let mut all_correct_for_entry = true;
-            for field in &selected_answer_fields {
-                let expected = entry_field_value(entry, field);
-                let key = answer_input_key(&entry.id, field);
-                let actual = answers.get(&key).cloned().unwrap_or_default();
-                let is_correct = normalize_for_compare(&actual) == normalize_for_compare(&expected);
-
-                total_fields += 1;
-                if is_correct {
-                    correct_fields += 1;
-                } else {
-                    all_correct_for_entry = false;
-                }
-
-                field_results.push((entry.id.clone(), field.clone(), is_correct, actual));
-            }
-
-            if all_correct_for_entry {
-                newly_solved_ids.push(entry.id.clone());
-            }
-        }
-
-        word_bank_state
-            .set_temp_practice_result
-            .update(|temp_result| {
-                for (entry_id, field, is_correct, actual) in &field_results {
-                    record_field_check_result(temp_result, entry_id, field, *is_correct, actual);
-                }
-            });
-
-        if !newly_solved_ids.is_empty() {
-            let solved_set = newly_solved_ids
-                .iter()
-                .cloned()
-                .collect::<HashSet<String>>();
-
-            set_solved_question_ids.update(|solved_ids| {
-                for entry_id in &newly_solved_ids {
-                    if !solved_ids.iter().any(|existing| existing == entry_id) {
-                        solved_ids.push(entry_id.clone());
-                    }
-                }
-            });
-
-            set_answer_inputs.update(|inputs| {
-                inputs.retain(|key, _| {
-                    !solved_set
-                        .iter()
-                        .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
-                });
-            });
-        }
-
-        if newly_solved_ids.is_empty() {
-            set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，暂无整题通过。"
-            ));
-        } else {
-            set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，本轮完成 {} 条，已自动补充新题。",
-                newly_solved_ids.len()
-            ));
-        }
-    });
+    let (group_statuses, set_group_statuses) = signal(HashMap::<String, String>::new());
 
     let restart_ui_click = Callback::new(move |_| {
-        set_solved_question_ids.set(Vec::new());
         set_answer_inputs.set(HashMap::new());
-        set_active_question_ids.set(Vec::new());
+        set_group_statuses.set(HashMap::new());
     });
 
     view! {
@@ -156,7 +414,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待作答并点击检查...".to_string()
+                                "等待分组作答并点击对应分组检查按钮...".to_string()
                             } else {
                                 s
                             }
@@ -166,36 +424,197 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第一部分：练习设置"</h2>
-                    <PracticeSettings
-                        questions_per_page=questions_per_page
-                        set_questions_per_page=set_questions_per_page
-                        prompt_field_a=prompt_field_a
-                        set_prompt_field_a=set_prompt_field_a
-                        prompt_field_b=prompt_field_b
-                        set_prompt_field_b=set_prompt_field_b
-                        answer_fields=answer_fields
-                        set_answer_fields=set_answer_fields
-                    />
+                    <h2 class="text-lg font-semibold">"请写出以下代词的各种形式"</h2>
+                    <p class="mt-2 text-sm text-slate-400">
+                        "每个输入框都绑定到对应词条的 base_form，检查后会按词条结构化记录结果。"
+                    </p>
                 </section>
 
-                <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第二部分：练习题"</h2>
-                    <PracticeEntry
-                        active_question_ids=active_question_ids
-                        entries=word_bank_state.entries
-                        prompt_field_a=prompt_field_a
-                        prompt_field_b=prompt_field_b
-                        answer_fields=answer_fields
-                        answer_inputs=answer_inputs
-                        set_answer_inputs=set_answer_inputs
-                    />
-                </section>
+                {PRONOUN_GROUPS
+                    .iter()
+                    .map(|group| {
+                        let group_key_for_check = group.key.to_string();
+                        let group_key_for_msg = group.key.to_string();
+                        let group_title = group.title;
+                        let group_hint = group.hint;
+                        let group_rows = group.rows;
+
+                        let check_group_click = Callback::new(move |_| {
+                            let entries = word_bank_state.entries.get_untracked();
+                            let (rows, missing_fields) = build_pronoun_rows(&entries, group_rows);
+                            if rows.is_empty() {
+                                let message = "当前分组没有可检查题目，请先确认系列词库加载正常。".to_string();
+                                set_group_statuses.update(|messages| {
+                                    messages.insert(group_key_for_check.clone(), message.clone());
+                                });
+                                set_status.set(message);
+                                return;
+                            }
+
+                            let answers = answer_inputs.get_untracked();
+                            let mut total_fields = 0_usize;
+                            let mut correct_fields = 0_usize;
+                            let mut fully_correct_rows = 0_usize;
+                            let mut field_results = Vec::<(String, bool, String)>::new();
+
+                            for row in &rows {
+                                let mut row_all_correct = true;
+                                for field in &row.fields {
+                                    let key = answer_input_key(&field.entry_id, "base_form");
+                                    let actual = answers.get(&key).cloned().unwrap_or_default();
+                                    let is_correct = normalize_for_compare(&actual)
+                                        == normalize_for_compare(&field.expected);
+
+                                    total_fields += 1;
+                                    if is_correct {
+                                        correct_fields += 1;
+                                    } else {
+                                        row_all_correct = false;
+                                    }
+
+                                    field_results.push((field.entry_id.clone(), is_correct, actual));
+                                }
+                                if row_all_correct && !row.fields.is_empty() {
+                                    fully_correct_rows += 1;
+                                }
+                            }
+
+                            word_bank_state
+                                .set_temp_practice_result
+                                .update(|temp_result| {
+                                    for (entry_id, is_correct, actual) in &field_results {
+                                        record_field_check_result(
+                                            temp_result,
+                                            entry_id,
+                                            "base_form",
+                                            *is_correct,
+                                            actual,
+                                        );
+                                    }
+                                });
+
+                            let base_message = format!(
+                                "检查完成：字段正确 {correct_fields}/{total_fields}，整行全对 {fully_correct_rows}/{}。",
+                                rows.len()
+                            );
+                            let final_message = if missing_fields.is_empty() {
+                                base_message
+                            } else {
+                                format!("{} 缺失：{}。", base_message, missing_fields.join("、"))
+                            };
+                            set_group_statuses.update(|messages| {
+                                messages.insert(group_key_for_check.clone(), final_message.clone());
+                            });
+                            set_status.set(format!("{group_title}：{final_message}"));
+                        });
+
+                        view! {
+                            <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <h3 class="text-lg font-semibold">{group_title}</h3>
+                                    <CheckPracticeButton
+                                        on_check=check_group_click
+                                        label="检查本组".to_string()
+                                        class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600".to_string()
+                                    />
+                                </div>
+                                <p class="mt-2 text-sm text-slate-400">{group_hint}</p>
+
+                                <div class="mt-4 space-y-3">
+                                    {move || {
+                                        let entries = word_bank_state.entries.get();
+                                        let (rows, missing_fields) = build_pronoun_rows(&entries, group_rows);
+                                        if rows.is_empty() {
+                                            return view! {
+                                                <p class="text-sm text-amber-300">
+                                                    "当前分组无可用题目。请检查词库数据是否完整。"
+                                                </p>
+                                            }
+                                                .into_any();
+                                        }
+
+                                        let rows_view = rows
+                                            .into_iter()
+                                            .map(|row| {
+                                                let prompt = row.prompt.clone();
+                                                let field_view = row
+                                                    .fields
+                                                    .into_iter()
+                                                    .map(|field| {
+                                                        let field_label = field.label.clone();
+                                                        let key_for_value =
+                                                            answer_input_key(&field.entry_id, "base_form");
+                                                        let key_for_input = key_for_value.clone();
+                                                        view! {
+                                                            <label class="flex flex-col gap-1 text-xs text-slate-300">
+                                                                <span>{field_label}</span>
+                                                                <input
+                                                                    type="text"
+                                                                    prop:value=move || {
+                                                                        answer_inputs
+                                                                            .get()
+                                                                            .get(&key_for_value)
+                                                                            .cloned()
+                                                                            .unwrap_or_default()
+                                                                    }
+                                                                    on:input=move |ev| {
+                                                                        let value = event_target_value(&ev);
+                                                                        set_answer_inputs.update(|inputs| {
+                                                                            inputs.insert(key_for_input.clone(), value);
+                                                                        });
+                                                                    }
+                                                                    placeholder="填写该形式"
+                                                                    class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                                />
+                                                            </label>
+                                                        }
+                                                    })
+                                                    .collect_view();
+
+                                                view! {
+                                                    <article class="grid grid-cols-1 gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+                                                        <div class="text-sm font-semibold text-slate-200">{prompt}</div>
+                                                        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                                            {field_view}
+                                                        </div>
+                                                    </article>
+                                                }
+                                            })
+                                            .collect_view();
+
+                                        if missing_fields.is_empty() {
+                                            view! { {rows_view} }.into_any()
+                                        } else {
+                                            view! {
+                                                <>
+                                                    {rows_view}
+                                                    <p class="text-xs text-amber-300">
+                                                        {format!("提示：以下题目项未找到对应词条：{}", missing_fields.join("、"))}
+                                                    </p>
+                                                </>
+                                            }
+                                                .into_any()
+                                        }
+                                    }}
+                                </div>
+
+                                <p class="mt-3 min-h-5 text-sm text-slate-300">
+                                    {move || {
+                                        group_statuses
+                                            .get()
+                                            .get(&group_key_for_msg)
+                                            .cloned()
+                                            .unwrap_or_else(|| "待检查".to_string())
+                                    }}
+                                </p>
+                            </section>
+                        }
+                    })
+                    .collect_view()}
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第三部分：流程控制"</h2>
-                    <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <CheckPracticeButton on_check=check_click/>
+                    <h2 class="text-lg font-semibold">"流程控制"</h2>
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
                             word_bank_state=word_bank_state
                             set_current_page=set_current_page
@@ -221,31 +640,46 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
     }
 }
 
-fn refill_active_question_ids(
-    selected_ids: &[String],
-    current_active_ids: &[String],
-    solved_ids: &[String],
-    page_size: usize,
-) -> Vec<String> {
-    let solved_set = solved_ids.iter().cloned().collect::<HashSet<String>>();
-    let mut next_active = current_active_ids
-        .iter()
-        .filter(|id| !solved_set.contains(*id))
-        .cloned()
-        .collect::<Vec<_>>();
-    let mut used = next_active.iter().cloned().collect::<HashSet<String>>();
+fn build_pronoun_rows(
+    entries: &[WordEntry],
+    row_configs: &[PronounRowConfig],
+) -> (Vec<ResolvedPronounRow>, Vec<String>) {
+    let mut rows = Vec::new();
+    let mut missing_fields = Vec::new();
 
-    for id in selected_ids {
-        if next_active.len() >= page_size {
-            break;
+    for row_cfg in row_configs {
+        let mut resolved_fields = Vec::new();
+        for field_cfg in row_cfg.fields {
+            let Some(entry) = find_pronoun_entry_by_chinese(entries, field_cfg.chinese) else {
+                missing_fields.push(format!("{}-{}", row_cfg.prompt, field_cfg.label));
+                continue;
+            };
+            resolved_fields.push(ResolvedPronounField {
+                label: field_cfg.label.to_string(),
+                entry_id: entry.id.clone(),
+                expected: entry.base_form.clone(),
+            });
         }
-        if solved_set.contains(id) || used.contains(id) {
-            continue;
+        if !resolved_fields.is_empty() {
+            rows.push(ResolvedPronounRow {
+                prompt: row_cfg.prompt.to_string(),
+                fields: resolved_fields,
+            });
         }
-        next_active.push(id.clone());
-        used.insert(id.clone());
     }
 
-    next_active.truncate(page_size.min(selected_ids.len()));
-    next_active
+    (rows, missing_fields)
+}
+
+fn find_pronoun_entry_by_chinese<'a>(
+    entries: &'a [WordEntry],
+    chinese: &str,
+) -> Option<&'a WordEntry> {
+    entries.iter().find(|entry| {
+        entry.part_of_speech == "pronoun"
+            && entry
+                .chinese
+                .iter()
+                .any(|candidate| normalize_for_compare(candidate) == normalize_for_compare(chinese))
+    })
 }
