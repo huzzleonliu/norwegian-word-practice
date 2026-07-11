@@ -1,8 +1,0 @@
-services:
-  web:
-    build:
-      context: .
-      dockerfile: Containerfile.web
-    container_name: norwegian-word-practice-web
-    ports:
-      - "8080:80"
