@@ -2,12 +2,13 @@ use leptos::prelude::*;
 
 use super::structures::LexiconBrowserMode;
 use super::utils::{
-    DATA_COLUMN_KEYS, compare_entries_by_rules, entry_matches_filter, format_sort_rules,
-    header_name, input_to_option, option_to_input, parse_pipe_list,
+    DATA_COLUMN_KEYS, compare_entries_by_rules, default_search_column_visibility,
+    entry_matches_filter, format_sort_rules, header_name, input_to_option, option_to_input,
+    parse_pipe_list,
 };
 use crate::app_state::WordBankState;
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
-use crate::utils::dictionary::validate_existing_entry;
+use crate::utils::dictionary::validate_and_prepare_all_entries;
 use crate::utils::i18n::{field_label, tr};
 
 #[component]
@@ -40,13 +41,7 @@ pub fn LexiconBrowser(
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
     let (search_text, set_search_text) = signal(String::new());
     let (search_query, set_search_query) = signal(String::new());
-    let (search_columns, set_search_columns) = signal({
-        let mut cols = vec![true; DATA_COLUMN_COUNT];
-        if let Some(id_col) = cols.get_mut(0) {
-            *id_col = false;
-        }
-        cols
-    });
+    let (search_columns, set_search_columns) = signal(default_search_column_visibility());
     let (search_scope_expanded, set_search_scope_expanded) = signal(false);
     let (confirm_error, set_confirm_error) = signal(String::new());
     let (confirm_success, set_confirm_success) = signal(String::new());
@@ -233,30 +228,22 @@ pub fn LexiconBrowser(
         let mut entries_to_commit = current_entries.clone();
 
         if !is_query_mode {
-            let mut errors = Vec::new();
-            let mut validated_entries = Vec::with_capacity(current_entries.len());
-            for (idx, item) in current_entries.iter().enumerate() {
-                match validate_existing_entry(item, &current_entries, idx) {
-                    Ok(validated_entry) => validated_entries.push(validated_entry),
-                    Err(err) => errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err)),
+            match validate_and_prepare_all_entries(&current_entries) {
+                Ok(validated_entries) => entries_to_commit = validated_entries,
+                Err(errors) => {
+                    let message = errors.join("；");
+                    set_confirm_error.set(message.clone());
+                    set_status.set(
+                        tr(
+                            lang.get_untracked(),
+                            "确认失败：存在不合法修改。",
+                            "Confirm failed: invalid modifications found.",
+                        )
+                        .to_string(),
+                    );
+                    return;
                 }
             }
-
-            if !errors.is_empty() {
-                let message = errors.join("；");
-                set_confirm_error.set(message.clone());
-                set_status.set(
-                    tr(
-                        lang.get_untracked(),
-                        "确认失败：存在不合法修改。",
-                        "Confirm failed: invalid modifications found.",
-                    )
-                    .to_string(),
-                );
-                return;
-            }
-
-            entries_to_commit = validated_entries;
         }
 
         set_committed_entries.set(entries_to_commit.clone());

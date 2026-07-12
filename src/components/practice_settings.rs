@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
+use crate::utils::dictionary::is_optional_variant_field;
 use crate::utils::i18n::{field_label, tr};
 
 pub const NONE_FIELD_KEY: &str = "none";
@@ -86,7 +87,7 @@ pub fn default_answer_fields() -> Vec<String> {
     ANSWER_FIELD_OPTIONS
         .iter()
         .filter_map(|key| {
-            if *key == "english" || *key == "chinese" {
+            if *key == "english" || *key == "chinese" || is_optional_variant_field(key) {
                 None
             } else {
                 Some((*key).to_string())

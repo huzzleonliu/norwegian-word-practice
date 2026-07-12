@@ -1,8 +1,22 @@
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
 
 pub type SingleEntryDraft = WordBankEntry;
+
+/// 词性校验中不要求填写、使用频率较低的变体字段；UI 默认不勾选。
+pub const OPTIONAL_VARIANT_FIELD_KEYS: [&str; 5] = [
+    "verb_passive_past",
+    "noun_singular_indefinite_genitive",
+    "noun_plural_indefinite_genitive",
+    "adverb_comparative",
+    "adverb_superlative",
+];
+
+pub fn is_optional_variant_field(key: &str) -> bool {
+    OPTIONAL_VARIANT_FIELD_KEYS.contains(&key)
+}
 
 pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
     PartOfSpeech::from_key(raw).map_err(|_| {
@@ -32,25 +46,39 @@ pub fn validate_and_prepare_single_entry(
     Ok(prepared_entry)
 }
 
-pub fn validate_existing_entry(
-    entry: &WordBankEntry,
-    existing_entries: &[WordBankEntry],
-    self_index: usize,
-) -> Result<WordBankEntry, String> {
-    let prepared_entry = prepare_entry_for_storage(draft_from_word_entry(entry))?;
-    if existing_entries
-        .iter()
-        .enumerate()
-        .any(|(idx, item)| idx != self_index && compute_word_entry_id(item) == prepared_entry.id)
-    {
-        return Err(format!(
-            "词条重复：词性 `{}` + 词形组合已存在（原型 `{}`）。",
-            prepared_entry.part_of_speech.as_key(),
-            prepared_entry.base_form
-        ));
+/// 批量校验并规范化词库条目。每条仅计算一次哈希，重复检测为 O(n)。
+pub fn validate_and_prepare_all_entries(
+    entries: &[WordBankEntry],
+) -> Result<Vec<WordBankEntry>, Vec<String>> {
+    let mut validated = Vec::with_capacity(entries.len());
+    let mut errors = Vec::new();
+    let mut id_to_line: HashMap<String, usize> = HashMap::new();
+
+    for (idx, item) in entries.iter().enumerate() {
+        let line = idx + 1;
+        match prepare_entry_for_storage(draft_from_word_entry(item)) {
+            Ok(prepared) => {
+                if let Some(&dup_line) = id_to_line.get(&prepared.id) {
+                    errors.push(format!(
+                        "第 {line} 行与第 {dup_line} 行重复（id: {}）：词性 `{}` + 词形组合已存在（原型 `{}`）。",
+                        prepared.id,
+                        prepared.part_of_speech.as_key(),
+                        prepared.base_form,
+                    ));
+                } else {
+                    id_to_line.insert(prepared.id.clone(), line);
+                    validated.push(prepared);
+                }
+            }
+            Err(err) => errors.push(format!("第 {line} 行（id: {}）{err}", item.id)),
+        }
     }
 
-    Ok(prepared_entry)
+    if errors.is_empty() {
+        Ok(validated)
+    } else {
+        Err(errors)
+    }
 }
 
 pub fn draft_from_word_entry(entry: &WordBankEntry) -> SingleEntryDraft {

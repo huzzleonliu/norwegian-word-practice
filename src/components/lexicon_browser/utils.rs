@@ -2,9 +2,25 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
+use crate::utils::dictionary::OPTIONAL_VARIANT_FIELD_KEYS;
 use crate::utils::i18n::tr;
 
 use super::structures::CsvWordEntry;
+
+pub fn default_search_column_visibility() -> Vec<bool> {
+    let mut cols = vec![true; DATA_COLUMN_KEYS.len()];
+    if let Some(id_col) = cols.get_mut(0) {
+        *id_col = false;
+    }
+    for key in OPTIONAL_VARIANT_FIELD_KEYS {
+        if let Some(idx) = DATA_COLUMN_KEYS.iter().position(|&col_key| col_key == key) {
+            if let Some(col) = cols.get_mut(idx) {
+                *col = false;
+            }
+        }
+    }
+    cols
+}
 
 pub const DATA_COLUMN_KEYS: [&str; 38] = [
     "id",
