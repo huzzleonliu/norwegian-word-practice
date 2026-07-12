@@ -57,7 +57,7 @@ fn App() -> impl IntoView {
             <button
                 type="button"
                 on:click=move |_| set_ui_language.update(|lang| *lang = lang.toggle())
-                class="fixed right-4 top-4 z-[100] rounded-lg border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs text-slate-100 hover:bg-slate-800"
+                class="fixed right-2 top-2 z-[100] rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:right-4 sm:top-4 sm:px-3 sm:py-2 sm:text-xs"
             >
                 {move || {
                     let lang = ui_language.get();

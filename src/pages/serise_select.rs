@@ -74,10 +74,10 @@ pub fn SeriseSelectPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::PracticeModeSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
                     {move || tr(lang.get(), "单词系列练习", "Series Practice")}
                 </h1>
                 <MiniConsole
@@ -91,28 +91,28 @@ pub fn SeriseSelectPage() -> impl IntoView {
                     <button
                         type="button"
                         on:click=cardinal_click
-                        class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
                     >
                         {move || tr(lang.get(), "数词", "Number")}
                     </button>
                     <button
                         type="button"
                         on:click=month_click
-                        class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
                     >
                         {move || tr(lang.get(), "月份", "Month")}
                     </button>
                     <button
                         type="button"
                         on:click=pronoun_click
-                        class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
                     >
                         {move || tr(lang.get(), "代词", "Pronoun")}
                     </button>
                     <button
                         type="button"
                         on:click=interrogative_click
-                        class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
                     >
                         {move || tr(lang.get(), "疑问词", "Interrogative")}
                     </button>

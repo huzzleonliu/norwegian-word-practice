@@ -17,7 +17,7 @@ pub fn CheckPracticeButton(
     let check_click = move |_| on_check.run(());
     let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "检查", "Check").to_string());
     let class = class.unwrap_or_else(|| {
-        "rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
+        "w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto"
             .to_string()
     });
 
@@ -269,7 +269,10 @@ pub fn PracticeEntry(
         }}
 
         <div class="mt-4 flex justify-center">
-            <CheckPracticeButton on_check=on_check/>
+            <CheckPracticeButton
+                on_check=on_check
+                class="w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto".to_string()
+            />
         </div>
     }
 }

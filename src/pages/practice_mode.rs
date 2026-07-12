@@ -93,10 +93,10 @@ pub fn PracticeModePage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-            <section class="relative w-full max-w-5xl p-8 rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-3 sm:p-6">
+            <section class="relative w-full max-w-5xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-8 shadow-xl">
                 <ReturnButton target_page=AppPage::Home/>
-                <h1 class="text-3xl font-bold tracking-tight">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
                     {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
                 </h1>
                 <MiniConsole
@@ -170,7 +170,7 @@ pub fn PracticeModePage() -> impl IntoView {
                                 type="button"
                                 on:click=choose_word_bank_click
                                 disabled=LEXICON_WORD_BANK_FILES.is_empty()
-                                class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
+                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto"
                             >
                                 {move || tr(lang.get(), "选择词库", "Load Lexicon")}
                             </button>
@@ -179,7 +179,7 @@ pub fn PracticeModePage() -> impl IntoView {
                                 label=Signal::derive(move || {
                                     tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
                                 })
-                                class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700".to_string()
+                                class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto".to_string()
                                 set_entries=word_bank_state.set_entries
                                 set_status=set_status
                                 set_data_version=word_bank_state.set_data_version
@@ -191,7 +191,7 @@ pub fn PracticeModePage() -> impl IntoView {
                             <button
                                 type="button"
                                 on:click=move |_| set_current_page.set(AppPage::LexiconMode)
-                                class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
+                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
                             >
                                 {move || tr(lang.get(), "词库模式", "Lexicon Mode")}
                             </button>
@@ -215,7 +215,7 @@ pub fn PracticeModePage() -> impl IntoView {
                             <button
                                 type="button"
                                 on:click=move |_| set_current_page.set(AppPage::SeriseSelect)
-                                class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
+                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
                             >
                                 {move || tr(lang.get(), "单词系列模式", "Series Mode")}
                             </button>
@@ -223,7 +223,7 @@ pub fn PracticeModePage() -> impl IntoView {
                     </section>
                 </div>
 
-                <div class="mt-10 text-right">
+                <div class="mt-10 text-left sm:text-right">
                     <button
                         type="button"
                         on:click=move |_| set_current_page.set(AppPage::LocalLexiconEditor)

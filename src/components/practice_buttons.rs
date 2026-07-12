@@ -38,7 +38,7 @@ pub fn FinishPracticeButton(
     };
     let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "完成练习", "Finish Practice").to_string());
     let class = class.unwrap_or_else(|| {
-        "rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
+        "w-full rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600 sm:w-auto"
             .to_string()
     });
 
@@ -72,7 +72,7 @@ pub fn RestartPracticeButton(
     let label =
         label.unwrap_or_else(|| tr(lang.get_untracked(), "重新练习", "Restart").to_string());
     let class = class.unwrap_or_else(|| {
-        "rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
+        "w-full rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600 sm:w-auto"
             .to_string()
     });
 
@@ -99,7 +99,7 @@ pub fn AbortPracticeButton(
         tr(lang.get_untracked(), "放弃练习并返回", "Abort and Return").to_string()
     });
     let class = class.unwrap_or_else(|| {
-        "rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
+        "w-full rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600 sm:w-auto"
             .to_string()
     });
 

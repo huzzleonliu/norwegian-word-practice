@@ -66,7 +66,7 @@ pub fn LexiconEditorAddMulti(
             }}
             <button
                 type="submit"
-                class="mt-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"
+                class="mt-3 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 sm:w-auto"
             >
                 {move || tr(lang.get(), "添加多条", "Add Entries")}
             </button>

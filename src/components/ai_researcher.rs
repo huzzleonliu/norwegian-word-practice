@@ -405,7 +405,7 @@ pub fn AiResearcher(
                     type="button"
                     on:click=test_connectivity
                     disabled=move || is_testing.get()
-                    class="rounded-lg border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="w-full rounded-lg border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                 >
                     {move || {
                         if is_testing.get() {
@@ -451,7 +451,7 @@ pub fn AiResearcher(
                     type="button"
                     on:click=query_forms
                     disabled=move || is_querying.get()
-                    class="rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    class="w-full rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
                 >
                     {move || {
                         if is_querying.get() {

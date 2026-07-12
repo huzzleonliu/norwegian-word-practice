@@ -80,11 +80,11 @@ pub fn LexiconSelectPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::PracticeModeSelect/>
                 <header class="flex items-center gap-4">
-                    <h1 class="text-2xl font-bold tracking-tight">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
                         {move || tr(lang.get(), "请选择想要练习的单词", "Select words to practice")}
                     </h1>
                 </header>
@@ -131,7 +131,7 @@ pub fn LexiconSelectPage() -> impl IntoView {
                     <button
                         type="button"
                         on:click=start_practice_click
-                        class="inline-flex items-center rounded-lg border border-emerald-700 bg-emerald-700 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                        class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-700 bg-emerald-700 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
                     >
                         {move || tr(lang.get(), "开始练习", "Start Practice")}
                     </button>

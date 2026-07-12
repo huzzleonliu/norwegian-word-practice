@@ -13,7 +13,7 @@ pub fn ReturnButton(
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
     let lang = word_bank_state.ui_language;
-    let mut classes = "absolute right-6 top-6 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700".to_string();
+    let mut classes = "mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:w-auto".to_string();
     if let Some(extra) = class {
         let extra = extra.trim();
         if !extra.is_empty() {

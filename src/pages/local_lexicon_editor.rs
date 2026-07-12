@@ -279,11 +279,11 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::PracticeModeSelect/>
                 <header class="mb-6 flex items-center gap-4">
-                    <h1 class="text-2xl font-bold tracking-tight">
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
                         {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}
                     </h1>
                 </header>
@@ -432,13 +432,13 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     mode=LexiconBrowserMode::Edit
                 />
 
-                <div class="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-800 pt-4">
+                <div class="mt-4 flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                     <ImportCsvButton
                         input_id="lexicon-import-csv-input".to_string()
                         label=Signal::derive(move || {
                             tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
                         })
-                        class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700".to_string()
+                        class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 sm:w-auto".to_string()
                         set_entries=set_entries
                         set_status=set_status
                         set_data_version=set_data_version
@@ -448,7 +448,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     <button
                         type="button"
                         on:click=export_csv_click
-                        class="inline-flex items-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                        class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
                     >
                         {move || tr(lang.get(), "导出词库 CSV", "Export Lexicon CSV")}
                     </button>

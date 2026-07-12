@@ -398,10 +398,10 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
                     {move || tr(lang.get(), "代词系列练习", "Pronoun Series Practice")}
                 </h1>
                 <MiniConsole
@@ -555,7 +555,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                     <CheckPracticeButton
                                         on_check=check_group_click
                                         label=tr(lang.get_untracked(), "检查本组", "Check Group").to_string()
-                                        class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600".to_string()
+                                        class="w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto".to_string()
                                     />
                                 </div>
                                 <p class="mt-2 text-sm text-slate-400">

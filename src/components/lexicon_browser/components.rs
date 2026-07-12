@@ -333,38 +333,38 @@ pub fn LexiconBrowser(
 
     view! {
         <section
-            class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4"
+            class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-3 sm:p-4"
             on:mousemove=on_mouse_move
             on:mouseup=stop_resize
             on:mouseleave=stop_resize
         >
             <div class="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     <input
                         type="text"
                         placeholder=move || tr(lang.get(), "输入要查找的字符", "Type to search")
                         prop:value=move || search_text.get()
                         on:input=move |ev| set_search_text.set(event_target_value(&ev))
-                        class="min-w-60 flex-1 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+                        class="w-full min-w-0 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm sm:min-w-60 sm:flex-1"
                     />
                     <button
                         type="button"
                         on:click=apply_search
-                        class="rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"
+                        class="w-full rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 sm:w-auto"
                     >
                         {move || tr(lang.get(), "查找", "Search")}
                     </button>
                     <button
                         type="button"
                         on:click=move |_| set_search_columns.set(vec![true; DATA_COLUMN_COUNT])
-                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
+                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
                     >
                         {move || tr(lang.get(), "全选列", "Select all columns")}
                     </button>
                     <button
                         type="button"
                         on:click=move |_| set_search_columns.set(vec![false; DATA_COLUMN_COUNT])
-                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
+                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
                     >
                         {move || tr(lang.get(), "全不选列", "Unselect all columns")}
                     </button>
@@ -375,7 +375,7 @@ pub fn LexiconBrowser(
                         on:click=move |_| {
                             set_search_scope_expanded.update(|expanded| *expanded = !*expanded)
                         }
-                        class="inline-flex items-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 sm:w-auto sm:justify-start"
                     >
                         {move || {
                             if search_scope_expanded.get() {
@@ -410,7 +410,7 @@ pub fn LexiconBrowser(
                                                             _ => group_name,
                                                         }}
                                                     </p>
-                                                    <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5">
+                                                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
                                                         {indices
                                                             .into_iter()
                                                             .map(|idx| {
@@ -449,7 +449,7 @@ pub fn LexiconBrowser(
                     }}
                 </div>
             </div>
-            <div class="max-h-[420px] overflow-auto pr-1">
+            <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
                 <table class="w-full border-collapse text-sm table-fixed">
                     <colgroup>
                         {move || {
@@ -889,19 +889,19 @@ pub fn LexiconBrowser(
                     </tbody>
                 </table>
             </div>
-            <div class="mt-3 flex items-center gap-3">
-                <div class="flex items-center gap-2">
+            <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div class="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
                     <button
                         type="button"
                         on:click=select_visible_click
-                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
                     >
                         {move || tr(lang.get(), "全选", "Select All")}
                     </button>
                     <button
                         type="button"
                         on:click=unselect_visible_click
-                        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
+                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
                     >
                         {move || tr(lang.get(), "全不选", "Unselect All")}
                     </button>
@@ -920,7 +920,7 @@ pub fn LexiconBrowser(
                 <button
                     type="button"
                     on:click=confirm_changes
-                    class="rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                    class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
                 >
                     {move || tr(lang.get(), "确认修改", "Confirm Changes")}
                 </button>

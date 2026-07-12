@@ -48,16 +48,16 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <button
                     type="button"
                     on:click=return_back_click
-                    class="absolute right-6 top-6 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700"
+                    class="mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:w-auto"
                 >
                     {move || tr(lang.get(), "返回上一级页面", "Back")}
                 </button>
-                <h1 class="text-2xl font-bold tracking-tight">{move || tr(lang.get(), "练习总结", "Practice Summary")}</h1>
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">{move || tr(lang.get(), "练习总结", "Practice Summary")}</h1>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
@@ -201,18 +201,18 @@ pub fn LexiconSummaryPage() -> impl IntoView {
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                     <h2 class="text-lg font-semibold">{move || tr(lang.get(), "流程控制部分", "Flow Control")}</h2>
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                         <button
                             type="button"
                             on:click=export_result_click
-                            class="rounded-lg border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600"
+                            class="w-full rounded-lg border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 sm:w-auto"
                         >
                             {move || tr(lang.get(), "导出练习结果", "Export Practice Result")}
                         </button>
                         <button
                             type="button"
                             on:click=continue_practice_click
-                            class="rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                            class="w-full rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
                         >
                             {move || tr(lang.get(), "继续练习", "Continue Practice")}
                         </button>

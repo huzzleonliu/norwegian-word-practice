@@ -264,7 +264,7 @@ pub fn LexiconEditorAddSingle(
             </div>
             <button
                 type="submit"
-                class="mt-3 rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600"
+                class="mt-3 w-full rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 sm:w-auto"
             >
                 {move || tr(lang.get(), "添加单条", "Add Entry")}
             </button>

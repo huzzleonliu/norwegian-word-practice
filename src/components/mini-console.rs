@@ -62,7 +62,7 @@ fn schedule_scroll_to_bottom(panel_ref: NodeRef<leptos::html::Div>) {
     use wasm_bindgen::{JsCast, closure::Closure};
 
     let callback = Closure::wrap(Box::new(move || {
-        if let Some(panel) = panel_ref.get() {
+        if let Some(panel) = panel_ref.get_untracked() {
             panel.set_scroll_top(panel.scroll_height());
         }
     }) as Box<dyn FnMut()>);

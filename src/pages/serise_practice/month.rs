@@ -179,10 +179,10 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
+            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
                     {move || tr(lang.get(), "月份系列练习", "Month Series Practice")}
                 </h1>
                 <MiniConsole
