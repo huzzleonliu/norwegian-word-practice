@@ -1,32 +1,22 @@
 use std::collections::HashSet;
 
-use crate::components::lexicon_browser::{PART_OF_SPEECH_OPTIONS, WordEntry};
-use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
 
 pub type SingleEntryDraft = WordBankEntry;
 
 pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
-    match raw.trim() {
-        "verb" => Ok(PartOfSpeech::Verb),
-        "noun" => Ok(PartOfSpeech::Noun),
-        "adjective" => Ok(PartOfSpeech::Adjective),
-        "adverb" => Ok(PartOfSpeech::Adverb),
-        "cardinal_number" => Ok(PartOfSpeech::CardinalNumber),
-        "ordinal_number" => Ok(PartOfSpeech::OrdinalNumber),
-        "month" => Ok(PartOfSpeech::Month),
-        "pronoun" => Ok(PartOfSpeech::Pronoun),
-        "interrogative" => Ok(PartOfSpeech::Interrogative),
-        _ => Err(format!(
+    PartOfSpeech::from_key(raw).map_err(|_| {
+        format!(
             "词性不合法，请从预设选项中选择：{}",
             PART_OF_SPEECH_OPTIONS.join(", ")
-        )),
-    }
+        )
+    })
 }
 
 pub fn validate_and_prepare_single_entry(
     draft: SingleEntryDraft,
-    existing_entries: &[WordEntry],
-) -> Result<WordEntry, String> {
+    existing_entries: &[WordBankEntry],
+) -> Result<WordBankEntry, String> {
     let base_form = draft.base_form.trim().to_string();
     if base_form.is_empty() {
         return Err("原型不能为空。".to_string());
@@ -51,10 +41,10 @@ pub fn validate_and_prepare_single_entry(
         .collect::<HashSet<_>>();
     let id = make_unique_id_from_base_form(&base_form, &existing_ids);
 
-    Ok(WordEntry {
+    Ok(WordBankEntry {
         id,
         selected: draft.selected,
-        part_of_speech: part_of_speech_to_key(&draft.part_of_speech).to_string(),
+        part_of_speech: draft.part_of_speech,
         tags: normalize_vec(draft.tags),
         english: normalize_vec(draft.english),
         chinese,
@@ -77,8 +67,8 @@ pub fn validate_and_prepare_single_entry(
 }
 
 pub fn validate_existing_entry(
-    entry: &WordEntry,
-    existing_entries: &[WordEntry],
+    entry: &WordBankEntry,
+    existing_entries: &[WordBankEntry],
     self_index: usize,
 ) -> Result<(), String> {
     let base_form = entry.base_form.trim().to_string();
@@ -93,7 +83,7 @@ pub fn validate_existing_entry(
         return Err(format!("原型 `{base_form}` 已存在，不能重复。"));
     }
 
-    let draft = draft_from_word_entry(entry)?;
+    let draft = draft_from_word_entry(entry);
     let chinese = normalize_vec(draft.chinese.clone());
     if chinese.is_empty() {
         return Err("对应中文不能为空。".to_string());
@@ -102,28 +92,8 @@ pub fn validate_existing_entry(
     validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)
 }
 
-pub fn draft_from_word_entry(entry: &WordEntry) -> Result<SingleEntryDraft, String> {
-    Ok(SingleEntryDraft {
-        id: entry.id.clone(),
-        selected: entry.selected,
-        part_of_speech: parse_part_of_speech(&entry.part_of_speech)?,
-        tags: entry.tags.clone(),
-        english: entry.english.clone(),
-        chinese: entry.chinese.clone(),
-        base_form: entry.base_form.clone(),
-        past_tense: entry.past_tense.clone(),
-        imperative: entry.imperative.clone(),
-        plural: entry.plural.clone(),
-        singular_definite: entry.singular_definite.clone(),
-        plural_definite: entry.plural_definite.clone(),
-        neuter_form: entry.neuter_form.clone(),
-        plural_form: entry.plural_form.clone(),
-        adjective_comparative: entry.adjective_comparative.clone(),
-        adjective_superlative_indefinite: entry.adjective_superlative_indefinite.clone(),
-        adjective_superlative_definite: entry.adjective_superlative_definite.clone(),
-        adverb_comparative: entry.adverb_comparative.clone(),
-        adverb_superlative: entry.adverb_superlative.clone(),
-    })
+pub fn draft_from_word_entry(entry: &WordBankEntry) -> SingleEntryDraft {
+    entry.clone()
 }
 
 fn validate_forms_by_part_of_speech(
@@ -158,20 +128,6 @@ fn validate_forms_by_part_of_speech(
         | PartOfSpeech::Interrogative => {}
     }
     Ok(())
-}
-
-fn part_of_speech_to_key(pos: &PartOfSpeech) -> &'static str {
-    match pos {
-        PartOfSpeech::Verb => "verb",
-        PartOfSpeech::Noun => "noun",
-        PartOfSpeech::Adjective => "adjective",
-        PartOfSpeech::Adverb => "adverb",
-        PartOfSpeech::CardinalNumber => "cardinal_number",
-        PartOfSpeech::OrdinalNumber => "ordinal_number",
-        PartOfSpeech::Month => "month",
-        PartOfSpeech::Pronoun => "pronoun",
-        PartOfSpeech::Interrogative => "interrogative",
-    }
 }
 
 fn require_option(field_name: &str, value: &Option<String>) -> Result<(), String> {

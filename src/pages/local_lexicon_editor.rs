@@ -164,13 +164,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                         format!("（原型：{}）", row.base_form.trim())
                     };
 
-                    let draft = match draft_from_word_entry(&row) {
-                        Ok(draft) => draft,
-                        Err(err) => {
-                            errors.push(format!("第 {line_no} 行 {base_form_label}：{err}"));
-                            continue;
-                        }
-                    };
+                    let draft = draft_from_word_entry(&row);
 
                     match validate_and_prepare_single_entry(draft, &simulated_entries) {
                         Ok(valid_entry) => {

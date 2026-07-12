@@ -1,15 +1,18 @@
 use leptos::ev::Event;
 use leptos::prelude::*;
+#[cfg(target_arch = "wasm32")]
 use leptos::task::spawn_local;
 
-use crate::components::lexicon_browser::{WordEntry, parse_word_bank_csv};
+#[cfg(target_arch = "wasm32")]
+use crate::components::lexicon_browser::parse_word_bank_csv;
+use crate::structures::word_bank_entry::WordBankEntry;
 
 #[component]
 pub fn ImportCsvButton(
     input_id: String,
     label: String,
     class: String,
-    set_entries: WriteSignal<Vec<WordEntry>>,
+    set_entries: WriteSignal<Vec<WordBankEntry>>,
     set_status: WriteSignal<String>,
     set_data_version: WriteSignal<u64>,
     #[prop(optional)] set_source_name: Option<WriteSignal<String>>,
@@ -40,7 +43,7 @@ pub fn ImportCsvButton(
 
 fn import_csv_from_file(
     ev: Event,
-    set_entries: WriteSignal<Vec<WordEntry>>,
+    set_entries: WriteSignal<Vec<WordBankEntry>>,
     set_status: WriteSignal<String>,
     set_data_version: WriteSignal<u64>,
     set_source_name: Option<WriteSignal<String>>,

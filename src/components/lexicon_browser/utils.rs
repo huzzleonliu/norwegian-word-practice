@@ -1,15 +1,15 @@
 use std::cmp::Ordering;
 
-use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::structures::word_bank_entry::WordBankEntry;
 
-use super::structures::{CsvWordEntry, PART_OF_SPEECH_OPTIONS, WordEntry};
+use super::structures::CsvWordEntry;
 
-pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordEntry>, String> {
+pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordBankEntry>, String> {
     let has_header = detect_word_bank_header(content);
     parse_word_bank_csv_inner(content, has_header)
 }
 
-pub fn serialize_word_bank_csv(entries: &[WordEntry]) -> Result<String, String> {
+pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, String> {
     let mut writer = csv::Writer::from_writer(Vec::<u8>::new());
     writer
         .write_record([
@@ -36,8 +36,7 @@ pub fn serialize_word_bank_csv(entries: &[WordEntry]) -> Result<String, String> 
         .map_err(|err| format!("CSV 写入失败: {err}"))?;
 
     for entry in entries {
-        let normalized = word_entry_to_word_bank(entry)?;
-        let csv_entry = CsvWordEntry::from_word_bank_entry(normalized);
+        let csv_entry = CsvWordEntry::from(entry);
 
         writer
             .write_record([
@@ -79,8 +78,8 @@ pub fn parse_pipe_list(raw: &str) -> Vec<String> {
 }
 
 pub(super) fn compare_entries_by_rules(
-    a: &WordEntry,
-    b: &WordEntry,
+    a: &WordBankEntry,
+    b: &WordBankEntry,
     rules: &[(usize, bool)],
 ) -> Ordering {
     for (col_idx, asc) in rules {
@@ -93,7 +92,7 @@ pub(super) fn compare_entries_by_rules(
     a.id.cmp(&b.id)
 }
 
-pub(super) fn entry_matches_filter(entry: &WordEntry, query: &str, columns: &[bool]) -> bool {
+pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: &[bool]) -> bool {
     let trimmed = query.trim();
     if trimmed.is_empty() {
         return true;
@@ -174,7 +173,10 @@ fn detect_word_bank_header(content: &str) -> bool {
     normalized.starts_with("id,selected,part_of_speech,")
 }
 
-fn parse_word_bank_csv_inner(content: &str, has_headers: bool) -> Result<Vec<WordEntry>, String> {
+fn parse_word_bank_csv_inner(
+    content: &str,
+    has_headers: bool,
+) -> Result<Vec<WordBankEntry>, String> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(has_headers)
         .trim(csv::Trim::All)
@@ -184,23 +186,22 @@ fn parse_word_bank_csv_inner(content: &str, has_headers: bool) -> Result<Vec<Wor
     let mut entries = Vec::new();
     for row in reader.deserialize::<CsvWordEntry>() {
         let row = row.map_err(|err| format!("CSV 解析失败: {err}"))?;
-        let normalized = row.to_word_bank_entry()?;
-        entries.push(word_bank_to_word_entry(normalized));
+        entries.push(WordBankEntry::try_from(row)?);
     }
 
     Ok(entries)
 }
 
 fn compare_entries_by_column(
-    a: &WordEntry,
-    b: &WordEntry,
+    a: &WordBankEntry,
+    b: &WordBankEntry,
     col_idx: usize,
     ascending: bool,
 ) -> Ordering {
     let ordering = match col_idx {
         0 => a.id.cmp(&b.id),
         1 => a.selected.cmp(&b.selected),
-        2 => a.part_of_speech.cmp(&b.part_of_speech),
+        2 => a.part_of_speech.as_key().cmp(b.part_of_speech.as_key()),
         3 => a.tags.join("|").cmp(&b.tags.join("|")),
         4 => a.english.join("|").cmp(&b.english.join("|")),
         5 => a.chinese.join("|").cmp(&b.chinese.join("|")),
@@ -233,7 +234,7 @@ fn compare_entries_by_column(
     }
 }
 
-fn column_value_text(entry: &WordEntry, col_idx: usize) -> String {
+fn column_value_text(entry: &WordBankEntry, col_idx: usize) -> String {
     match col_idx {
         0 => entry.id.clone(),
         1 => {
@@ -243,7 +244,7 @@ fn column_value_text(entry: &WordEntry, col_idx: usize) -> String {
                 "false".to_string()
             }
         }
-        2 => entry.part_of_speech.clone(),
+        2 => entry.part_of_speech.as_key().to_string(),
         3 => entry.tags.join("|"),
         4 => entry.english.join("|"),
         5 => entry.chinese.join("|"),
@@ -272,153 +273,4 @@ fn column_value_text(entry: &WordEntry, col_idx: usize) -> String {
 
 fn opt_cmp(a: &Option<String>, b: &Option<String>) -> Ordering {
     a.as_deref().unwrap_or("").cmp(b.as_deref().unwrap_or(""))
-}
-
-fn parse_optional_text(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
-    }
-}
-
-fn optional_to_text(value: &Option<String>) -> String {
-    value.clone().unwrap_or_default()
-}
-
-fn parse_part_of_speech_key(raw: &str) -> Result<PartOfSpeech, String> {
-    match raw.trim() {
-        "verb" => Ok(PartOfSpeech::Verb),
-        "noun" => Ok(PartOfSpeech::Noun),
-        "adjective" => Ok(PartOfSpeech::Adjective),
-        "adverb" => Ok(PartOfSpeech::Adverb),
-        "cardinal_number" => Ok(PartOfSpeech::CardinalNumber),
-        "ordinal_number" => Ok(PartOfSpeech::OrdinalNumber),
-        "month" => Ok(PartOfSpeech::Month),
-        "pronoun" => Ok(PartOfSpeech::Pronoun),
-        "interrogative" => Ok(PartOfSpeech::Interrogative),
-        _ => Err(format!(
-            "词性不合法：{raw}，应为 {}",
-            PART_OF_SPEECH_OPTIONS.join(", ")
-        )),
-    }
-}
-
-fn part_of_speech_to_key(pos: &PartOfSpeech) -> &'static str {
-    match pos {
-        PartOfSpeech::Verb => "verb",
-        PartOfSpeech::Noun => "noun",
-        PartOfSpeech::Adjective => "adjective",
-        PartOfSpeech::Adverb => "adverb",
-        PartOfSpeech::CardinalNumber => "cardinal_number",
-        PartOfSpeech::OrdinalNumber => "ordinal_number",
-        PartOfSpeech::Month => "month",
-        PartOfSpeech::Pronoun => "pronoun",
-        PartOfSpeech::Interrogative => "interrogative",
-    }
-}
-
-fn word_bank_to_word_entry(entry: WordBankEntry) -> WordEntry {
-    WordEntry {
-        id: entry.id,
-        selected: entry.selected,
-        part_of_speech: part_of_speech_to_key(&entry.part_of_speech).to_string(),
-        tags: entry.tags,
-        english: entry.english,
-        chinese: entry.chinese,
-        base_form: entry.base_form,
-        past_tense: entry.past_tense,
-        imperative: entry.imperative,
-        plural: entry.plural,
-        singular_definite: entry.singular_definite,
-        plural_definite: entry.plural_definite,
-        neuter_form: entry.neuter_form,
-        plural_form: entry.plural_form,
-        adjective_comparative: entry.adjective_comparative,
-        adjective_superlative_indefinite: entry.adjective_superlative_indefinite,
-        adjective_superlative_definite: entry.adjective_superlative_definite,
-        adverb_comparative: entry.adverb_comparative,
-        adverb_superlative: entry.adverb_superlative,
-    }
-}
-
-fn word_entry_to_word_bank(entry: &WordEntry) -> Result<WordBankEntry, String> {
-    Ok(WordBankEntry {
-        id: entry.id.clone(),
-        selected: entry.selected,
-        part_of_speech: parse_part_of_speech_key(&entry.part_of_speech)?,
-        tags: entry.tags.clone(),
-        english: entry.english.clone(),
-        chinese: entry.chinese.clone(),
-        base_form: entry.base_form.clone(),
-        past_tense: entry.past_tense.clone(),
-        imperative: entry.imperative.clone(),
-        plural: entry.plural.clone(),
-        singular_definite: entry.singular_definite.clone(),
-        plural_definite: entry.plural_definite.clone(),
-        neuter_form: entry.neuter_form.clone(),
-        plural_form: entry.plural_form.clone(),
-        adjective_comparative: entry.adjective_comparative.clone(),
-        adjective_superlative_indefinite: entry.adjective_superlative_indefinite.clone(),
-        adjective_superlative_definite: entry.adjective_superlative_definite.clone(),
-        adverb_comparative: entry.adverb_comparative.clone(),
-        adverb_superlative: entry.adverb_superlative.clone(),
-    })
-}
-
-impl CsvWordEntry {
-    fn to_word_bank_entry(self) -> Result<WordBankEntry, String> {
-        Ok(WordBankEntry {
-            id: self.id,
-            selected: self.selected,
-            part_of_speech: parse_part_of_speech_key(&self.part_of_speech)?,
-            tags: parse_pipe_list(&self.tags),
-            english: parse_pipe_list(&self.english),
-            chinese: parse_pipe_list(&self.chinese),
-            base_form: self.norwegian_base,
-            past_tense: parse_optional_text(&self.past_tense),
-            imperative: parse_optional_text(&self.imperative),
-            plural: parse_optional_text(&self.plural),
-            singular_definite: parse_optional_text(&self.singular_definite),
-            plural_definite: parse_optional_text(&self.plural_definite),
-            neuter_form: parse_optional_text(&self.neuter_form),
-            plural_form: parse_optional_text(&self.plural_form),
-            adjective_comparative: parse_optional_text(&self.adjective_comparative),
-            adjective_superlative_indefinite: parse_optional_text(
-                &self.adjective_superlative_indefinite,
-            ),
-            adjective_superlative_definite: parse_optional_text(
-                &self.adjective_superlative_definite,
-            ),
-            adverb_comparative: parse_optional_text(&self.adverb_comparative),
-            adverb_superlative: parse_optional_text(&self.adverb_superlative),
-        })
-    }
-
-    fn from_word_bank_entry(entry: WordBankEntry) -> Self {
-        Self {
-            id: entry.id,
-            selected: entry.selected,
-            part_of_speech: part_of_speech_to_key(&entry.part_of_speech).to_string(),
-            tags: entry.tags.join("|"),
-            english: entry.english.join("|"),
-            chinese: entry.chinese.join("|"),
-            norwegian_base: entry.base_form,
-            past_tense: optional_to_text(&entry.past_tense),
-            imperative: optional_to_text(&entry.imperative),
-            plural: optional_to_text(&entry.plural),
-            singular_definite: optional_to_text(&entry.singular_definite),
-            plural_definite: optional_to_text(&entry.plural_definite),
-            neuter_form: optional_to_text(&entry.neuter_form),
-            plural_form: optional_to_text(&entry.plural_form),
-            adjective_comparative: optional_to_text(&entry.adjective_comparative),
-            adjective_superlative_indefinite: optional_to_text(
-                &entry.adjective_superlative_indefinite,
-            ),
-            adjective_superlative_definite: optional_to_text(&entry.adjective_superlative_definite),
-            adverb_comparative: optional_to_text(&entry.adverb_comparative),
-            adverb_superlative: optional_to_text(&entry.adverb_superlative),
-        }
-    }
 }

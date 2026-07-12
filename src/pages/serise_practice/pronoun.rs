@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
     AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
@@ -12,6 +11,7 @@ use crate::components::practice_buttons::{
 use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
+use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
 use super::initialize_temp_practice_result;
 
@@ -642,7 +642,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
 }
 
 fn build_pronoun_rows(
-    entries: &[WordEntry],
+    entries: &[WordBankEntry],
     row_configs: &[PronounRowConfig],
 ) -> (Vec<ResolvedPronounRow>, Vec<String>) {
     let mut rows = Vec::new();
@@ -673,11 +673,11 @@ fn build_pronoun_rows(
 }
 
 fn find_pronoun_entry_by_chinese<'a>(
-    entries: &'a [WordEntry],
+    entries: &'a [WordBankEntry],
     chinese: &str,
-) -> Option<&'a WordEntry> {
+) -> Option<&'a WordBankEntry> {
     entries.iter().find(|entry| {
-        entry.part_of_speech == "pronoun"
+        entry.part_of_speech.as_key() == PartOfSpeech::Pronoun.as_key()
             && entry
                 .chinese
                 .iter()

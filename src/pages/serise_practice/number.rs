@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_buttons::{
     AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
@@ -12,6 +11,7 @@ use crate::components::practice_buttons::{
 use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
+use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
 use super::initialize_temp_practice_result;
 
@@ -364,7 +364,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
 }
 
 fn build_number_question_rows(
-    entries: &[WordEntry],
+    entries: &[WordBankEntry],
     numbers: &[u32],
 ) -> (Vec<NumberQuestionRow>, Vec<u32>) {
     let mut rows = Vec::new();
@@ -378,13 +378,13 @@ fn build_number_question_rows(
         let ordinal_chinese = format!("第{cardinal_chinese}");
 
         let Some(cardinal_entry) =
-            find_entry_by_pos_and_chinese(entries, "cardinal_number", cardinal_chinese)
+            find_entry_by_pos_and_chinese(entries, PartOfSpeech::CardinalNumber, cardinal_chinese)
         else {
             missing_numbers.push(*number);
             continue;
         };
         let Some(ordinal_entry) =
-            find_entry_by_pos_and_chinese(entries, "ordinal_number", &ordinal_chinese)
+            find_entry_by_pos_and_chinese(entries, PartOfSpeech::OrdinalNumber, &ordinal_chinese)
         else {
             missing_numbers.push(*number);
             continue;
@@ -403,12 +403,12 @@ fn build_number_question_rows(
 }
 
 fn find_entry_by_pos_and_chinese<'a>(
-    entries: &'a [WordEntry],
-    part_of_speech: &str,
+    entries: &'a [WordBankEntry],
+    part_of_speech: PartOfSpeech,
     chinese: &str,
-) -> Option<&'a WordEntry> {
+) -> Option<&'a WordBankEntry> {
     entries.iter().find(|entry| {
-        entry.part_of_speech == part_of_speech
+        entry.part_of_speech.as_key() == part_of_speech.as_key()
             && entry
                 .chinese
                 .iter()

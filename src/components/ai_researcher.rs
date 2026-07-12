@@ -4,7 +4,8 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::components::lexicon_browser::PART_OF_SPEECH_OPTIONS;
+use crate::components::lexicon_browser::serialize_word_bank_csv;
+use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
 const WORD_FORM_HINT_OPTIONS: [(&str, &str); 22] = [
     ("unknown", "未知"),
@@ -53,6 +54,38 @@ struct GeminiWordResult {
     adjective_superlative_definite: Option<String>,
     adverb_comparative: Option<String>,
     adverb_superlative: Option<String>,
+}
+
+impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
+    type Error = String;
+
+    fn try_from((value, hint): (&GeminiWordResult, &str)) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: String::new(),
+            selected: true,
+            part_of_speech: normalize_part_of_speech_enum(value.part_of_speech.clone(), hint),
+            tags: normalize_text_list(&value.tags),
+            english: normalize_text_list(&value.english),
+            chinese: normalize_text_list(&value.chinese),
+            base_form: normalize_text_opt(value.base_form.clone()).unwrap_or_default(),
+            past_tense: normalize_text_opt(value.past_tense.clone()),
+            imperative: normalize_text_opt(value.imperative.clone()),
+            plural: normalize_text_opt(value.plural.clone()),
+            singular_definite: normalize_text_opt(value.singular_definite.clone()),
+            plural_definite: normalize_text_opt(value.plural_definite.clone()),
+            neuter_form: normalize_text_opt(value.neuter_form.clone()),
+            plural_form: normalize_text_opt(value.plural_form.clone()),
+            adjective_comparative: normalize_text_opt(value.adjective_comparative.clone()),
+            adjective_superlative_indefinite: normalize_text_opt(
+                value.adjective_superlative_indefinite.clone(),
+            ),
+            adjective_superlative_definite: normalize_text_opt(
+                value.adjective_superlative_definite.clone(),
+            ),
+            adverb_comparative: normalize_text_opt(value.adverb_comparative.clone()),
+            adverb_superlative: normalize_text_opt(value.adverb_superlative.clone()),
+        })
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -329,10 +362,6 @@ fn normalize_text_opt(value: Option<String>) -> Option<String> {
     }
 }
 
-fn normalize_text(raw: &str) -> String {
-    raw.trim().to_string()
-}
-
 fn join_pipe(values: Vec<String>) -> Option<String> {
     let list = values
         .into_iter()
@@ -346,99 +375,40 @@ fn join_pipe(values: Vec<String>) -> Option<String> {
     }
 }
 
-fn join_pipe_raw(values: &[String]) -> String {
+fn normalize_text_list(values: &[String]) -> Vec<String> {
     values
         .iter()
-        .map(|item| normalize_text(item))
+        .map(|item| item.trim().to_string())
         .filter(|item| !item.is_empty())
-        .collect::<Vec<_>>()
-        .join(" | ")
+        .collect()
 }
 
-fn hint_to_part_of_speech(hint: &str) -> Option<String> {
+fn hint_to_part_of_speech(hint: &str) -> Option<PartOfSpeech> {
     let prefix = hint.split('-').next().unwrap_or_default().trim();
-    if PART_OF_SPEECH_OPTIONS.contains(&prefix) {
-        Some(prefix.to_string())
-    } else {
-        None
-    }
+    PartOfSpeech::from_key(prefix).ok()
 }
 
 fn normalize_part_of_speech(raw: Option<String>, hint: &str) -> String {
+    normalize_part_of_speech_enum(raw, hint)
+        .as_key()
+        .to_string()
+}
+
+fn normalize_part_of_speech_enum(raw: Option<String>, hint: &str) -> PartOfSpeech {
     if let Some(pos) = normalize_text_opt(raw) {
-        if PART_OF_SPEECH_OPTIONS.contains(&pos.as_str()) {
-            return pos;
+        if let Ok(parsed) = PartOfSpeech::from_key(&pos) {
+            return parsed;
         }
     }
-    hint_to_part_of_speech(hint).unwrap_or_else(|| "noun".to_string())
+    hint_to_part_of_speech(hint).unwrap_or(PartOfSpeech::Noun)
 }
 
 fn build_bulk_csv_from_results(results: &[GeminiWordResult], hint: &str) -> Result<String, String> {
-    let mut writer = csv::Writer::from_writer(Vec::<u8>::new());
-    writer
-        .write_record([
-            "id",
-            "selected",
-            "part_of_speech",
-            "tags",
-            "english",
-            "chinese",
-            "norwegian_base",
-            "past_tense",
-            "imperative",
-            "plural",
-            "singular_definite",
-            "plural_definite",
-            "neuter_form",
-            "plural_form",
-            "adjective_comparative",
-            "adjective_superlative_indefinite",
-            "adjective_superlative_definite",
-            "adverb_comparative",
-            "adverb_superlative",
-        ])
-        .map_err(|err| format!("CSV 写入失败：{err}"))?;
-
-    for item in results {
-        writer
-            .write_record([
-                "",
-                "true",
-                normalize_part_of_speech(item.part_of_speech.clone(), hint).as_str(),
-                join_pipe_raw(&item.tags).as_str(),
-                join_pipe_raw(&item.english).as_str(),
-                join_pipe_raw(&item.chinese).as_str(),
-                normalize_text_opt(item.base_form.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.past_tense.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.imperative.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.plural.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.singular_definite.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.plural_definite.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.neuter_form.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.plural_form.clone()).unwrap_or_default().as_str(),
-                normalize_text_opt(item.adjective_comparative.clone())
-                    .unwrap_or_default()
-                    .as_str(),
-                normalize_text_opt(item.adjective_superlative_indefinite.clone())
-                    .unwrap_or_default()
-                    .as_str(),
-                normalize_text_opt(item.adjective_superlative_definite.clone())
-                    .unwrap_or_default()
-                    .as_str(),
-                normalize_text_opt(item.adverb_comparative.clone())
-                    .unwrap_or_default()
-                    .as_str(),
-                normalize_text_opt(item.adverb_superlative.clone())
-                    .unwrap_or_default()
-                    .as_str(),
-            ])
-            .map_err(|err| format!("CSV 行写入失败：{err}"))?;
-    }
-
-    let bytes = writer
-        .into_inner()
-        .map_err(|err| format!("CSV 构建失败：{}", err.error()))?;
-    String::from_utf8(bytes).map_err(|err| format!("CSV 编码失败：{err}"))
+    let entries = results
+        .iter()
+        .map(|item| WordBankEntry::try_from((item, hint)))
+        .collect::<Result<Vec<_>, _>>()?;
+    serialize_word_bank_csv(&entries)
 }
 
 fn build_research_prompt(word: &str, hint: &str) -> String {

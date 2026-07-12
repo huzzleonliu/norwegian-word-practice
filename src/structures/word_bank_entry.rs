@@ -1,5 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+pub const PART_OF_SPEECH_OPTIONS: [&str; 9] = [
+    "verb",
+    "noun",
+    "adjective",
+    "adverb",
+    "cardinal_number",
+    "ordinal_number",
+    "month",
+    "pronoun",
+    "interrogative",
+];
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum PartOfSpeech {
     Verb,
@@ -11,6 +23,40 @@ pub enum PartOfSpeech {
     Month,
     Pronoun,
     Interrogative,
+}
+
+impl PartOfSpeech {
+    pub fn as_key(&self) -> &'static str {
+        match self {
+            PartOfSpeech::Verb => "verb",
+            PartOfSpeech::Noun => "noun",
+            PartOfSpeech::Adjective => "adjective",
+            PartOfSpeech::Adverb => "adverb",
+            PartOfSpeech::CardinalNumber => "cardinal_number",
+            PartOfSpeech::OrdinalNumber => "ordinal_number",
+            PartOfSpeech::Month => "month",
+            PartOfSpeech::Pronoun => "pronoun",
+            PartOfSpeech::Interrogative => "interrogative",
+        }
+    }
+
+    pub fn from_key(raw: &str) -> Result<Self, String> {
+        match raw.trim() {
+            "verb" => Ok(PartOfSpeech::Verb),
+            "noun" => Ok(PartOfSpeech::Noun),
+            "adjective" => Ok(PartOfSpeech::Adjective),
+            "adverb" => Ok(PartOfSpeech::Adverb),
+            "cardinal_number" => Ok(PartOfSpeech::CardinalNumber),
+            "ordinal_number" => Ok(PartOfSpeech::OrdinalNumber),
+            "month" => Ok(PartOfSpeech::Month),
+            "pronoun" => Ok(PartOfSpeech::Pronoun),
+            "interrogative" => Ok(PartOfSpeech::Interrogative),
+            _ => Err(format!(
+                "词性不合法，请从预设选项中选择：{}",
+                PART_OF_SPEECH_OPTIONS.join(", ")
+            )),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

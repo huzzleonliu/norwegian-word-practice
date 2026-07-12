@@ -1,7 +1,7 @@
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
-use crate::components::lexicon_browser::PART_OF_SPEECH_OPTIONS;
+use crate::structures::word_bank_entry::PART_OF_SPEECH_OPTIONS;
 
 #[component]
 pub fn LexiconEditorAddSingle(

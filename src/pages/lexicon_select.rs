@@ -1,10 +1,11 @@
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode, WordEntry};
+use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode};
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
+use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::shuffle::shuffle_strings;
 
 #[component]
@@ -100,7 +101,7 @@ pub fn LexiconSelectPage() -> impl IntoView {
     }
 }
 
-fn collect_selected_entry_ids(entries: &[WordEntry]) -> Vec<String> {
+fn collect_selected_entry_ids(entries: &[WordBankEntry]) -> Vec<String> {
     entries
         .iter()
         .filter(|entry| entry.selected)

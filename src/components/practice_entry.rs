@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
-use crate::components::lexicon_browser::WordEntry;
 use crate::components::practice_settings::NONE_FIELD_KEY;
+use crate::structures::word_bank_entry::WordBankEntry;
 
 #[component]
 pub fn CheckPracticeButton(
@@ -29,7 +29,7 @@ pub fn CheckPracticeButton(
 pub fn PracticeEntry(
     on_check: Callback<()>,
     active_question_ids: ReadSignal<Vec<String>>,
-    entries: ReadSignal<Vec<WordEntry>>,
+    entries: ReadSignal<Vec<WordBankEntry>>,
     prompt_field_a: ReadSignal<String>,
     prompt_field_b: ReadSignal<String>,
     answer_fields: ReadSignal<Vec<String>>,
@@ -229,8 +229,8 @@ pub fn PracticeEntry(
 
 pub fn build_question_items(
     active_ids: &[String],
-    entries: &[WordEntry],
-) -> Vec<(usize, WordEntry)> {
+    entries: &[WordBankEntry],
+) -> Vec<(usize, WordBankEntry)> {
     active_ids
         .iter()
         .enumerate()
@@ -248,14 +248,14 @@ pub fn answer_input_key(entry_id: &str, field: &str) -> String {
     format!("{entry_id}::{field}")
 }
 
-pub fn is_answer_field_available(entry: &WordEntry, field: &str) -> bool {
+pub fn is_answer_field_available(entry: &WordBankEntry, field: &str) -> bool {
     !entry_field_value(entry, field).trim().is_empty()
 }
 
-pub fn entry_field_value(entry: &WordEntry, field: &str) -> String {
+pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
     match field {
         "id" => entry.id.clone(),
-        "part_of_speech" => entry.part_of_speech.clone(),
+        "part_of_speech" => entry.part_of_speech.as_key().to_string(),
         "tags" => entry.tags.join(" | "),
         "english" => entry.english.join(" | "),
         "chinese" => entry.chinese.join(" | "),

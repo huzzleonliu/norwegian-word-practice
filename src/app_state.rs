@@ -1,13 +1,13 @@
 use leptos::prelude::*;
 
-use crate::components::lexicon_browser::WordEntry;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
+use crate::structures::word_bank_entry::WordBankEntry;
 
 #[derive(Clone, Copy)]
 pub struct WordBankState {
-    pub entries: ReadSignal<Vec<WordEntry>>,
-    pub set_entries: WriteSignal<Vec<WordEntry>>,
+    pub entries: ReadSignal<Vec<WordBankEntry>>,
+    pub set_entries: WriteSignal<Vec<WordBankEntry>>,
     pub data_version: ReadSignal<u64>,
     pub set_data_version: WriteSignal<u64>,
     pub source_name: ReadSignal<String>,

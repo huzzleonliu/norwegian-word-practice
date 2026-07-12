@@ -1,10 +1,10 @@
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::lexicon_browser::WordEntry;
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::{AnswerStats, PracticeResult, PracticedWordEntryResult};
+use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
 
 #[component]
@@ -195,7 +195,7 @@ struct WrongSummaryItem {
 
 fn build_wrong_summary_items(
     session_result: &PracticeResult,
-    entries: &[WordEntry],
+    entries: &[WordBankEntry],
 ) -> Vec<WrongSummaryItem> {
     session_result
         .practiced_word_entries
@@ -205,7 +205,7 @@ fn build_wrong_summary_items(
             if let Some(word_entry) = entries.iter().find(|entry| entry.id == practiced_entry.id) {
                 WrongSummaryItem {
                     chinese: join_or_placeholder(&word_entry.chinese),
-                    part_of_speech: word_entry.part_of_speech.clone(),
+                    part_of_speech: word_entry.part_of_speech.as_key().to_string(),
                     correct_answer: build_part_of_speech_correct_answer(word_entry),
                     wrong_answers: build_wrong_answers_summary(practiced_entry),
                 }
@@ -257,21 +257,21 @@ fn join_or_placeholder(values: &[String]) -> String {
     }
 }
 
-fn build_part_of_speech_correct_answer(entry: &WordEntry) -> String {
+fn build_part_of_speech_correct_answer(entry: &WordBankEntry) -> String {
     let mut parts = Vec::<String>::new();
     push_answer_part(&mut parts, "原型", Some(entry.base_form.as_str()));
 
-    match entry.part_of_speech.as_str() {
-        "verb" => {
+    match &entry.part_of_speech {
+        PartOfSpeech::Verb => {
             push_answer_part(&mut parts, "过去式", entry.past_tense.as_deref());
             push_answer_part(&mut parts, "祈使式", entry.imperative.as_deref());
         }
-        "noun" => {
+        PartOfSpeech::Noun => {
             push_answer_part(&mut parts, "复数", entry.plural.as_deref());
             push_answer_part(&mut parts, "单数特指", entry.singular_definite.as_deref());
             push_answer_part(&mut parts, "复数特指", entry.plural_definite.as_deref());
         }
-        "adjective" => {
+        PartOfSpeech::Adjective => {
             push_answer_part(&mut parts, "对应中性", entry.neuter_form.as_deref());
             push_answer_part(&mut parts, "对应复数", entry.plural_form.as_deref());
             push_answer_part(&mut parts, "比较级", entry.adjective_comparative.as_deref());
@@ -286,11 +286,15 @@ fn build_part_of_speech_correct_answer(entry: &WordEntry) -> String {
                 entry.adjective_superlative_definite.as_deref(),
             );
         }
-        "adverb" => {
+        PartOfSpeech::Adverb => {
             push_answer_part(&mut parts, "比较级", entry.adverb_comparative.as_deref());
             push_answer_part(&mut parts, "最高级", entry.adverb_superlative.as_deref());
         }
-        _ => {}
+        PartOfSpeech::CardinalNumber
+        | PartOfSpeech::OrdinalNumber
+        | PartOfSpeech::Month
+        | PartOfSpeech::Pronoun
+        | PartOfSpeech::Interrogative => {}
     }
 
     if parts.is_empty() {

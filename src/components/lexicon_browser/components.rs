@@ -1,16 +1,17 @@
 use leptos::prelude::*;
 
-use super::structures::{LexiconBrowserMode, PART_OF_SPEECH_OPTIONS, WordEntry};
+use super::structures::LexiconBrowserMode;
 use super::utils::{
     compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name,
     input_to_option, option_to_input, parse_pipe_list,
 };
+use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
 use crate::utils::dictionary::validate_existing_entry;
 
 #[component]
 pub fn LexiconBrowser(
-    entries: ReadSignal<Vec<WordEntry>>,
-    set_entries: WriteSignal<Vec<WordEntry>>,
+    entries: ReadSignal<Vec<WordBankEntry>>,
+    set_entries: WriteSignal<Vec<WordBankEntry>>,
     set_status: WriteSignal<String>,
     data_version: ReadSignal<u64>,
     mode: LexiconBrowserMode,
@@ -23,7 +24,8 @@ pub fn LexiconBrowser(
     ]);
     let (baseline_entries, set_baseline_entries) = signal(entries.get_untracked());
     let (draft_entries, set_draft_entries) = signal(entries.get_untracked());
-    let (row_undo, set_row_undo) = signal(vec![None::<WordEntry>; entries.get_untracked().len()]);
+    let (row_undo, set_row_undo) =
+        signal(vec![None::<WordBankEntry>; entries.get_untracked().len()]);
     let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
     let (selection_drag_target, set_selection_drag_target) = signal(None::<bool>);
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
@@ -53,7 +55,7 @@ pub fn LexiconBrowser(
             .into_iter()
             .enumerate()
             .filter(|(_, entry)| entry_matches_filter(entry, &query, &columns))
-            .collect::<Vec<(usize, WordEntry)>>()
+            .collect::<Vec<(usize, WordBankEntry)>>()
     };
     let min_width_for = |idx: usize| -> u16 {
         match idx {
@@ -477,7 +479,9 @@ pub fn LexiconBrowser(
                                                     class="pointer-events-none"
                                                 />
                                             </td>
-                                            <td class="border border-slate-800 p-2">{entry.part_of_speech.clone()}</td>
+                                            <td class="border border-slate-800 p-2">
+                                                {entry.part_of_speech.as_key().to_string()}
+                                            </td>
                                             <td class="border border-slate-800 p-2">{entry.tags.join(" | ")}</td>
                                             <td class="border border-slate-800 p-2">{entry.english.join(" | ")}</td>
                                             <td class="border border-slate-800 p-2">{entry.chinese.join(" | ")}</td>
@@ -545,9 +549,16 @@ pub fn LexiconBrowser(
                                         </td>
                                         <td class="border border-slate-800 p-1">
                                             <select
-                                                prop:value=entry.part_of_speech.clone()
+                                                prop:value=entry.part_of_speech.as_key().to_string()
                                                 on:change=move |ev| {
                                                     let value = event_target_value(&ev);
+                                                    let parsed = match PartOfSpeech::from_key(&value) {
+                                                        Ok(parsed) => parsed,
+                                                        Err(err) => {
+                                                            set_status.set(format!("词性更新失败：{err}"));
+                                                            return;
+                                                        }
+                                                    };
                                                     set_entries.update(|list| {
                                                         if let Some(item) = list.get_mut(idx) {
                                                             set_row_undo.update(|undo| {
@@ -556,7 +567,7 @@ pub fn LexiconBrowser(
                                                                 }
                                                                 undo[idx] = Some(item.clone());
                                                             });
-                                                            item.part_of_speech = value;
+                                                            item.part_of_speech = parsed;
                                                         }
                                                     });
                                                 }
@@ -686,8 +697,8 @@ pub fn LexiconBrowser(
 fn update_selected_cell(
     idx: usize,
     checked: bool,
-    set_entries: WriteSignal<Vec<WordEntry>>,
-    set_row_undo: WriteSignal<Vec<Option<WordEntry>>>,
+    set_entries: WriteSignal<Vec<WordBankEntry>>,
+    set_row_undo: WriteSignal<Vec<Option<WordBankEntry>>>,
 ) {
     set_entries.update(|list| {
         if let Some(item) = list.get_mut(idx) {
