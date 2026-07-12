@@ -12,14 +12,17 @@ use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::utils::i18n::tr;
 
 use super::initialize_temp_practice_result;
 
 #[derive(Clone, Copy)]
 struct NumberGroupConfig {
     key: &'static str,
-    title: &'static str,
-    hint: &'static str,
+    title_zh: &'static str,
+    title_en: &'static str,
+    hint_zh: &'static str,
+    hint_en: &'static str,
     numbers: &'static [u32],
 }
 
@@ -42,20 +45,26 @@ const GROUP_3_NUMBERS: &[u32] = &[
 const NUMBER_GROUPS: [NumberGroupConfig; 3] = [
     NumberGroupConfig {
         key: "group-1-20",
-        title: "第一块：1-20",
-        hint: "每个数字填写两个词：左侧基数词，右侧序数词。",
+        title_zh: "第一块：1-20",
+        title_en: "Group 1: 1-20",
+        hint_zh: "每个数字填写两个词：左侧基数词，右侧序数词。",
+        hint_en: "Each number has two forms: cardinal on left, ordinal on right.",
         numbers: GROUP_1_NUMBERS,
     },
     NumberGroupConfig {
         key: "group-21-30",
-        title: "第二块：21-30",
-        hint: "继续按数字顺序填写基数词与序数词。",
+        title_zh: "第二块：21-30",
+        title_en: "Group 2: 21-30",
+        hint_zh: "继续按数字顺序填写基数词与序数词。",
+        hint_en: "Continue with cardinal and ordinal forms in numeric order.",
         numbers: GROUP_2_NUMBERS,
     },
     NumberGroupConfig {
         key: "group-selected-large",
-        title: "第三块：40-100000（精选）",
-        hint: "本块按 readme 精选数字出题，不是连续每个数字都出题。",
+        title_zh: "第三块：40-100000（精选）",
+        title_en: "Group 3: 40-100000 (Selected)",
+        hint_zh: "本块按 readme 精选数字出题，不是连续每个数字都出题。",
+        hint_en: "Selected numbers from README, not every continuous number.",
         numbers: GROUP_3_NUMBERS,
     },
 ];
@@ -63,6 +72,7 @@ const NUMBER_GROUPS: [NumberGroupConfig; 3] = [
 #[component]
 pub fn NumberSerisePracticePage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
+    let lang = word_bank_state.ui_language;
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
@@ -79,9 +89,12 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">"数词系列练习"</h1>
+                <h1 class="text-3xl font-bold tracking-tight">
+                    {move || tr(lang.get(), "数词系列练习", "Number Series Practice")}
+                </h1>
                 <MiniConsole
                     message=Signal::derive(move || {
+                        let language = lang.get();
                         let selected_count = word_bank_state.selected_word_entry_ids.get().len();
                         let temp_entries = word_bank_state
                             .temp_practice_result
@@ -89,12 +102,21 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                             .practiced_word_entries
                             .len();
                         let overview = format!(
-                            "当前可练习词条：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
+                            "{}：{selected_count} {}，{} {temp_entries} {}。",
+                            tr(language, "当前可练习词条", "Available entries"),
+                            tr(language, "条", "entries"),
+                            tr(language, "临时练习结果已记录", "Temp result recorded"),
+                            tr(language, "条", "entries")
                         );
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待分组作答并点击对应分组检查按钮...".to_string()
+                                tr(
+                                    language,
+                                    "等待分组作答并点击对应分组检查按钮...",
+                                    "Answer by group and click group check button...",
+                                )
+                                .to_string()
                             } else {
                                 s
                             }
@@ -104,9 +126,17 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"请写出以下数字的基数词和序数词"</h2>
+                    <h2 class="text-lg font-semibold">
+                        {move || tr(lang.get(), "请写出以下数字的基数词和序数词", "Write cardinal and ordinal forms")}
+                    </h2>
                     <p class="mt-2 text-sm text-slate-400">
-                        "每行左侧输入基数词，右侧输入序数词。每个输入框都会映射到对应词条的 base_form。"
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "每行左侧输入基数词，右侧输入序数词。每个输入框都会映射到对应词条的 base_form。",
+                                "Left input is cardinal, right input is ordinal. Each input maps to base_form.",
+                            )
+                        }}
                     </p>
                 </section>
 
@@ -116,14 +146,22 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                         let group_key_for_check = group.key.to_string();
                         let group_key_for_msg = group.key.to_string();
                         let numbers = group.numbers;
-                        let group_title = group.title;
-                        let group_hint = group.hint;
+                        let group_title_zh = group.title_zh;
+                        let group_title_en = group.title_en;
+                        let group_hint_zh = group.hint_zh;
+                        let group_hint_en = group.hint_en;
 
                         let check_group_click = Callback::new(move |_| {
+                            let language = lang.get_untracked();
                             let entries = word_bank_state.entries.get_untracked();
                             let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                             if rows.is_empty() {
-                                let no_data_message = "当前分组没有可检查题目，请先确认系列词库加载正常。".to_string();
+                                let no_data_message = tr(
+                                    language,
+                                    "当前分组没有可检查题目，请先确认系列词库加载正常。",
+                                    "No checkable questions in this group. Please confirm series lexicon is loaded.",
+                                )
+                                .to_string();
                                 set_group_statuses.update(|messages| {
                                     messages.insert(group_key_for_check.clone(), no_data_message.clone());
                                 });
@@ -186,50 +224,64 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                 });
 
                             let base_message = format!(
-                                "检查完成：字段正确 {correct_fields}/{total_fields}，整行全对 {fully_correct_rows}/{}。",
+                                "{} {correct_fields}/{total_fields}，{} {fully_correct_rows}/{}。",
+                                tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                                tr(language, "整行全对", "fully correct rows"),
                                 rows.len()
                             );
                             let final_message = if missing_numbers.is_empty() {
                                 base_message
                             } else {
                                 format!(
-                                    "{} 缺失题号：{}。",
+                                    "{} {}: {}.",
                                     base_message,
+                                    tr(language, "缺失题号", "missing numbers"),
                                     missing_numbers
                                         .iter()
                                         .map(|n| n.to_string())
                                         .collect::<Vec<_>>()
-                                        .join("、")
+                                        .join(", ")
                                 )
                             };
                             set_group_statuses.update(|messages| {
                                 messages.insert(group_key_for_check.clone(), final_message.clone());
                             });
-                            set_status.set(format!("{group_title}：{final_message}"));
+                            set_status.set(format!(
+                                "{}: {final_message}",
+                                tr(language, group_title_zh, group_title_en)
+                            ));
                         });
 
                         view! {
                             <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <h3 class="text-lg font-semibold">{group_title}</h3>
+                                    <h3 class="text-lg font-semibold">
+                                        {move || tr(lang.get(), group_title_zh, group_title_en)}
+                                    </h3>
                                     <CheckPracticeButton
                                         on_check=check_group_click
-                                        label="检查本组".to_string()
+                                        label=tr(lang.get_untracked(), "检查本组", "Check Group").to_string()
                                         class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600".to_string()
                                     />
                                 </div>
-                                <p class="mt-2 text-sm text-slate-400">{group_hint}</p>
+                                <p class="mt-2 text-sm text-slate-400">
+                                    {move || tr(lang.get(), group_hint_zh, group_hint_en)}
+                                </p>
 
                                 <div class="mt-4 space-y-3">
                                     {move || {
                                         let entries = word_bank_state.entries.get();
                                         let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                                         if rows.is_empty() {
-                                            return view! {
-                                                <p class="text-sm text-amber-300">
-                                                    "当前分组无可用题目。请检查词库数据是否完整。"
-                                                </p>
-                                            }
+                                            return view! { <p class="text-sm text-amber-300">
+                                                {move || {
+                                                    tr(
+                                                        lang.get(),
+                                                        "当前分组无可用题目。请检查词库数据是否完整。",
+                                                        "No questions in this group. Please check lexicon data.",
+                                                    )
+                                                }}
+                                            </p> }
                                                 .into_any();
                                         }
 
@@ -250,10 +302,10 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                                 view! {
                                                     <article class="grid grid-cols-1 gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3 md:grid-cols-[90px_1fr_1fr] md:items-center">
                                                         <div class="text-sm font-semibold text-slate-200">
-                                                            {format!("数字 {}", row.number)}
+                                                            {move || format!("{} {}", tr(lang.get(), "数字", "Number"), row.number)}
                                                         </div>
                                                         <label class="flex flex-col gap-1 text-xs text-slate-300">
-                                                            <span>"基数词（cardinal）"</span>
+                                                            <span>{move || tr(lang.get(), "基数词（cardinal）", "Cardinal")}</span>
                                                             <input
                                                                 type="text"
                                                                 prop:value=move || {
@@ -269,12 +321,12 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                                                         inputs.insert(cardinal_key_for_input.clone(), value);
                                                                     });
                                                                 }
-                                                                placeholder="填写基数词"
+                                                                placeholder=move || tr(lang.get(), "填写基数词", "Type cardinal")
                                                                 class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
                                                             />
                                                         </label>
                                                         <label class="flex flex-col gap-1 text-xs text-slate-300">
-                                                            <span>"序数词（ordinal）"</span>
+                                                            <span>{move || tr(lang.get(), "序数词（ordinal）", "Ordinal")}</span>
                                                             <input
                                                                 type="text"
                                                                 prop:value=move || {
@@ -290,7 +342,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                                                         inputs.insert(ordinal_key_for_input.clone(), value);
                                                                     });
                                                                 }
-                                                                placeholder="填写序数词"
+                                                                placeholder=move || tr(lang.get(), "填写序数词", "Type ordinal")
                                                                 class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
                                                             />
                                                         </label>
@@ -311,7 +363,14 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                                 <>
                                                     {rows_view}
                                                     <p class="text-xs text-amber-300">
-                                                        {format!("提示：以下题号未找到完整基数词/序数词词条：{missing_text}")}
+                                                        {move || format!(
+                                                            "{}{missing_text}",
+                                                            tr(
+                                                                lang.get(),
+                                                                "提示：以下题号未找到完整基数词/序数词词条：",
+                                                                "Hint: missing complete cardinal/ordinal entries for numbers: ",
+                                                            )
+                                                        )}
                                                     </p>
                                                 </>
                                             }
@@ -326,7 +385,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                             .get()
                                             .get(&group_key_for_msg)
                                             .cloned()
-                                            .unwrap_or_else(|| "待检查".to_string())
+                                            .unwrap_or_else(|| tr(lang.get(), "待检查", "Pending").to_string())
                                     }}
                                 </p>
                             </section>
@@ -335,7 +394,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                     .collect_view()}
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"流程控制"</h2>
+                    <h2 class="text-lg font-semibold">{move || tr(lang.get(), "流程控制", "Flow Control")}</h2>
                     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
                             word_bank_state=word_bank_state
@@ -348,7 +407,12 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                             word_bank_state=word_bank_state
                             set_status=set_status
                             on_restart_ui=restart_ui_click
-                            restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
+                            restart_message=tr(
+                                lang.get_untracked(),
+                                "已重新开始本轮练习（临时记录继续累加）。",
+                                "Restarted this round (temp result keeps accumulating).",
+                            )
+                            .to_string()
                             restart_temp_behavior=RestartTempBehavior::Keep
                         />
                         <AbortPracticeButton

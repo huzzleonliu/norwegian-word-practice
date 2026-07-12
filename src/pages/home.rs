@@ -7,13 +7,16 @@ use crate::app_state::WordBankState;
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
+use crate::structures::word_bank_entry::UiLanguage;
 #[cfg(target_arch = "wasm32")]
 use crate::utils::pracresult_crypto::parse_practice_result_from_import;
+use crate::utils::i18n::tr;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
+    let lang = word_bank_state.ui_language;
     let (status, set_status) = signal(String::new());
 
     let import_pracresult_change = move |ev: Event| {
@@ -23,6 +26,7 @@ pub fn HomePage() -> impl IntoView {
             set_current_page,
             word_bank_state.set_practice_result,
             word_bank_state.set_selected_word_entry_ids,
+            lang,
         );
     };
 
@@ -45,17 +49,23 @@ pub fn HomePage() -> impl IntoView {
                 <h1 class="text-3xl font-bold tracking-tight">"Norwegian Word Practice"</h1>
                 <MiniConsole
                     message=Signal::derive(move || {
+                        let language = lang.get();
                         let count = word_bank_state.entries.get().len();
                         let source = word_bank_state.source_name.get();
                         let source_line = if count == 0 {
-                            format!("当前词库：{source}。")
+                            format!("{}：{source}。", tr(language, "当前词库", "Current Lexicon"))
                         } else {
-                            format!("当前词库：{source}（共 {count} 条词条）。")
+                            format!(
+                                "{}：{source}（{} {count} {}）。",
+                                tr(language, "当前词库", "Current Lexicon"),
+                                tr(language, "共", "total"),
+                                tr(language, "条词条", "entries")
+                            )
                         };
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待操作...".to_string()
+                                tr(language, "等待操作...", "Waiting for action...").to_string()
                             } else {
                                 s
                             }
@@ -64,7 +74,13 @@ pub fn HomePage() -> impl IntoView {
                     })
                 />
                 <p class="mt-4 text-slate-300">
-                    "导入你的练习结果（.pracresult）后开始练习。"
+                    {move || {
+                        tr(
+                            lang.get(),
+                            "导入你的练习结果（.pracresult）后开始练习。",
+                            "Import your practice result (.pracresult) and start practicing.",
+                        )
+                    }}
                 </p>
 
                 <input
@@ -80,7 +96,7 @@ pub fn HomePage() -> impl IntoView {
                         for="pracresult-input"
                         class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
                     >
-                        "导入练习结果"
+                        {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
                     </label>
 
                     <button
@@ -88,7 +104,7 @@ pub fn HomePage() -> impl IntoView {
                         on:click=direct_start_practice_click
                         class="inline-flex items-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                     >
-                        "直接开始练习"
+                        {move || tr(lang.get(), "直接开始练习", "Start Practice")}
                     </button>
                 </div>
             </section>
@@ -102,25 +118,48 @@ fn import_pracresult_from_file(
     set_current_page: WriteSignal<AppPage>,
     set_practice_result: WriteSignal<PracticeResult>,
     set_selected_word_entry_ids: WriteSignal<Vec<String>>,
+    ui_language: ReadSignal<UiLanguage>,
 ) {
     #[cfg(target_arch = "wasm32")]
     {
         use wasm_bindgen::JsCast;
 
+        let lang = ui_language.get_untracked();
         let Some(target) = ev.target() else {
-            set_status.set("导入失败：无法获取文件输入目标。".to_string());
+            set_status.set(
+                tr(
+                    lang,
+                    "导入失败：无法获取文件输入目标。",
+                    "Import failed: cannot get file input target.",
+                )
+                .to_string(),
+            );
             return;
         };
         let Ok(input) = target.dyn_into::<web_sys::HtmlInputElement>() else {
-            set_status.set("导入失败：文件输入类型不正确。".to_string());
+            set_status.set(
+                tr(
+                    lang,
+                    "导入失败：文件输入类型不正确。",
+                    "Import failed: invalid file input type.",
+                )
+                .to_string(),
+            );
             return;
         };
         let Some(files) = input.files() else {
-            set_status.set("导入失败：未找到文件列表。".to_string());
+            set_status.set(
+                tr(
+                    lang,
+                    "导入失败：未找到文件列表。",
+                    "Import failed: file list not found.",
+                )
+                .to_string(),
+            );
             return;
         };
         let Some(file) = files.get(0) else {
-            set_status.set("导入已取消。".to_string());
+            set_status.set(tr(lang, "导入已取消。", "Import cancelled.").to_string());
             return;
         };
 
@@ -133,12 +172,22 @@ fn import_pracresult_from_file(
                 Ok(js_value) => match js_value.as_string() {
                     Some(content) => content,
                     None => {
-                        set_status.set("导入失败：文件内容不是文本。".to_string());
+                        set_status.set(
+                            tr(
+                                lang,
+                                "导入失败：文件内容不是文本。",
+                                "Import failed: file content is not text.",
+                            )
+                            .to_string(),
+                        );
                         return;
                     }
                 },
                 Err(err) => {
-                    set_status.set(format!("导入失败：读取文件失败，{err:?}"));
+                    set_status.set(format!(
+                        "{} {err:?}",
+                        tr(lang, "导入失败：读取文件失败，", "Import failed: read file error,")
+                    ));
                     return;
                 }
             };
@@ -147,11 +196,25 @@ fn import_pracresult_from_file(
                 Ok(result) => {
                     set_selected_word_entry_ids.set(result.selected_word_entry_ids.clone());
                     set_practice_result.set(result);
-                    set_status.set(format!("练习结果导入成功：{file_name}"));
+                    set_status.set(format!(
+                        "{}：{file_name}",
+                        tr(
+                            lang,
+                            "练习结果导入成功",
+                            "Practice result imported successfully"
+                        )
+                    ));
                     set_current_page.set(AppPage::PracticeModeSelect);
                 }
                 Err(err) => {
-                    set_status.set(format!("导入失败：练习结果解密或解析失败，{err}"));
+                    set_status.set(format!(
+                        "{} {err}",
+                        tr(
+                            lang,
+                            "导入失败：练习结果解密或解析失败，",
+                            "Import failed: decrypt/parse error,"
+                        )
+                    ));
                 }
             }
         });
@@ -163,6 +226,13 @@ fn import_pracresult_from_file(
         let _ = set_current_page;
         let _ = set_practice_result;
         let _ = set_selected_word_entry_ids;
-        set_status.set("导入仅在浏览器环境可用。".to_string());
+        set_status.set(
+            tr(
+                ui_language.get_untracked(),
+                "导入仅在浏览器环境可用。",
+                "Import is only available in browser environment.",
+            )
+            .to_string(),
+        );
     }
 }

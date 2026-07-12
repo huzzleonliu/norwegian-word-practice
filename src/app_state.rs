@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
-use crate::structures::word_bank_entry::WordBankEntry;
+use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 
 #[derive(Clone, Copy)]
 pub struct WordBankState {
@@ -12,6 +12,7 @@ pub struct WordBankState {
     pub set_data_version: WriteSignal<u64>,
     pub source_name: ReadSignal<String>,
     pub set_source_name: WriteSignal<String>,
+    pub ui_language: ReadSignal<UiLanguage>,
     pub selected_word_entry_ids: ReadSignal<Vec<String>>,
     pub set_selected_word_entry_ids: WriteSignal<Vec<String>>,
     pub practice_result: ReadSignal<PracticeResult>,

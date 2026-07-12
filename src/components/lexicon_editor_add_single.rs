@@ -1,7 +1,9 @@
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
-use crate::structures::word_bank_entry::PART_OF_SPEECH_OPTIONS;
+use crate::app_state::WordBankState;
+use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech};
+use crate::utils::i18n::tr;
 
 #[component]
 pub fn LexiconEditorAddSingle(
@@ -45,14 +47,21 @@ pub fn LexiconEditorAddSingle(
     single_adverb_superlative: ReadSignal<String>,
     set_single_adverb_superlative: WriteSignal<String>,
 ) -> impl IntoView {
+    let lang = expect_context::<WordBankState>().ui_language;
     view! {
         <form
             on:submit=move |ev| on_submit.run(ev)
             class="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
         >
-            <h2 class="mb-3 text-lg font-semibold">"单条添加"</h2>
+            <h2 class="mb-3 text-lg font-semibold">{move || tr(lang.get(), "单条添加", "Single Add")}</h2>
             <p class="mb-3 text-xs text-slate-400">
-                "序号会自动使用原型值生成；如重复将自动追加后缀（如 -2）。"
+                {move || {
+                    tr(
+                        lang.get(),
+                        "序号会自动使用原型值生成；如重复将自动追加后缀（如 -2）。",
+                        "ID is auto-generated from base form. Duplicate appends suffix (e.g. -2).",
+                    )
+                }}
             </p>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <label class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm">
@@ -61,7 +70,7 @@ pub fn LexiconEditorAddSingle(
                         prop:checked=move || single_selected.get()
                         on:change=move |ev| set_single_selected.set(event_target_checked(&ev))
                     />
-                    <span>"selected"</span>
+                    <span>{move || tr(lang.get(), "选中", "Selected")}</span>
                 </label>
                 <select
                     prop:value=move || single_pos.get()
@@ -70,7 +79,17 @@ pub fn LexiconEditorAddSingle(
                 >
                     {PART_OF_SPEECH_OPTIONS
                         .iter()
-                        .map(|option| view! { <option value=*option>{*option}</option> })
+                        .map(|option| {
+                            view! {
+                                <option value=*option>
+                                    {move || {
+                                        PartOfSpeech::from_key(option)
+                                            .map(|pos| pos.display_name(lang.get()).to_string())
+                                            .unwrap_or_else(|_| (*option).to_string())
+                                    }}
+                                </option>
+                            }
+                        })
                         .collect_view()}
                 </select>
                 <input
@@ -230,7 +249,13 @@ pub fn LexiconEditorAddSingle(
                     } else {
                         view! {
                             <p class="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400 md:col-span-3">
-                                "当前词性只需要基础字段：selected、词性、中文、原型。"
+                                {move || {
+                                    tr(
+                                        lang.get(),
+                                        "当前词性只需要基础字段：选中、词性、中文、原型。",
+                                        "This part of speech only needs core fields: selected, POS, Chinese, base form.",
+                                    )
+                                }}
                             </p>
                         }
                             .into_any()
@@ -241,7 +266,7 @@ pub fn LexiconEditorAddSingle(
                 type="submit"
                 class="mt-3 rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600"
             >
-                "添加单条"
+                {move || tr(lang.get(), "添加单条", "Add Entry")}
             </button>
         </form>
     }

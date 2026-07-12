@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
+use crate::app_state::WordBankState;
 use crate::components::practice_settings::NONE_FIELD_KEY;
 use crate::structures::word_bank_entry::WordBankEntry;
+use crate::utils::i18n::{field_label, tr};
 
 #[component]
 pub fn CheckPracticeButton(
@@ -11,8 +13,9 @@ pub fn CheckPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
+    let lang = expect_context::<WordBankState>().ui_language;
     let check_click = move |_| on_check.run(());
-    let label = label.unwrap_or_else(|| "检查".to_string());
+    let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "检查", "Check").to_string());
     let class = class.unwrap_or_else(|| {
         "rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600"
             .to_string()
@@ -39,6 +42,7 @@ pub fn PracticeEntry(
     revealed_answer_keys: Option<ReadSignal<HashSet<String>>>,
     set_revealed_answer_keys: Option<WriteSignal<HashSet<String>>>,
 ) -> impl IntoView {
+    let lang = expect_context::<WordBankState>().ui_language;
     view! {
         <div class="mt-4 space-y-4">
             <For
@@ -54,7 +58,13 @@ pub fn PracticeEntry(
                     view! {
                         <article class="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
                             <p class="text-sm font-semibold text-slate-200">
-                                {format!("第 {} 题", index + 1)}
+                                {move || {
+                                    format!(
+                                        "{} {}",
+                                        tr(lang.get(), "第", "Question"),
+                                        index + 1
+                                    )
+                                }}
                             </p>
 
                             <div class="mt-2 space-y-1 text-sm text-slate-300">
@@ -66,16 +76,27 @@ pub fn PracticeEntry(
                                         .filter(|field| field.as_str() != NONE_FIELD_KEY)
                                         .map(|field| {
                                             format!(
-                                                "{}：{}",
-                                                field,
-                                                entry_field_value(&entry_for_prompt, &field)
+                                                "{}: {}",
+                                                field_label(lang.get(), &field),
+                                                if field == "part_of_speech" {
+                                                    entry_for_prompt
+                                                        .part_of_speech
+                                                        .display_name(lang.get())
+                                                        .to_string()
+                                                } else {
+                                                    entry_field_value(&entry_for_prompt, &field)
+                                                }
                                             )
                                         })
                                         .collect::<Vec<_>>();
                                     if prompts.is_empty() {
-                                        "根据：无".to_string()
+                                        format!(
+                                            "{}: {}",
+                                            tr(lang.get(), "根据", "Prompt"),
+                                            tr(lang.get(), "无", "None")
+                                        )
                                     } else {
-                                        format!("根据：{}", prompts.join(" | "))
+                                        format!("{}: {}", tr(lang.get(), "根据", "Prompt"), prompts.join(" | "))
                                     }
                                 }}
                             </div>
@@ -86,7 +107,13 @@ pub fn PracticeEntry(
                                     if selected_answer_fields.is_empty() {
                                         view! {
                                             <p class="text-xs text-amber-300">
-                                                "请在上方至少勾选 1 个“回答”项。"
+                                                {move || {
+                                                    tr(
+                                                        lang.get(),
+                                                        "请在上方至少勾选 1 个“回答”项。",
+                                                        "Please select at least one answer field above.",
+                                                    )
+                                                }}
                                             </p>
                                         }
                                             .into_any()
@@ -98,7 +125,13 @@ pub fn PracticeEntry(
                                         if available_answer_fields.is_empty() {
                                             view! {
                                                 <p class="text-xs text-slate-400">
-                                                    "该词条在当前回答项下没有可作答字段。"
+                                                    {move || {
+                                                        tr(
+                                                            lang.get(),
+                                                            "该词条在当前回答项下没有可作答字段。",
+                                                            "This entry has no answerable fields under current settings.",
+                                                        )
+                                                    }}
                                                 </p>
                                             }
                                                 .into_any()
@@ -119,7 +152,7 @@ pub fn PracticeEntry(
                                                 view! {
                                                     <label class="flex flex-col gap-1 text-xs text-slate-300">
                                                         <div class="flex items-center justify-between gap-2">
-                                                            <span>{field_for_label}</span>
+                                                            <span>{move || field_label(lang.get(), &field_for_label)}</span>
                                                             {move || {
                                                                 let allow_reveal = allow_answer_reveal
                                                                     .map(|signal| signal.get())
@@ -128,7 +161,11 @@ pub fn PracticeEntry(
                                                                     let is_revealed = revealed_answer_keys
                                                                         .map(|signal| signal.get().contains(&key_for_reveal_check))
                                                                         .unwrap_or(false);
-                                                                    let label = if is_revealed { "隐藏" } else { "显示" };
+                                                                    let label = if is_revealed {
+                                                                        tr(lang.get(), "隐藏", "Hide")
+                                                                    } else {
+                                                                        tr(lang.get(), "显示", "Show")
+                                                                    };
                                                                     let toggle_key = key_for_reveal_toggle.clone();
                                                                     view! {
                                                                         <button
@@ -171,7 +208,7 @@ pub fn PracticeEntry(
                                                                     inputs.insert(key_for_input.clone(), value);
                                                                 });
                                                             }
-                                                            placeholder="填写答案"
+                                                            placeholder=move || tr(lang.get(), "填写答案", "Type your answer")
                                                             class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
                                                         />
                                                         {move || {
@@ -185,7 +222,11 @@ pub fn PracticeEntry(
                                                             {
                                                                 view! {
                                                                     <span class="text-[11px] text-amber-300">
-                                                                        {format!("参考答案：{expected}")}
+                                                                        {format!(
+                                                                            "{}: {}",
+                                                                            tr(lang.get(), "参考答案", "Reference"),
+                                                                            expected.as_str()
+                                                                        )}
                                                                     </span>
                                                                 }
                                                                     .into_any()
@@ -212,7 +253,13 @@ pub fn PracticeEntry(
             if active_question_ids.get().is_empty() {
                 view! {
                     <p class="mt-4 text-sm text-amber-300">
-                        "当前没有可练习题目，请返回上页先选择词条。"
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "当前没有可练习题目，请返回上页先选择词条。",
+                                "No questions available. Please go back and select entries first.",
+                            )
+                        }}
                     </p>
                 }
                     .into_any()

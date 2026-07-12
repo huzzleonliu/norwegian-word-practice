@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
-use crate::structures::word_bank_entry::WordBankEntry;
+use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
+use crate::utils::i18n::tr;
 
 use super::structures::CsvWordEntry;
 
@@ -135,9 +136,9 @@ pub(super) fn header_name(col_idx: usize) -> &'static str {
     }
 }
 
-pub(super) fn format_sort_rules(rules: &[(usize, bool)]) -> String {
+pub(super) fn format_sort_rules(rules: &[(usize, bool)], lang: UiLanguage) -> String {
     if rules.is_empty() {
-        return "未应用排序".to_string();
+        return tr(lang, "未应用排序", "No sort applied").to_string();
     }
 
     rules
@@ -152,7 +153,7 @@ pub(super) fn format_sort_rules(rules: &[(usize, bool)]) -> String {
             )
         })
         .collect::<Vec<_>>()
-        .join("，")
+        .join(", ")
 }
 
 pub(super) fn option_to_input(value: &Option<String>) -> String {

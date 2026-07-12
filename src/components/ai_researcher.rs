@@ -4,8 +4,10 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::app_state::WordBankState;
 use crate::components::lexicon_browser::serialize_word_bank_csv;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::utils::i18n::tr;
 
 const WORD_FORM_HINT_OPTIONS: [(&str, &str); 23] = [
     ("unknown", "未知"),
@@ -170,6 +172,7 @@ pub fn AiResearcher(
     single_adverb_superlative: ReadSignal<String>,
     set_single_adverb_superlative: WriteSignal<String>,
 ) -> impl IntoView {
+    let lang = expect_context::<WordBankState>().ui_language;
     let (gemini_token, set_gemini_token) = signal(String::new());
     let (form_hint, set_form_hint) = signal("unknown".to_string());
     let (query_word, set_query_word) = signal(String::new());
@@ -177,9 +180,17 @@ pub fn AiResearcher(
     let (is_querying, set_is_querying) = signal(false);
 
     let test_connectivity = move |_| {
+        let language = lang.get_untracked();
         let token = gemini_token.get_untracked().trim().to_string();
         if token.is_empty() {
-            set_status.set("Gemini 连接检测失败：请先输入 API Token。".to_string());
+            set_status.set(
+                tr(
+                    language,
+                    "Gemini 连接检测失败：请先输入 API Token。",
+                    "Gemini connectivity check failed: please enter API token first.",
+                )
+                .to_string(),
+            );
             return;
         }
 
@@ -189,24 +200,51 @@ pub fn AiResearcher(
         spawn_local(async move {
             match call_gemini_text(&token, "Reply with exactly: CONNECTED").await {
                 Ok(reply) if reply.to_uppercase().contains("CONNECTED") => {
-                    set_status.set("Gemini 连通成功。".to_string());
+                    set_status.set(
+                        tr(language, "Gemini 连通成功。", "Gemini connection succeeded.").to_string(),
+                    );
                 }
-                Ok(reply) => set_status.set(format!("Gemini 有响应，但检测返回异常：{reply}")),
-                Err(err) => set_status.set(format!("Gemini 连接检测失败：{err}")),
+                Ok(reply) => set_status.set(format!(
+                    "{} {reply}",
+                    tr(
+                        language,
+                        "Gemini 有响应，但检测返回异常：",
+                        "Gemini responded, but health check reply was unexpected:",
+                    )
+                )),
+                Err(err) => set_status.set(format!(
+                    "{} {err}",
+                    tr(language, "Gemini 连接检测失败：", "Gemini connectivity check failed:")
+                )),
             }
             set_is_testing.set(false);
         });
     };
 
     let query_forms = move |_| {
+        let language = lang.get_untracked();
         let token = gemini_token.get_untracked().trim().to_string();
         if token.is_empty() {
-            set_status.set("查询失败：请先输入 Gemini API Token。".to_string());
+            set_status.set(
+                tr(
+                    language,
+                    "查询失败：请先输入 Gemini API Token。",
+                    "Query failed: please enter Gemini API token first.",
+                )
+                .to_string(),
+            );
             return;
         }
         let word = query_word.get_untracked().trim().to_string();
         if word.is_empty() {
-            set_status.set("查询失败：请输入要查询的词。".to_string());
+            set_status.set(
+                tr(
+                    language,
+                    "查询失败：请输入要查询的词。",
+                    "Query failed: please enter a target word.",
+                )
+                .to_string(),
+            );
             return;
         }
         let hint = form_hint.get_untracked();
@@ -221,7 +259,10 @@ pub fn AiResearcher(
                 Ok(raw_text) => match parse_gemini_word_results(&raw_text) {
                     Ok(parsed_list) => {
                         if parsed_list.is_empty() {
-                            set_status.set("查询失败：AI 返回了空数组。".to_string());
+                            set_status.set(
+                                tr(language, "查询失败：AI 返回了空数组。", "Query failed: AI returned empty array.")
+                                    .to_string(),
+                            );
                         } else if parsed_list.len() == 1 {
                             let parsed = parsed_list.first().cloned().unwrap_or_default();
                             let pos =
@@ -303,7 +344,11 @@ pub fn AiResearcher(
                                 parsed.adverb_superlative,
                             );
 
-                            set_status.set(format!("AI 查询成功：已填充“{word}”的单条结果。"));
+                            set_status.set(format!(
+                                "{} \"{word}\" {}",
+                                tr(language, "AI 查询成功：已填充", "AI query succeeded: filled"),
+                                tr(language, "的单条结果。", "single-entry result.")
+                            ));
                         } else {
                             match build_bulk_csv_from_results(&parsed_list, &hint) {
                                 Ok(csv_text) => {
@@ -311,19 +356,32 @@ pub fn AiResearcher(
                                     set_bulk_errors.set(Vec::new());
                                     set_bulk_success_message.set(String::new());
                                     set_status.set(format!(
-                                        "AI 查询返回 {} 条结果，已写入“多条添加”输入框。",
+                                        "{} {} {}",
+                                        tr(language, "AI 查询返回", "AI query returned"),
                                         parsed_list.len()
+                                        ,
+                                        tr(language, "条结果，已写入“多条添加”输入框。", "results, written to bulk-add input.")
                                     ));
                                 }
                                 Err(err) => {
-                                    set_status.set(format!("查询失败：多条结果转 CSV 失败。{err}"));
+                                    set_status.set(format!(
+                                        "{} {err}",
+                                        tr(
+                                            language,
+                                            "查询失败：多条结果转 CSV 失败。",
+                                            "Query failed: multi-result CSV conversion failed.",
+                                        )
+                                    ));
                                 }
                             }
                         }
                     }
-                    Err(err) => set_status.set(format!("查询失败：AI 返回无法解析。{err}")),
+                    Err(err) => set_status.set(format!(
+                        "{} {err}",
+                        tr(language, "查询失败：AI 返回无法解析。", "Query failed: AI response not parseable.")
+                    )),
                 },
-                Err(err) => set_status.set(format!("查询失败：{err}")),
+                Err(err) => set_status.set(format!("{} {err}", tr(language, "查询失败：", "Query failed:"))),
             }
             set_is_querying.set(false);
         });
@@ -331,12 +389,14 @@ pub fn AiResearcher(
 
     view! {
         <section class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-            <h2 class="mb-3 text-lg font-semibold">"AI 辅助填充（Gemini）"</h2>
+            <h2 class="mb-3 text-lg font-semibold">
+                {move || tr(lang.get(), "AI 辅助填充（Gemini）", "AI Assisted Fill (Gemini)")}
+            </h2>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
                 <input
                     type="password"
-                    placeholder="输入 Gemini API Token"
+                    placeholder=move || tr(lang.get(), "输入 Gemini API Token", "Enter Gemini API token")
                     prop:value=move || gemini_token.get()
                     on:input=move |ev| set_gemini_token.set(event_target_value(&ev))
                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -347,7 +407,13 @@ pub fn AiResearcher(
                     disabled=move || is_testing.get()
                     class="rounded-lg border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    {move || if is_testing.get() { "检测中..." } else { "检测连通" }}
+                    {move || {
+                        if is_testing.get() {
+                            tr(lang.get(), "检测中...", "Checking...")
+                        } else {
+                            tr(lang.get(), "检测连通", "Test Connectivity")
+                        }
+                    }}
                 </button>
             </div>
 
@@ -359,12 +425,24 @@ pub fn AiResearcher(
                 >
                     {WORD_FORM_HINT_OPTIONS
                         .iter()
-                        .map(|(value, label)| view! { <option value=*value>{*label}</option> })
+                        .map(|(value, label)| {
+                            view! {
+                                <option value=*value>
+                                    {move || {
+                                        if *value == "unknown" {
+                                            tr(lang.get(), "未知", "Unknown")
+                                        } else {
+                                            *label
+                                        }
+                                    }}
+                                </option>
+                            }
+                        })
                         .collect_view()}
                 </select>
                 <input
                     type="text"
-                    placeholder="输入单词"
+                    placeholder=move || tr(lang.get(), "输入单词", "Enter word")
                     prop:value=move || query_word.get()
                     on:input=move |ev| set_query_word.set(event_target_value(&ev))
                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -375,7 +453,13 @@ pub fn AiResearcher(
                     disabled=move || is_querying.get()
                     class="rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    {move || if is_querying.get() { "查询中..." } else { "查询并分流" }}
+                    {move || {
+                        if is_querying.get() {
+                            tr(lang.get(), "查询中...", "Querying...")
+                        } else {
+                            tr(lang.get(), "查询并分流", "Query and Route")
+                        }
+                    }}
                 </button>
             </div>
         </section>
@@ -485,20 +569,20 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 
 fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {
     let json_text = extract_json_payload(raw_text)
-        .ok_or_else(|| "未提取到 JSON 内容。请检查 Gemini 返回格式。".to_string())?;
+        .ok_or_else(|| "No JSON payload extracted. Please check Gemini response format.".to_string())?;
     let value =
-        serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON 解析失败：{err}"))?;
+        serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON parse failed: {err}"))?;
 
     if value.is_object() {
         let one = serde_json::from_value::<GeminiWordResult>(value)
-            .map_err(|err| format!("单条对象解析失败：{err}"))?;
+            .map_err(|err| format!("Single object parse failed: {err}"))?;
         return Ok(vec![one]);
     }
     if value.is_array() {
         return serde_json::from_value::<Vec<GeminiWordResult>>(value)
-            .map_err(|err| format!("数组解析失败：{err}"));
+            .map_err(|err| format!("Array parse failed: {err}"));
     }
-    Err("JSON 根节点必须是对象或数组。".to_string())
+    Err("JSON root must be an object or an array.".to_string())
 }
 
 fn extract_json_payload(raw: &str) -> Option<String> {
@@ -544,29 +628,29 @@ async fn call_gemini_text(api_key: &str, prompt: &str) -> Result<String, String>
         let request = Request::post(&url)
             .header("Content-Type", "application/json")
             .body(payload_body.clone())
-            .map_err(|err| format!("请求构建失败：{err}"))?;
+            .map_err(|err| format!("Request build failed: {err}"))?;
         let response = request
             .send()
             .await
-            .map_err(|err| format!("请求发送失败：{err}"))?;
+            .map_err(|err| format!("Request send failed: {err}"))?;
 
         if !response.ok() {
             let status = response.status();
             let body = response
                 .text()
                 .await
-                .unwrap_or_else(|_| "（无法读取响应体）".to_string());
+                .unwrap_or_else(|_| "(Failed to read response body)".to_string());
             if should_try_next_model(status, &body) {
                 model_errors.push(format!("{model} -> HTTP {status}"));
                 continue;
             }
-            return Err(format!("{model} 请求失败：HTTP {status}：{body}"));
+            return Err(format!("{model} request failed: HTTP {status}: {body}"));
         }
 
         let parsed = response
             .json::<GeminiResponse>()
             .await
-            .map_err(|err| format!("{model} 响应解析失败：{err}"))?;
+            .map_err(|err| format!("{model} response parse failed: {err}"))?;
         let text = parsed
             .candidates
             .first()
@@ -575,14 +659,14 @@ async fn call_gemini_text(api_key: &str, prompt: &str) -> Result<String, String>
             .and_then(|part| part.text.clone())
             .unwrap_or_default();
         if text.trim().is_empty() {
-            return Err(format!("{model} 返回为空。"));
+            return Err(format!("{model} returned empty content."));
         }
         return Ok(text);
     }
 
     Err(format!(
-        "可用模型均不可用，请检查 Gemini API 权限或更换模型。尝试记录：{}",
-        model_errors.join("，")
+        "No available Gemini model worked. Check API permission or change model. Attempts: {}",
+        model_errors.join(", ")
     ))
 }
 

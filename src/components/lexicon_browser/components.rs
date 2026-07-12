@@ -1,11 +1,13 @@
 use leptos::prelude::*;
 
+use crate::app_state::WordBankState;
 use super::structures::LexiconBrowserMode;
 use super::utils::{
     compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name,
     input_to_option, option_to_input, parse_pipe_list,
 };
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
+use crate::utils::i18n::{field_label, tr};
 use crate::utils::dictionary::validate_existing_entry;
 
 #[component]
@@ -16,6 +18,7 @@ pub fn LexiconBrowser(
     data_version: ReadSignal<u64>,
     mode: LexiconBrowserMode,
 ) -> impl IntoView {
+    let lang = expect_context::<WordBankState>().ui_language;
     const DATA_COLUMN_COUNT: usize = 20;
     let is_query_mode = mode == LexiconBrowserMode::Query;
     let (col_widths, set_col_widths) = signal(vec![
@@ -167,7 +170,11 @@ pub fn LexiconBrowser(
         set_baseline_entries.set(sorted_baseline);
         set_row_undo.set(sorted_undo);
         set_sort_state.set(sort_rules.clone());
-        set_status.set(format!("已排序：{}", format_sort_rules(&sort_rules)));
+        set_status.set(format!(
+            "{} {}",
+            tr(lang.get_untracked(), "已排序：", "Sorted:"),
+            format_sort_rules(&sort_rules, lang.get_untracked())
+        ));
     };
     let apply_search = move |_| {
         let query = search_text.get().trim().to_string();
@@ -176,8 +183,10 @@ pub fn LexiconBrowser(
 
         if query.is_empty() {
             set_status.set(format!(
-                "已显示全部条目，共 {} 条。",
-                draft_entries.get_untracked().len()
+                "{} {} {}",
+                tr(lang.get_untracked(), "已显示全部条目，共", "Showing all entries,"),
+                draft_entries.get_untracked().len(),
+                tr(lang.get_untracked(), "条。", "entries.")
             ));
             return;
         }
@@ -187,7 +196,12 @@ pub fn LexiconBrowser(
             .iter()
             .filter(|entry| entry_matches_filter(entry, &query, &columns))
             .count();
-        set_status.set(format!("查找完成：匹配 {} 条。", count));
+        set_status.set(format!(
+            "{} {} {}",
+            tr(lang.get_untracked(), "查找完成：匹配", "Search complete: matched"),
+            count,
+            tr(lang.get_untracked(), "条。", "entries.")
+        ));
     };
     let confirm_changes = move |_| {
         set_confirm_error.set(String::new());
@@ -206,7 +220,14 @@ pub fn LexiconBrowser(
             if !errors.is_empty() {
                 let message = errors.join("；");
                 set_confirm_error.set(message.clone());
-                set_status.set("确认失败：存在不合法修改。".to_string());
+                set_status.set(
+                    tr(
+                        lang.get_untracked(),
+                        "确认失败：存在不合法修改。",
+                        "Confirm failed: invalid modifications found.",
+                    )
+                    .to_string(),
+                );
                 return;
             }
         }
@@ -215,11 +236,25 @@ pub fn LexiconBrowser(
         set_draft_entries.set(current_entries.clone());
         set_baseline_entries.set(current_entries.clone());
         set_row_undo.set(vec![None; current_entries.len()]);
-        set_confirm_success.set("修改成功".to_string());
+        set_confirm_success.set(tr(lang.get_untracked(), "修改成功", "Saved").to_string());
         if is_query_mode {
-            set_status.set("词库选择已确认并应用。".to_string());
+            set_status.set(
+                tr(
+                    lang.get_untracked(),
+                    "词库选择已确认并应用。",
+                    "Lexicon selection confirmed and applied.",
+                )
+                .to_string(),
+            );
         } else {
-            set_status.set("词库修改已确认并应用。".to_string());
+            set_status.set(
+                tr(
+                    lang.get_untracked(),
+                    "词库修改已确认并应用。",
+                    "Lexicon changes confirmed and applied.",
+                )
+                .to_string(),
+            );
         }
     };
     let set_visible_selected = move |checked: bool| {
@@ -238,7 +273,14 @@ pub fn LexiconBrowser(
             })
             .collect::<Vec<_>>();
         if visible_indices.is_empty() {
-            set_status.set("当前没有可操作的显示条目。".to_string());
+            set_status.set(
+                tr(
+                    lang.get_untracked(),
+                    "当前没有可操作的显示条目。",
+                    "No visible entries to operate on.",
+                )
+                .to_string(),
+            );
             return;
         }
 
@@ -263,9 +305,15 @@ pub fn LexiconBrowser(
             }
         });
         set_status.set(format!(
-            "已将当前显示的 {} 条词条设置为 {}。",
+            "{} {} {} {}",
+            tr(lang.get_untracked(), "已将当前显示的", "Set"),
             visible_indices.len(),
-            if checked { "选中" } else { "不选中" }
+            tr(lang.get_untracked(), "条词条设置为", "visible entries to"),
+            if checked {
+                tr(lang.get_untracked(), "选中。", "selected.")
+            } else {
+                tr(lang.get_untracked(), "不选中。", "unselected.")
+            }
         ));
     };
     let select_visible_click = move |_| set_visible_selected(true);
@@ -282,7 +330,7 @@ pub fn LexiconBrowser(
                 <div class="flex flex-wrap items-center gap-2">
                     <input
                         type="text"
-                        placeholder="输入要查找的字符"
+                        placeholder=move || tr(lang.get(), "输入要查找的字符", "Type to search")
                         prop:value=move || search_text.get()
                         on:input=move |ev| set_search_text.set(event_target_value(&ev))
                         class="min-w-60 flex-1 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
@@ -292,36 +340,45 @@ pub fn LexiconBrowser(
                         on:click=apply_search
                         class="rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700"
                     >
-                        "查找"
+                        {move || tr(lang.get(), "查找", "Search")}
                     </button>
                     <button
                         type="button"
                         on:click=move |_| set_search_columns.set(vec![true; DATA_COLUMN_COUNT])
                         class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
                     >
-                        "全选列"
+                        {move || tr(lang.get(), "全选列", "Select all columns")}
                     </button>
                     <button
                         type="button"
                         on:click=move |_| set_search_columns.set(vec![false; DATA_COLUMN_COUNT])
                         class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700"
                     >
-                        "全不选列"
+                        {move || tr(lang.get(), "全不选列", "Unselect all columns")}
                     </button>
                 </div>
                 <div class="mt-3 space-y-3">
                     {[
-                        ("基础组", vec![0, 1, 2, 3, 4, 5, 6]),
-                        ("动词变体组", vec![7, 8, 9]),
-                        ("名词变体组", vec![10, 11, 12]),
-                        ("形容词变体组", vec![13, 14, 15, 16, 17]),
-                        ("副词变体组", vec![18, 19]),
+                        ("core", vec![0, 1, 2, 3, 4, 5, 6]),
+                        ("verb", vec![7, 8, 9]),
+                        ("noun", vec![10, 11, 12]),
+                        ("adjective", vec![13, 14, 15, 16, 17]),
+                        ("adverb", vec![18, 19]),
                     ]
                         .into_iter()
                         .map(|(group_name, indices)| {
                             view! {
                                 <section class="rounded border border-slate-800 bg-slate-950/40 p-2">
-                                    <p class="mb-2 text-xs font-semibold text-slate-400">{group_name}</p>
+                                    <p class="mb-2 text-xs font-semibold text-slate-400">
+                                        {move || match group_name {
+                                            "core" => tr(lang.get(), "基础组", "Core"),
+                                            "verb" => tr(lang.get(), "动词变体组", "Verb Forms"),
+                                            "noun" => tr(lang.get(), "名词变体组", "Noun Forms"),
+                                            "adjective" => tr(lang.get(), "形容词变体组", "Adjective Forms"),
+                                            "adverb" => tr(lang.get(), "副词变体组", "Adverb Forms"),
+                                            _ => group_name,
+                                        }}
+                                    </p>
                                     <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-5">
                                         {indices
                                             .into_iter()
@@ -342,7 +399,7 @@ pub fn LexiconBrowser(
                                                                 });
                                                             }
                                                         />
-                                                        <span>{header_name(idx)}</span>
+                                                        <span>{move || field_label(lang.get(), header_name(idx))}</span>
                                                     </label>
                                                 }
                                             })
@@ -378,9 +435,9 @@ pub fn LexiconBrowser(
                                     "id",
                                     "selected",
                                     "part_of_speech",
-                                    "tags(|)",
-                                    "english(|)",
-                                    "chinese(|)",
+                                    "tags",
+                                    "english",
+                                    "chinese",
                                     "base_form",
                                     "verb_present_tense",
                                     "verb_past_tense",
@@ -399,7 +456,7 @@ pub fn LexiconBrowser(
                                 let op_header = if is_query_mode {
                                     Vec::new()
                                 } else {
-                                    vec!["操作"]
+                                    vec!["operation"]
                                 };
                                 let headers = headers
                                     .into_iter()
@@ -437,7 +494,20 @@ pub fn LexiconBrowser(
                                                     }
                                                 }
                                             >
-                                                {format!("{title}{indicator}")}
+                                                {format!(
+                                                    "{}{}",
+                                                    if *title == "operation" {
+                                                        tr(lang.get(), "操作", "Actions").to_string()
+                                                    } else if *title == "tags"
+                                                        || *title == "english"
+                                                        || *title == "chinese"
+                                                    {
+                                                        format!("{}(|)", field_label(lang.get(), title))
+                                                    } else {
+                                                        field_label(lang.get(), title).to_string()
+                                                    },
+                                                    indicator
+                                                )}
                                                 <div
                                                     class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80"
                                                     on:mousedown=move |ev| {
@@ -481,7 +551,7 @@ pub fn LexiconBrowser(
                                                 />
                                             </td>
                                             <td class="border border-slate-800 p-2">
-                                                {entry.part_of_speech.as_key().to_string()}
+                                                {move || entry.part_of_speech.display_name(lang.get()).to_string()}
                                             </td>
                                             <td class="border border-slate-800 p-2">{entry.tags.join(" | ")}</td>
                                             <td class="border border-slate-800 p-2">{entry.english.join(" | ")}</td>
@@ -557,7 +627,10 @@ pub fn LexiconBrowser(
                                                     let parsed = match PartOfSpeech::from_key(&value) {
                                                         Ok(parsed) => parsed,
                                                         Err(err) => {
-                                                            set_status.set(format!("词性更新失败：{err}"));
+                                                            set_status.set(format!(
+                                                                "{} {err}",
+                                                                tr(lang.get_untracked(), "词性更新失败：", "Failed to update part of speech:")
+                                                            ));
                                                             return;
                                                         }
                                                     };
@@ -578,7 +651,15 @@ pub fn LexiconBrowser(
                                                 {PART_OF_SPEECH_OPTIONS
                                                     .iter()
                                                     .map(|option| {
-                                                        view! { <option value=*option>{*option}</option> }
+                                                        view! {
+                                                            <option value=*option>
+                                                                {move || {
+                                                                    PartOfSpeech::from_key(option)
+                                                                        .map(|pos| pos.display_name(lang.get()).to_string())
+                                                                        .unwrap_or_else(|_| (*option).to_string())
+                                                                }}
+                                                            </option>
+                                                        }
                                                     })
                                                     .collect_view()}
                                             </select>
@@ -609,9 +690,14 @@ pub fn LexiconBrowser(
                                                                 *item = original;
                                                             }
                                                         });
-                                                        set_status.set("已恢复该行初始值。".to_string());
+                                                        set_status.set(
+                                                            tr(lang.get_untracked(), "已恢复该行初始值。", "Row restored to initial values.")
+                                                                .to_string(),
+                                                        );
                                                     }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">"恢复原值"</button>
+                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
+                                                    {move || tr(lang.get(), "恢复原值", "Reset")}
+                                                </button>
                                                 <button type="button" on:click=move |_| {
                                                     let undo_value = row_undo.get_untracked().get(idx).cloned().flatten();
                                                     if let Some(previous) = undo_value {
@@ -625,9 +711,14 @@ pub fn LexiconBrowser(
                                                                 undo[idx] = None;
                                                             }
                                                         });
-                                                        set_status.set("已撤销该行最近一次修改。".to_string());
+                                                        set_status.set(
+                                                            tr(lang.get_untracked(), "已撤销该行最近一次修改。", "Reverted latest row change.")
+                                                                .to_string(),
+                                                        );
                                                     }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">"撤销"</button>
+                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
+                                                    {move || tr(lang.get(), "撤销", "Undo")}
+                                                </button>
                                                 <button type="button" on:click=move |_| {
                                                     set_entries.update(|list| {
                                                         if idx < list.len() {
@@ -644,8 +735,12 @@ pub fn LexiconBrowser(
                                                             undo.remove(idx);
                                                         }
                                                     });
-                                                    set_status.set("已删除 1 条词条。".to_string());
-                                                } class="rounded border border-red-800 bg-red-900/80 px-2 py-1 text-xs text-red-100 hover:bg-red-800">"删除"</button>
+                                                    set_status.set(
+                                                        tr(lang.get_untracked(), "已删除 1 条词条。", "Deleted 1 entry.").to_string(),
+                                                    );
+                                                } class="rounded border border-red-800 bg-red-900/80 px-2 py-1 text-xs text-red-100 hover:bg-red-800">
+                                                    {move || tr(lang.get(), "删除", "Delete")}
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -664,14 +759,14 @@ pub fn LexiconBrowser(
                         on:click=select_visible_click
                         class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
                     >
-                        "全选"
+                        {move || tr(lang.get(), "全选", "Select All")}
                     </button>
                     <button
                         type="button"
                         on:click=unselect_visible_click
                         class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700"
                     >
-                        "全不选"
+                        {move || tr(lang.get(), "全不选", "Unselect All")}
                     </button>
                 </div>
                 <div class="min-h-6 flex-1 text-sm">
@@ -690,7 +785,7 @@ pub fn LexiconBrowser(
                     on:click=confirm_changes
                     class="rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                 >
-                    "确认修改"
+                    {move || tr(lang.get(), "确认修改", "Confirm Changes")}
                 </button>
             </div>
         </section>

@@ -5,6 +5,7 @@ use crate::pages::AppPage;
 use crate::structures::pracresult::{
     AnswerStats, MAX_WRONG_ANSWERS_PER_FORM, PracticeResult, PracticedWordEntryResult,
 };
+use crate::utils::i18n::tr;
 use crate::utils::shuffle::shuffle_strings;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -23,6 +24,7 @@ pub fn FinishPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
+    let lang = word_bank_state.ui_language;
     let finish_click = move |_| {
         word_bank_state
             .set_summary_return_page
@@ -34,7 +36,7 @@ pub fn FinishPracticeButton(
             finish_target_page,
         );
     };
-    let label = label.unwrap_or_else(|| "完成练习".to_string());
+    let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "完成练习", "Finish Practice").to_string());
     let class = class.unwrap_or_else(|| {
         "rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600"
             .to_string()
@@ -57,6 +59,7 @@ pub fn RestartPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
+    let lang = word_bank_state.ui_language;
     let restart_click = move |_| {
         handle_restart_click(
             word_bank_state,
@@ -66,7 +69,8 @@ pub fn RestartPracticeButton(
             restart_temp_behavior,
         );
     };
-    let label = label.unwrap_or_else(|| "重新练习".to_string());
+    let label =
+        label.unwrap_or_else(|| tr(lang.get_untracked(), "重新练习", "Restart").to_string());
     let class = class.unwrap_or_else(|| {
         "rounded-lg border border-amber-600 bg-amber-700 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-600"
             .to_string()
@@ -87,10 +91,13 @@ pub fn AbortPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
+    let lang = word_bank_state.ui_language;
     let abort_click = move |_| {
         handle_abort_click(word_bank_state, set_current_page, abort_target_page);
     };
-    let label = label.unwrap_or_else(|| "放弃练习并返回".to_string());
+    let label = label.unwrap_or_else(|| {
+        tr(lang.get_untracked(), "放弃练习并返回", "Abort and Return").to_string()
+    });
     let class = class.unwrap_or_else(|| {
         "rounded-lg border border-rose-600 bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
             .to_string()
@@ -121,9 +128,12 @@ pub fn handle_finish_click(
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
 ) {
+    let lang = word_bank_state.ui_language.get_untracked();
     let mut selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
     if selected_ids.is_empty() {
-        set_status.set("当前没有可练习词条。".to_string());
+        set_status.set(
+            tr(lang, "当前没有可练习词条。", "No entries available for practice.").to_string(),
+        );
         return;
     }
 

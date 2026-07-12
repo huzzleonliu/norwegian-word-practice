@@ -8,6 +8,9 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
+use structures::word_bank_entry::UiLanguage;
+use utils::i18n::tr;
+
 fn main() {
     leptos::mount::mount_to_body(App)
 }
@@ -18,6 +21,7 @@ fn App() -> impl IntoView {
     let (word_bank_entries, set_word_bank_entries) = signal(Vec::new());
     let (word_bank_data_version, set_word_bank_data_version) = signal(0_u64);
     let (word_bank_source_name, set_word_bank_source_name) = signal("尚未加载词库".to_string());
+    let (ui_language, set_ui_language) = signal(UiLanguage::Zh);
     let (selected_word_entry_ids, set_selected_word_entry_ids) = signal(Vec::<String>::new());
     let (practice_result, set_practice_result) =
         signal(structures::pracresult::PracticeResult::default());
@@ -35,6 +39,7 @@ fn App() -> impl IntoView {
         set_data_version: set_word_bank_data_version,
         source_name: word_bank_source_name,
         set_source_name: set_word_bank_source_name,
+        ui_language,
         selected_word_entry_ids,
         set_selected_word_entry_ids,
         practice_result,
@@ -48,39 +53,55 @@ fn App() -> impl IntoView {
     });
 
     view! {
-        {move || match current_page.get() {
-            pages::AppPage::Home => view! { <pages::home::HomePage/> }.into_any(),
-            pages::AppPage::PracticeModeSelect => {
-                view! { <pages::practice_mode::PracticeModePage/> }.into_any()
-            }
-            pages::AppPage::LexiconMode => {
-                view! { <pages::lexicon_select::LexiconSelectPage/> }.into_any()
-            }
-            pages::AppPage::LexiconPractice => {
-                view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
-            }
-            pages::AppPage::LexiconSummary => {
-                view! { <pages::lexicon_summary::LexiconSummaryPage/> }.into_any()
-            }
-            pages::AppPage::LocalLexiconEditor => {
-                view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()
-            }
-            pages::AppPage::SeriseSelect => {
-                view! { <pages::serise_select::SeriseSelectPage/> }.into_any()
-            }
-            pages::AppPage::SeriseNumberPractice => {
-                view! { <pages::serise_practice::number::NumberSerisePracticePage/> }.into_any()
-            }
-            pages::AppPage::SeriseMonthPractice => {
-                view! { <pages::serise_practice::month::MonthSerisePracticePage/> }.into_any()
-            }
-            pages::AppPage::SerisePronounPractice => {
-                view! { <pages::serise_practice::pronoun::PronounSerisePracticePage/> }.into_any()
-            }
-            pages::AppPage::SeriseInterrogativePractice => {
-                view! { <pages::serise_practice::interrogative::InterrogativeSerisePracticePage/> }
-                    .into_any()
-            }
-        }}
+        <div>
+            <button
+                type="button"
+                on:click=move |_| set_ui_language.update(|lang| *lang = lang.toggle())
+                class="fixed right-4 top-4 z-[100] rounded-lg border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs text-slate-100 hover:bg-slate-800"
+            >
+                {move || {
+                    let lang = ui_language.get();
+                    format!(
+                        "{}: {}",
+                        tr(lang, "语言", "Language"),
+                        tr(lang, "中文", "English")
+                    )
+                }}
+            </button>
+            {move || match current_page.get() {
+                pages::AppPage::Home => view! { <pages::home::HomePage/> }.into_any(),
+                pages::AppPage::PracticeModeSelect => {
+                    view! { <pages::practice_mode::PracticeModePage/> }.into_any()
+                }
+                pages::AppPage::LexiconMode => {
+                    view! { <pages::lexicon_select::LexiconSelectPage/> }.into_any()
+                }
+                pages::AppPage::LexiconPractice => {
+                    view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
+                }
+                pages::AppPage::LexiconSummary => {
+                    view! { <pages::lexicon_summary::LexiconSummaryPage/> }.into_any()
+                }
+                pages::AppPage::LocalLexiconEditor => {
+                    view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()
+                }
+                pages::AppPage::SeriseSelect => {
+                    view! { <pages::serise_select::SeriseSelectPage/> }.into_any()
+                }
+                pages::AppPage::SeriseNumberPractice => {
+                    view! { <pages::serise_practice::number::NumberSerisePracticePage/> }.into_any()
+                }
+                pages::AppPage::SeriseMonthPractice => {
+                    view! { <pages::serise_practice::month::MonthSerisePracticePage/> }.into_any()
+                }
+                pages::AppPage::SerisePronounPractice => {
+                    view! { <pages::serise_practice::pronoun::PronounSerisePracticePage/> }.into_any()
+                }
+                pages::AppPage::SeriseInterrogativePractice => {
+                    view! { <pages::serise_practice::interrogative::InterrogativeSerisePracticePage/> }
+                        .into_any()
+                }
+            }}
+        </div>
     }
 }

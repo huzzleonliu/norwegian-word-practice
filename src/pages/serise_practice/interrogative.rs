@@ -14,6 +14,7 @@ use crate::components::practice_entry::{
 };
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
+use crate::utils::i18n::tr;
 
 use super::initialize_temp_practice_result;
 
@@ -22,6 +23,7 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
     const QUESTIONS_PER_PAGE: usize = 20;
 
     let word_bank_state = expect_context::<WordBankState>();
+    let lang = word_bank_state.ui_language;
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
@@ -49,9 +51,17 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
     });
 
     let check_click = Callback::new(move |_| {
+        let language = lang.get_untracked();
         let selected_answer_fields = answer_fields.get_untracked();
         if selected_answer_fields.is_empty() {
-            set_status.set("请先勾选至少 1 个“回答”项。".to_string());
+            set_status.set(
+                tr(
+                    language,
+                    "请先勾选至少 1 个“回答”项。",
+                    "Please select at least one answer field.",
+                )
+                .to_string(),
+            );
             return;
         }
 
@@ -59,7 +69,10 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
         let entries = word_bank_state.entries.get_untracked();
         let current_questions = build_question_items(&active_ids, &entries);
         if current_questions.is_empty() {
-            set_status.set("当前没有可检查的题目。".to_string());
+            set_status.set(
+                tr(language, "当前没有可检查的题目。", "No questions available for checking.")
+                    .to_string(),
+            );
             return;
         }
 
@@ -99,7 +112,14 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
         }
 
         if total_fields == 0 {
-            set_status.set("当前题目在已选回答项下没有可作答字段。".to_string());
+            set_status.set(
+                tr(
+                    language,
+                    "当前题目在已选回答项下没有可作答字段。",
+                    "No answerable fields under current answer settings.",
+                )
+                .to_string(),
+            );
             return;
         }
 
@@ -136,12 +156,18 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
 
         if newly_solved_ids.is_empty() {
             set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，暂无整题通过。"
+                "{} {correct_fields}/{total_fields}，{}",
+                tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                tr(language, "暂无整题通过。", "no full entry solved yet.")
             ));
         } else {
             set_status.set(format!(
-                "检查完成：字段正确 {correct_fields}/{total_fields}，本轮完成 {} 条，已自动补充新题。",
+                "{} {correct_fields}/{total_fields}，{} {} {}",
+                tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                tr(language, "本轮完成", "solved this round"),
                 newly_solved_ids.len()
+                ,
+                tr(language, "条，已自动补充新题。", "entries, new questions appended.")
             ));
         }
     });
@@ -156,9 +182,12 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">"疑问词系列练习"</h1>
+                <h1 class="text-3xl font-bold tracking-tight">
+                    {move || tr(lang.get(), "疑问词系列练习", "Interrogative Series Practice")}
+                </h1>
                 <MiniConsole
                     message=Signal::derive(move || {
+                        let language = lang.get();
                         let selected_count = word_bank_state.selected_word_entry_ids.get().len();
                         let temp_entries = word_bank_state
                             .temp_practice_result
@@ -166,12 +195,17 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                             .practiced_word_entries
                             .len();
                         let overview = format!(
-                            "当前可练习词条：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
+                            "{}：{selected_count} {}，{} {temp_entries} {}。",
+                            tr(language, "当前可练习词条", "Available entries"),
+                            tr(language, "条", "entries"),
+                            tr(language, "临时练习结果已记录", "Temp result recorded"),
+                            tr(language, "条", "entries")
                         );
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待作答并点击检查...".to_string()
+                                tr(language, "等待作答并点击检查...", "Answer and click check...")
+                                    .to_string()
                             } else {
                                 s
                             }
@@ -181,7 +215,9 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第一部分：练习题"</h2>
+                    <h2 class="text-lg font-semibold">
+                        {move || tr(lang.get(), "第一部分：练习题", "Part 1: Questions")}
+                    </h2>
                     <PracticeEntry
                         on_check=check_click
                         active_question_ids=active_question_ids
@@ -198,7 +234,9 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                 </section>
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"第二部分：流程控制"</h2>
+                    <h2 class="text-lg font-semibold">
+                        {move || tr(lang.get(), "第二部分：流程控制", "Part 2: Flow Control")}
+                    </h2>
                     <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
                             word_bank_state=word_bank_state
@@ -211,7 +249,12 @@ pub fn InterrogativeSerisePracticePage() -> impl IntoView {
                             word_bank_state=word_bank_state
                             set_status=set_status
                             on_restart_ui=restart_ui_click
-                            restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
+                            restart_message=tr(
+                                lang.get_untracked(),
+                                "已重新开始本轮练习（临时记录继续累加）。",
+                                "Restarted this round (temp result keeps accumulating).",
+                            )
+                            .to_string()
                             restart_temp_behavior=RestartTempBehavior::Keep
                         />
                         <AbortPracticeButton

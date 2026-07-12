@@ -16,21 +16,34 @@ use crate::utils::dictionary::{
     SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
     validate_and_prepare_single_entry,
 };
+use crate::utils::i18n::tr;
 
 #[component]
 pub fn LocalLexiconEditorPage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
+    let lang = word_bank_state.ui_language;
     let entries = word_bank_state.entries;
     let set_entries = word_bank_state.set_entries;
     let data_version = word_bank_state.data_version;
     let set_data_version = word_bank_state.set_data_version;
     let (status, set_status) = signal({
+        let language = lang.get_untracked();
         let count = entries.get_untracked().len();
         let source = word_bank_state.source_name.get_untracked();
         if count == 0 {
-            "当前词库为空，请先回到首页加载或导入词库。".to_string()
+            tr(
+                language,
+                "当前词库为空，请先回到首页加载或导入词库。",
+                "Current lexicon is empty. Please load/import lexicon first.",
+            )
+            .to_string()
         } else {
-            format!("当前词库：{source}（共 {count} 条）。")
+            format!(
+                "{}：{source}（{} {count} {}）。",
+                tr(language, "当前词库", "Current Lexicon"),
+                tr(language, "共", "total"),
+                tr(language, "条", "entries")
+            )
         }
     });
 
@@ -60,6 +73,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (bulk_errors, set_bulk_errors) = signal(Vec::<String>::new());
     let (bulk_success_message, set_bulk_success_message) = signal(String::new());
     let add_single_entry = Callback::new(move |ev: SubmitEvent| {
+        let language = lang.get_untracked();
         ev.prevent_default();
 
         let draft: SingleEntryDraft = SingleEntryDraft {
@@ -68,7 +82,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             part_of_speech: match parse_part_of_speech(&single_pos.get()) {
                 Ok(value) => value,
                 Err(err) => {
-                    set_status.set(format!("单条添加失败：{err}"));
+                    set_status.set(format!("{} {err}", tr(language, "单条添加失败：", "Single add failed:")));
                     return;
                 }
             },
@@ -98,7 +112,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         let new_entry = match validate_and_prepare_single_entry(draft, &existing_entries) {
             Ok(entry) => entry,
             Err(err) => {
-                set_status.set(format!("单条添加失败：{err}"));
+                set_status.set(format!("{} {err}", tr(language, "单条添加失败：", "Single add failed:")));
                 return;
             }
         };
@@ -111,7 +125,10 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         });
         set_data_version.update(|ver| *ver += 1);
         set_status.set(format!(
-            "已添加 1 条到本地缓存词库（id: {generated_id}），当前共 {total_after_add} 条。"
+            "{}（id: {generated_id}），{} {total_after_add} {}。",
+            tr(language, "已添加 1 条到本地缓存词库", "Added 1 entry to local cache"),
+            tr(language, "当前共", "now total"),
+            tr(language, "条", "entries")
         ));
 
         set_single_selected.set(true);
@@ -136,22 +153,47 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     });
 
     let add_bulk_entries = Callback::new(move |ev: SubmitEvent| {
+        let language = lang.get_untracked();
         ev.prevent_default();
         set_bulk_errors.set(Vec::new());
         set_bulk_success_message.set(String::new());
 
         let content = bulk_input.get();
         if content.trim().is_empty() {
-            set_status.set("多条添加失败：文本框不能为空。".to_string());
-            set_bulk_errors.set(vec!["输入不能为空。请粘贴带表头的 CSV 文本。".to_string()]);
+            set_status.set(
+                tr(language, "多条添加失败：文本框不能为空。", "Bulk add failed: input is empty.")
+                    .to_string(),
+            );
+            set_bulk_errors.set(vec![
+                tr(
+                    language,
+                    "输入不能为空。请粘贴带表头的 CSV 文本。",
+                    "Input cannot be empty. Please paste CSV text with header.",
+                )
+                .to_string(),
+            ]);
             return;
         }
 
         match parse_word_bank_csv(&content) {
             Ok(parsed) => {
                 if parsed.is_empty() {
-                    set_status.set("多条添加失败：未检测到可导入条目。".to_string());
-                    set_bulk_errors.set(vec!["CSV 中没有可导入的数据行。".to_string()]);
+                    set_status.set(
+                        tr(
+                            language,
+                            "多条添加失败：未检测到可导入条目。",
+                            "Bulk add failed: no importable rows detected.",
+                        )
+                        .to_string(),
+                    );
+                    set_bulk_errors.set(vec![
+                        tr(
+                            language,
+                            "CSV 中没有可导入的数据行。",
+                            "No importable data rows in CSV.",
+                        )
+                        .to_string(),
+                    ]);
                     return;
                 }
 
@@ -182,34 +224,57 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
                 if !errors.is_empty() {
                     set_bulk_errors.set(errors);
-                    set_status.set("批量添加失败：存在不合法条目，请先修正红字错误。".to_string());
+                    set_status.set(
+                        tr(
+                            language,
+                            "批量添加失败：存在不合法条目，请先修正红字错误。",
+                            "Bulk add failed: invalid entries found.",
+                        )
+                        .to_string(),
+                    );
                     return;
                 }
 
                 let add_count = validated_entries.len();
                 set_entries.update(|list| list.extend(validated_entries));
                 set_data_version.update(|ver| *ver += 1);
-                set_status.set(format!("批量添加成功，新增 {} 条。", add_count));
-                set_bulk_success_message.set("成功导入".to_string());
+                set_status.set(format!(
+                    "{} {} {}",
+                    tr(language, "批量添加成功，新增", "Bulk add succeeded, added"),
+                    add_count,
+                    tr(language, "条。", "entries.")
+                ));
+                set_bulk_success_message.set(tr(language, "成功导入", "Imported").to_string());
             }
             Err(err) => {
-                set_status.set(format!("多条添加失败：请输入带表头的 CSV 文本。{err}"));
-                set_bulk_errors.set(vec![format!("CSV 解析失败：{err}")]);
+                set_status.set(format!(
+                    "{} {err}",
+                    tr(
+                        language,
+                        "多条添加失败：请输入带表头的 CSV 文本。",
+                        "Bulk add failed: please provide CSV text with header.",
+                    )
+                ));
+                set_bulk_errors.set(vec![format!(
+                    "{} {err}",
+                    tr(language, "CSV 解析失败：", "CSV parse failed:")
+                )]);
             }
         }
     });
     let export_csv_click = move |_| {
+        let language = lang.get_untracked();
         let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
             Ok(content) => content,
             Err(err) => {
-                set_status.set(format!("导出失败：{err}"));
+                set_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:")));
                 return;
             }
         };
 
         match export_csv_download("word-bank.csv", &csv_content) {
-            Ok(()) => set_status.set("词库 CSV 已导出。".to_string()),
-            Err(err) => set_status.set(format!("导出失败：{err}")),
+            Ok(()) => set_status.set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
+            Err(err) => set_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:"))),
         }
     };
 
@@ -218,7 +283,9 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::PracticeModeSelect/>
                 <header class="mb-6 flex items-center gap-4">
-                    <h1 class="text-2xl font-bold tracking-tight">"本地词库修改器"</h1>
+                    <h1 class="text-2xl font-bold tracking-tight">
+                        {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}
+                    </h1>
                 </header>
 
                 <MiniConsole
@@ -226,12 +293,16 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待词库编辑操作...".to_string()
+                                tr(lang.get(), "等待词库编辑操作...", "Waiting for lexicon editing...")
+                                    .to_string()
                             } else {
                                 s
                             }
                         };
-                        format!("{status_line}\n编辑后请点击“确认修改”再导出。")
+                        format!(
+                            "{status_line}\n{}",
+                            tr(lang.get(), "编辑后请点击“确认修改”再导出。", "Click \"Confirm Changes\" before exporting.")
+                        )
                     })
                 />
 
@@ -330,11 +401,27 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 />
 
                 <section class="mt-4">
-                    <h2 class="mb-3 text-lg font-semibold">"词库浏览器"</h2>
+                    <h2 class="mb-3 text-lg font-semibold">
+                        {move || tr(lang.get(), "词库浏览器", "Lexicon Browser")}
+                    </h2>
                     <p class="mb-3 text-sm text-slate-400">
-                        "以表格形式查看、直接修改并删除词条（类似 Excel）。"
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "以表格形式查看、直接修改并删除词条（类似 Excel）。",
+                                "View, edit and delete entries in table form (Excel-like).",
+                            )
+                        }}
                     </p>
-                    <p class="mb-3 text-xs text-slate-500">"拖拽表头右侧边界可调整列宽（更像 Excel）。"</p>
+                    <p class="mb-3 text-xs text-slate-500">
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "拖拽表头右侧边界可调整列宽（更像 Excel）。",
+                                "Drag header right edge to resize columns.",
+                            )
+                        }}
+                    </p>
                 </section>
 
                 <LexiconBrowser
@@ -348,11 +435,14 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 <div class="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-800 pt-4">
                     <ImportCsvButton
                         input_id="lexicon-import-csv-input".to_string()
-                        label="导入词库 CSV".to_string()
+                        label=Signal::derive(move || {
+                            tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
+                        })
                         class="inline-flex cursor-pointer items-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700".to_string()
                         set_entries=set_entries
                         set_status=set_status
                         set_data_version=set_data_version
+                        ui_language=lang
                         set_source_name=word_bank_state.set_source_name
                     />
                     <button
@@ -360,7 +450,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                         on:click=export_csv_click
                         class="inline-flex items-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
                     >
-                        "导出词库 CSV"
+                        {move || tr(lang.get(), "导出词库 CSV", "Export Lexicon CSV")}
                     </button>
                 </div>
             </section>

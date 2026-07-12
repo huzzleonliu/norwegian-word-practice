@@ -12,6 +12,7 @@ use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::utils::i18n::tr;
 
 use super::initialize_temp_practice_result;
 
@@ -383,6 +384,7 @@ const PRONOUN_GROUPS: [PronounGroupConfig; 3] = [
 #[component]
 pub fn PronounSerisePracticePage() -> impl IntoView {
     let word_bank_state = expect_context::<WordBankState>();
+    let lang = word_bank_state.ui_language;
     initialize_temp_practice_result(word_bank_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
@@ -399,9 +401,12 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-6">
             <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
                 <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-3xl font-bold tracking-tight">"代词系列练习"</h1>
+                <h1 class="text-3xl font-bold tracking-tight">
+                    {move || tr(lang.get(), "代词系列练习", "Pronoun Series Practice")}
+                </h1>
                 <MiniConsole
                     message=Signal::derive(move || {
+                        let language = lang.get();
                         let selected_count = word_bank_state.selected_word_entry_ids.get().len();
                         let temp_entries = word_bank_state
                             .temp_practice_result
@@ -409,12 +414,21 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                             .practiced_word_entries
                             .len();
                         let overview = format!(
-                            "当前可练习词条：{selected_count} 条，临时练习结果已记录 {temp_entries} 条。"
+                            "{}：{selected_count} {}，{} {temp_entries} {}。",
+                            tr(language, "当前可练习词条", "Available entries"),
+                            tr(language, "条", "entries"),
+                            tr(language, "临时练习结果已记录", "Temp result recorded"),
+                            tr(language, "条", "entries")
                         );
                         let status_line = {
                             let s = status.get();
                             if s.trim().is_empty() {
-                                "等待分组作答并点击对应分组检查按钮...".to_string()
+                                tr(
+                                    language,
+                                    "等待分组作答并点击对应分组检查按钮...",
+                                    "Answer by group and click group check button...",
+                                )
+                                .to_string()
                             } else {
                                 s
                             }
@@ -424,9 +438,17 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                 />
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"请写出以下代词的各种形式"</h2>
+                    <h2 class="text-lg font-semibold">
+                        {move || tr(lang.get(), "请写出以下代词的各种形式", "Write all forms for pronouns")}
+                    </h2>
                     <p class="mt-2 text-sm text-slate-400">
-                        "每个输入框都绑定到对应词条的 base_form，检查后会按词条结构化记录结果。"
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "每个输入框都绑定到对应词条的 base_form，检查后会按词条结构化记录结果。",
+                                "Each input maps to the entry base_form and records structured results after checking.",
+                            )
+                        }}
                     </p>
                 </section>
 
@@ -440,10 +462,16 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                         let group_rows = group.rows;
 
                         let check_group_click = Callback::new(move |_| {
+                            let language = lang.get_untracked();
                             let entries = word_bank_state.entries.get_untracked();
                             let (rows, missing_fields) = build_pronoun_rows(&entries, group_rows);
                             if rows.is_empty() {
-                                let message = "当前分组没有可检查题目，请先确认系列词库加载正常。".to_string();
+                                let message = tr(
+                                    language,
+                                    "当前分组没有可检查题目，请先确认系列词库加载正常。",
+                                    "No checkable questions in this group. Please confirm series lexicon is loaded.",
+                                )
+                                .to_string();
                                 set_group_statuses.update(|messages| {
                                     messages.insert(group_key_for_check.clone(), message.clone());
                                 });
@@ -494,31 +522,45 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                 });
 
                             let base_message = format!(
-                                "检查完成：字段正确 {correct_fields}/{total_fields}，整行全对 {fully_correct_rows}/{}。",
+                                "{} {correct_fields}/{total_fields}，{} {fully_correct_rows}/{}。",
+                                tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                                tr(language, "整行全对", "fully correct rows"),
                                 rows.len()
                             );
                             let final_message = if missing_fields.is_empty() {
                                 base_message
                             } else {
-                                format!("{} 缺失：{}。", base_message, missing_fields.join("、"))
+                                format!(
+                                    "{} {}: {}.",
+                                    base_message,
+                                    tr(language, "缺失", "missing"),
+                                    missing_fields.join(", ")
+                                )
                             };
                             set_group_statuses.update(|messages| {
                                 messages.insert(group_key_for_check.clone(), final_message.clone());
                             });
-                            set_status.set(format!("{group_title}：{final_message}"));
+                            set_status.set(format!(
+                                "{}: {final_message}",
+                                tr(language, group_title, pronoun_group_title_en(group_title))
+                            ));
                         });
 
                         view! {
                             <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <h3 class="text-lg font-semibold">{group_title}</h3>
+                                    <h3 class="text-lg font-semibold">
+                                        {move || tr(lang.get(), group_title, pronoun_group_title_en(group_title))}
+                                    </h3>
                                     <CheckPracticeButton
                                         on_check=check_group_click
-                                        label="检查本组".to_string()
+                                        label=tr(lang.get_untracked(), "检查本组", "Check Group").to_string()
                                         class="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600".to_string()
                                     />
                                 </div>
-                                <p class="mt-2 text-sm text-slate-400">{group_hint}</p>
+                                <p class="mt-2 text-sm text-slate-400">
+                                    {move || tr(lang.get(), group_hint, pronoun_group_hint_en(group_hint))}
+                                </p>
 
                                 <div class="mt-4 space-y-3">
                                     {move || {
@@ -527,7 +569,13 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                         if rows.is_empty() {
                                             return view! {
                                                 <p class="text-sm text-amber-300">
-                                                    "当前分组无可用题目。请检查词库数据是否完整。"
+                                                    {move || {
+                                                        tr(
+                                                            lang.get(),
+                                                            "当前分组无可用题目。请检查词库数据是否完整。",
+                                                            "No questions in this group. Please check lexicon data.",
+                                                        )
+                                                    }}
                                                 </p>
                                             }
                                                 .into_any();
@@ -547,7 +595,16 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                                         let key_for_input = key_for_value.clone();
                                                         view! {
                                                             <label class="flex flex-col gap-1 text-xs text-slate-300">
-                                                                <span>{field_label}</span>
+                                                                <span>
+                                                                    {move || {
+                                                                        tr(
+                                                                            lang.get(),
+                                                                            &field_label,
+                                                                            pronoun_field_label_en(&field_label),
+                                                                        )
+                                                                        .to_string()
+                                                                    }}
+                                                                </span>
                                                                 <input
                                                                     type="text"
                                                                     prop:value=move || {
@@ -563,7 +620,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                                                             inputs.insert(key_for_input.clone(), value);
                                                                         });
                                                                     }
-                                                                    placeholder="填写该形式"
+                                                                    placeholder=move || tr(lang.get(), "填写该形式", "Type this form")
                                                                     class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
                                                                 />
                                                             </label>
@@ -573,7 +630,12 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
 
                                                 view! {
                                                     <article class="grid grid-cols-1 gap-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                                                        <div class="text-sm font-semibold text-slate-200">{prompt}</div>
+                                                        <div class="text-sm font-semibold text-slate-200">
+                                                            {move || {
+                                                                tr(lang.get(), &prompt, pronoun_prompt_en(&prompt))
+                                                                    .to_string()
+                                                            }}
+                                                        </div>
                                                         <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
                                                             {field_view}
                                                         </div>
@@ -589,7 +651,11 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                                 <>
                                                     {rows_view}
                                                     <p class="text-xs text-amber-300">
-                                                        {format!("提示：以下题目项未找到对应词条：{}", missing_fields.join("、"))}
+                                                        {move || format!(
+                                                            "{}{}",
+                                                            tr(lang.get(), "提示：以下题目项未找到对应词条：", "Hint: missing mapped entries for: "),
+                                                            missing_fields.join(", ")
+                                                        )}
                                                     </p>
                                                 </>
                                             }
@@ -604,7 +670,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                                             .get()
                                             .get(&group_key_for_msg)
                                             .cloned()
-                                            .unwrap_or_else(|| "待检查".to_string())
+                                            .unwrap_or_else(|| tr(lang.get(), "待检查", "Pending").to_string())
                                     }}
                                 </p>
                             </section>
@@ -613,7 +679,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                     .collect_view()}
 
                 <section class="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <h2 class="text-lg font-semibold">"流程控制"</h2>
+                    <h2 class="text-lg font-semibold">{move || tr(lang.get(), "流程控制", "Flow Control")}</h2>
                     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
                             word_bank_state=word_bank_state
@@ -626,7 +692,12 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                             word_bank_state=word_bank_state
                             set_status=set_status
                             on_restart_ui=restart_ui_click
-                            restart_message="已重新开始本轮练习（临时记录继续累加）。".to_string()
+                            restart_message=tr(
+                                lang.get_untracked(),
+                                "已重新开始本轮练习（临时记录继续累加）。",
+                                "Restarted this round (temp result keeps accumulating).",
+                            )
+                            .to_string()
                             restart_temp_behavior=RestartTempBehavior::Keep
                         />
                         <AbortPracticeButton
@@ -638,6 +709,59 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
                 </section>
             </section>
         </main>
+    }
+}
+
+fn pronoun_group_title_en(zh: &str) -> &'static str {
+    match zh {
+        "第一块：我 / 你 / 他 / 她" => "Group 1: I / You / He / She",
+        "第二块：我们 / 你们 / 他们 / 她们" => "Group 2: We / You(pl) / They(m) / They(f)",
+        "第三块：这 / 那 / 这些 / 那些" => "Group 3: This / That / These / Those",
+        _ => "Pronoun Group",
+    }
+}
+
+fn pronoun_group_hint_en(zh: &str) -> &'static str {
+    match zh {
+        "题面是人称，填写主格、宾格、所有格（阴阳/中性/复数）、反身、反身物主。" => {
+            "Prompt is person. Fill nominative, accusative, possessive (m/f, neuter, plural), reflexive, reflexive possessive."
+        }
+        "同样填写 7 类形式；每行对应一个人称。" => {
+            "Fill the same 7 forms; each row corresponds to one person."
+        }
+        "指示代词按行填写对应原型。" => "Fill the base forms of demonstrative pronouns by row.",
+        _ => "Fill the required pronoun forms for each row.",
+    }
+}
+
+fn pronoun_prompt_en(zh: &str) -> &'static str {
+    match zh {
+        "我" => "I",
+        "你" => "You (sg)",
+        "他" => "He",
+        "她" => "She",
+        "我们" => "We",
+        "你们" => "You (pl)",
+        "他们" => "They (m)",
+        "她们" => "They (f)",
+        "这" => "This",
+        "那" => "That",
+        "这些" => "These",
+        "那些" => "Those",
+        _ => "Pronoun",
+    }
+}
+
+fn pronoun_field_label_en(zh: &str) -> &'static str {
+    match zh {
+        "主格" => "Nominative",
+        "宾格" => "Accusative",
+        "所有格阴阳性" => "Possessive (m/f)",
+        "所有格中性" => "Possessive (neuter)",
+        "所有格复数" => "Possessive (plural)",
+        "反身代词" => "Reflexive",
+        "反身物主代词" => "Reflexive Possessive",
+        _ => "Form",
     }
 }
 

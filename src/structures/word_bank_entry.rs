@@ -12,6 +12,21 @@ pub const PART_OF_SPEECH_OPTIONS: [&str; 9] = [
     "interrogative",
 ];
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum UiLanguage {
+    Zh,
+    En,
+}
+
+impl UiLanguage {
+    pub fn toggle(self) -> Self {
+        match self {
+            UiLanguage::Zh => UiLanguage::En,
+            UiLanguage::En => UiLanguage::Zh,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum PartOfSpeech {
     Verb,
@@ -55,6 +70,33 @@ impl PartOfSpeech {
                 "词性不合法，请从预设选项中选择：{}",
                 PART_OF_SPEECH_OPTIONS.join(", ")
             )),
+        }
+    }
+
+    pub fn display_name(&self, language: UiLanguage) -> &'static str {
+        match language {
+            UiLanguage::Zh => match self {
+                PartOfSpeech::Verb => "动词",
+                PartOfSpeech::Noun => "名词",
+                PartOfSpeech::Adjective => "形容词",
+                PartOfSpeech::Adverb => "副词",
+                PartOfSpeech::CardinalNumber => "基数词",
+                PartOfSpeech::OrdinalNumber => "序数词",
+                PartOfSpeech::Month => "月份",
+                PartOfSpeech::Pronoun => "代词",
+                PartOfSpeech::Interrogative => "疑问词",
+            },
+            UiLanguage::En => match self {
+                PartOfSpeech::Verb => "Verb",
+                PartOfSpeech::Noun => "Noun",
+                PartOfSpeech::Adjective => "Adjective",
+                PartOfSpeech::Adverb => "Adverb",
+                PartOfSpeech::CardinalNumber => "Cardinal Number",
+                PartOfSpeech::OrdinalNumber => "Ordinal Number",
+                PartOfSpeech::Month => "Month",
+                PartOfSpeech::Pronoun => "Pronoun",
+                PartOfSpeech::Interrogative => "Interrogative",
+            },
         }
     }
 }
