@@ -31,15 +31,23 @@ pub struct PracticedWordEntryResult {
     pub chinese: AnswerStats,
     pub base_form: AnswerStats,
 
-    pub past_tense: AnswerStats,
-    pub imperative: AnswerStats,
+    pub verb_present_tense: AnswerStats,
+    #[serde(alias = "past_tense")]
+    pub verb_past_tense: AnswerStats,
+    #[serde(alias = "imperative")]
+    pub verb_imperative: AnswerStats,
 
-    pub plural: AnswerStats,
-    pub singular_definite: AnswerStats,
-    pub plural_definite: AnswerStats,
+    #[serde(alias = "plural")]
+    pub noun_plural: AnswerStats,
+    #[serde(alias = "singular_definite")]
+    pub noun_singular_definite: AnswerStats,
+    #[serde(alias = "plural_definite")]
+    pub noun_plural_definite: AnswerStats,
 
-    pub neuter_form: AnswerStats,
-    pub plural_form: AnswerStats,
+    #[serde(alias = "neuter_form")]
+    pub adjective_neuter_form: AnswerStats,
+    #[serde(alias = "plural_form")]
+    pub adjective_plural_form: AnswerStats,
     pub adjective_comparative: AnswerStats,
     pub adjective_superlative_indefinite: AnswerStats,
     pub adjective_superlative_definite: AnswerStats,

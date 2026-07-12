@@ -40,6 +40,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (single_chinese, set_single_chinese) = signal(String::new());
     let (single_english, set_single_english) = signal(String::new());
     let (single_tags, set_single_tags) = signal(String::new());
+    let (single_verb_present_tense, set_single_verb_present_tense) = signal(String::new());
     let (single_past_tense, set_single_past_tense) = signal(String::new());
     let (single_imperative, set_single_imperative) = signal(String::new());
     let (single_plural, set_single_plural) = signal(String::new());
@@ -75,13 +76,14 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             english: parse_csv_list(&single_english.get()),
             chinese: parse_csv_list(&single_chinese.get()),
             base_form: single_norwegian.get(),
-            past_tense: parse_optional_input(&single_past_tense.get()),
-            imperative: parse_optional_input(&single_imperative.get()),
-            plural: parse_optional_input(&single_plural.get()),
-            singular_definite: parse_optional_input(&single_singular_definite.get()),
-            plural_definite: parse_optional_input(&single_plural_definite.get()),
-            neuter_form: parse_optional_input(&single_neuter_form.get()),
-            plural_form: parse_optional_input(&single_plural_form.get()),
+            verb_present_tense: parse_optional_input(&single_verb_present_tense.get()),
+            verb_past_tense: parse_optional_input(&single_past_tense.get()),
+            verb_imperative: parse_optional_input(&single_imperative.get()),
+            noun_plural: parse_optional_input(&single_plural.get()),
+            noun_singular_definite: parse_optional_input(&single_singular_definite.get()),
+            noun_plural_definite: parse_optional_input(&single_plural_definite.get()),
+            adjective_neuter_form: parse_optional_input(&single_neuter_form.get()),
+            adjective_plural_form: parse_optional_input(&single_plural_form.get()),
             adjective_comparative: parse_optional_input(&single_adjective_comparative.get()),
             adjective_superlative_indefinite: parse_optional_input(
                 &single_adjective_superlative_indefinite.get(),
@@ -118,6 +120,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_single_chinese.set(String::new());
         set_single_english.set(String::new());
         set_single_tags.set(String::new());
+        set_single_verb_present_tense.set(String::new());
         set_single_past_tense.set(String::new());
         set_single_imperative.set(String::new());
         set_single_plural.set(String::new());
@@ -246,6 +249,8 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_english=set_single_english
                     single_tags=single_tags
                     set_single_tags=set_single_tags
+                    single_verb_present_tense=single_verb_present_tense
+                    set_single_verb_present_tense=set_single_verb_present_tense
                     single_past_tense=single_past_tense
                     set_single_past_tense=set_single_past_tense
                     single_imperative=single_imperative
@@ -286,6 +291,8 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_english=set_single_english
                     single_tags=single_tags
                     set_single_tags=set_single_tags
+                    single_verb_present_tense=single_verb_present_tense
+                    set_single_verb_present_tense=set_single_verb_present_tense
                     single_past_tense=single_past_tense
                     set_single_past_tense=set_single_past_tense
                     single_imperative=single_imperative

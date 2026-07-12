@@ -2,20 +2,21 @@ use leptos::prelude::*;
 
 pub const NONE_FIELD_KEY: &str = "none";
 
-const PROMPT_FIELD_OPTIONS: [(&str, &str); 18] = [
+const PROMPT_FIELD_OPTIONS: [(&str, &str); 19] = [
     (NONE_FIELD_KEY, "无"),
     ("part_of_speech", "part_of_speech"),
     ("tags", "tags"),
     ("english", "english"),
     ("chinese", "chinese"),
     ("base_form", "base_form"),
-    ("past_tense", "past_tense"),
-    ("imperative", "imperative"),
-    ("plural", "plural"),
-    ("singular_definite", "singular_definite"),
-    ("plural_definite", "plural_definite"),
-    ("neuter_form", "neuter_form"),
-    ("plural_form", "plural_form"),
+    ("verb_present_tense", "verb_present_tense"),
+    ("verb_past_tense", "verb_past_tense"),
+    ("verb_imperative", "verb_imperative"),
+    ("noun_plural", "noun_plural"),
+    ("noun_singular_definite", "noun_singular_definite"),
+    ("noun_plural_definite", "noun_plural_definite"),
+    ("adjective_neuter_form", "adjective_neuter_form"),
+    ("adjective_plural_form", "adjective_plural_form"),
     ("adjective_comparative", "adjective_comparative"),
     (
         "adjective_superlative_indefinite",
@@ -29,17 +30,18 @@ const PROMPT_FIELD_OPTIONS: [(&str, &str); 18] = [
     ("adverb_superlative", "adverb_superlative"),
 ];
 
-const ANSWER_FIELD_OPTIONS: [(&str, &str); 15] = [
+const ANSWER_FIELD_OPTIONS: [(&str, &str); 16] = [
     ("english", "english"),
     ("chinese", "chinese"),
     ("base_form", "base_form"),
-    ("past_tense", "past_tense"),
-    ("imperative", "imperative"),
-    ("plural", "plural"),
-    ("singular_definite", "singular_definite"),
-    ("plural_definite", "plural_definite"),
-    ("neuter_form", "neuter_form"),
-    ("plural_form", "plural_form"),
+    ("verb_present_tense", "verb_present_tense"),
+    ("verb_past_tense", "verb_past_tense"),
+    ("verb_imperative", "verb_imperative"),
+    ("noun_plural", "noun_plural"),
+    ("noun_singular_definite", "noun_singular_definite"),
+    ("noun_plural_definite", "noun_plural_definite"),
+    ("adjective_neuter_form", "adjective_neuter_form"),
+    ("adjective_plural_form", "adjective_plural_form"),
     ("adjective_comparative", "adjective_comparative"),
     (
         "adjective_superlative_indefinite",
@@ -132,10 +134,10 @@ pub fn PracticeSettings(
             <div class="space-y-3">
                 {[
                     ("基础组", vec![0_usize, 1, 2]),
-                    ("名词变体组", vec![5, 6, 7]),
-                    ("动词变体组", vec![3, 4]),
-                    ("形容词变体组", vec![8, 9, 10, 11, 12]),
-                    ("副词变体组", vec![13, 14]),
+                    ("动词变体组", vec![3, 4, 5]),
+                    ("名词变体组", vec![6, 7, 8]),
+                    ("形容词变体组", vec![9, 10, 11, 12, 13]),
+                    ("副词变体组", vec![14, 15]),
                 ]
                     .into_iter()
                     .map(|(group_name, indices)| {

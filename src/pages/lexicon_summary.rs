@@ -263,17 +263,18 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry) -> String {
 
     match &entry.part_of_speech {
         PartOfSpeech::Verb => {
-            push_answer_part(&mut parts, "过去式", entry.past_tense.as_deref());
-            push_answer_part(&mut parts, "祈使式", entry.imperative.as_deref());
+            push_answer_part(&mut parts, "现在时", entry.verb_present_tense.as_deref());
+            push_answer_part(&mut parts, "过去式", entry.verb_past_tense.as_deref());
+            push_answer_part(&mut parts, "祈使式", entry.verb_imperative.as_deref());
         }
         PartOfSpeech::Noun => {
-            push_answer_part(&mut parts, "复数", entry.plural.as_deref());
-            push_answer_part(&mut parts, "单数特指", entry.singular_definite.as_deref());
-            push_answer_part(&mut parts, "复数特指", entry.plural_definite.as_deref());
+            push_answer_part(&mut parts, "复数", entry.noun_plural.as_deref());
+            push_answer_part(&mut parts, "单数特指", entry.noun_singular_definite.as_deref());
+            push_answer_part(&mut parts, "复数特指", entry.noun_plural_definite.as_deref());
         }
         PartOfSpeech::Adjective => {
-            push_answer_part(&mut parts, "对应中性", entry.neuter_form.as_deref());
-            push_answer_part(&mut parts, "对应复数", entry.plural_form.as_deref());
+            push_answer_part(&mut parts, "对应中性", entry.adjective_neuter_form.as_deref());
+            push_answer_part(&mut parts, "对应复数", entry.adjective_plural_form.as_deref());
             push_answer_part(&mut parts, "比较级", entry.adjective_comparative.as_deref());
             push_answer_part(
                 &mut parts,
@@ -331,24 +332,25 @@ fn practiced_entry_has_wrong(practiced_entry: &PracticedWordEntryResult) -> bool
         .any(|stats| stats.wrong_count > 0)
 }
 
-fn practiced_entry_stats(practiced_entry: &PracticedWordEntryResult) -> [&AnswerStats; 15] {
+fn practiced_entry_stats(practiced_entry: &PracticedWordEntryResult) -> [&AnswerStats; 16] {
     practiced_entry_stats_with_labels(practiced_entry).map(|(_, stats)| stats)
 }
 
 fn practiced_entry_stats_with_labels(
     practiced_entry: &PracticedWordEntryResult,
-) -> [(&'static str, &AnswerStats); 15] {
+) -> [(&'static str, &AnswerStats); 16] {
     [
         ("english", &practiced_entry.english),
         ("chinese", &practiced_entry.chinese),
         ("base_form", &practiced_entry.base_form),
-        ("past_tense", &practiced_entry.past_tense),
-        ("imperative", &practiced_entry.imperative),
-        ("plural", &practiced_entry.plural),
-        ("singular_definite", &practiced_entry.singular_definite),
-        ("plural_definite", &practiced_entry.plural_definite),
-        ("neuter_form", &practiced_entry.neuter_form),
-        ("plural_form", &practiced_entry.plural_form),
+        ("verb_present_tense", &practiced_entry.verb_present_tense),
+        ("verb_past_tense", &practiced_entry.verb_past_tense),
+        ("verb_imperative", &practiced_entry.verb_imperative),
+        ("noun_plural", &practiced_entry.noun_plural),
+        ("noun_singular_definite", &practiced_entry.noun_singular_definite),
+        ("noun_plural_definite", &practiced_entry.noun_plural_definite),
+        ("adjective_neuter_form", &practiced_entry.adjective_neuter_form),
+        ("adjective_plural_form", &practiced_entry.adjective_plural_form),
         (
             "adjective_comparative",
             &practiced_entry.adjective_comparative,

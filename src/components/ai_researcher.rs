@@ -7,24 +7,31 @@ use serde_json::Value;
 use crate::components::lexicon_browser::serialize_word_bank_csv;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
-const WORD_FORM_HINT_OPTIONS: [(&str, &str); 22] = [
+const WORD_FORM_HINT_OPTIONS: [(&str, &str); 23] = [
     ("unknown", "未知"),
     ("noun-baseform", "noun-baseform"),
-    ("noun-plural", "noun-plural"),
-    ("noun-singular_definite", "noun-singular_definite"),
-    ("noun-plural_definite", "noun-plural_definite"),
+    ("noun_plural", "noun_plural"),
+    ("noun_singular_definite", "noun_singular_definite"),
+    ("noun_plural_definite", "noun_plural_definite"),
     ("verb-baseform", "verb-baseform"),
-    ("verb-past_tense", "verb-past_tense"),
-    ("verb-imperative", "verb-imperative"),
+    ("verb_present_tense", "verb_present_tense"),
+    ("verb_past_tense", "verb_past_tense"),
+    ("verb_imperative", "verb_imperative"),
     ("adjective-baseform", "adjective-baseform"),
-    ("adjective-neuter_form", "adjective-neuter_form"),
-    ("adjective-plural_form", "adjective-plural_form"),
-    ("adjective-comparative", "adjective-comparative"),
-    ("adjective-superlative_indefinite", "adjective-superlative_indefinite"),
-    ("adjective-superlative_definite", "adjective-superlative_definite"),
+    ("adjective_neuter_form", "adjective_neuter_form"),
+    ("adjective_plural_form", "adjective_plural_form"),
+    ("adjective_comparative", "adjective_comparative"),
+    (
+        "adjective_superlative_indefinite",
+        "adjective_superlative_indefinite",
+    ),
+    (
+        "adjective_superlative_definite",
+        "adjective_superlative_definite",
+    ),
     ("adverb-baseform", "adverb-baseform"),
-    ("adverb-comparative", "adverb-comparative"),
-    ("adverb-superlative", "adverb-superlative"),
+    ("adverb_comparative", "adverb_comparative"),
+    ("adverb_superlative", "adverb_superlative"),
     ("cardinal_number-baseform", "cardinal_number-baseform"),
     ("ordinal_number-baseform", "ordinal_number-baseform"),
     ("month-baseform", "month-baseform"),
@@ -32,7 +39,8 @@ const WORD_FORM_HINT_OPTIONS: [(&str, &str); 22] = [
     ("interrogative-baseform", "interrogative-baseform"),
 ];
 
-const GEMINI_MODEL_CANDIDATES: [&str; 3] = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+const GEMINI_MODEL_CANDIDATES: [&str; 3] =
+    ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
@@ -42,13 +50,22 @@ struct GeminiWordResult {
     chinese: Vec<String>,
     english: Vec<String>,
     tags: Vec<String>,
-    past_tense: Option<String>,
-    imperative: Option<String>,
-    plural: Option<String>,
-    singular_definite: Option<String>,
-    plural_definite: Option<String>,
-    neuter_form: Option<String>,
-    plural_form: Option<String>,
+    #[serde(alias = "present_tense")]
+    verb_present_tense: Option<String>,
+    #[serde(alias = "past_tense")]
+    verb_past_tense: Option<String>,
+    #[serde(alias = "imperative")]
+    verb_imperative: Option<String>,
+    #[serde(alias = "plural")]
+    noun_plural: Option<String>,
+    #[serde(alias = "singular_definite")]
+    noun_singular_definite: Option<String>,
+    #[serde(alias = "plural_definite")]
+    noun_plural_definite: Option<String>,
+    #[serde(alias = "neuter_form")]
+    adjective_neuter_form: Option<String>,
+    #[serde(alias = "plural_form")]
+    adjective_plural_form: Option<String>,
     adjective_comparative: Option<String>,
     adjective_superlative_indefinite: Option<String>,
     adjective_superlative_definite: Option<String>,
@@ -68,13 +85,14 @@ impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
             english: normalize_text_list(&value.english),
             chinese: normalize_text_list(&value.chinese),
             base_form: normalize_text_opt(value.base_form.clone()).unwrap_or_default(),
-            past_tense: normalize_text_opt(value.past_tense.clone()),
-            imperative: normalize_text_opt(value.imperative.clone()),
-            plural: normalize_text_opt(value.plural.clone()),
-            singular_definite: normalize_text_opt(value.singular_definite.clone()),
-            plural_definite: normalize_text_opt(value.plural_definite.clone()),
-            neuter_form: normalize_text_opt(value.neuter_form.clone()),
-            plural_form: normalize_text_opt(value.plural_form.clone()),
+            verb_present_tense: normalize_text_opt(value.verb_present_tense.clone()),
+            verb_past_tense: normalize_text_opt(value.verb_past_tense.clone()),
+            verb_imperative: normalize_text_opt(value.verb_imperative.clone()),
+            noun_plural: normalize_text_opt(value.noun_plural.clone()),
+            noun_singular_definite: normalize_text_opt(value.noun_singular_definite.clone()),
+            noun_plural_definite: normalize_text_opt(value.noun_plural_definite.clone()),
+            adjective_neuter_form: normalize_text_opt(value.adjective_neuter_form.clone()),
+            adjective_plural_form: normalize_text_opt(value.adjective_plural_form.clone()),
             adjective_comparative: normalize_text_opt(value.adjective_comparative.clone()),
             adjective_superlative_indefinite: normalize_text_opt(
                 value.adjective_superlative_indefinite.clone(),
@@ -125,20 +143,22 @@ pub fn AiResearcher(
     set_single_english: WriteSignal<String>,
     single_tags: ReadSignal<String>,
     set_single_tags: WriteSignal<String>,
-    single_past_tense: ReadSignal<String>,
-    set_single_past_tense: WriteSignal<String>,
-    single_imperative: ReadSignal<String>,
-    set_single_imperative: WriteSignal<String>,
-    single_plural: ReadSignal<String>,
-    set_single_plural: WriteSignal<String>,
-    single_singular_definite: ReadSignal<String>,
-    set_single_singular_definite: WriteSignal<String>,
-    single_plural_definite: ReadSignal<String>,
-    set_single_plural_definite: WriteSignal<String>,
-    single_neuter_form: ReadSignal<String>,
-    set_single_neuter_form: WriteSignal<String>,
-    single_plural_form: ReadSignal<String>,
-    set_single_plural_form: WriteSignal<String>,
+    single_verb_present_tense: ReadSignal<String>,
+    set_single_verb_present_tense: WriteSignal<String>,
+    single_verb_past_tense: ReadSignal<String>,
+    set_single_verb_past_tense: WriteSignal<String>,
+    single_verb_imperative: ReadSignal<String>,
+    set_single_verb_imperative: WriteSignal<String>,
+    single_noun_plural: ReadSignal<String>,
+    set_single_noun_plural: WriteSignal<String>,
+    single_noun_singular_definite: ReadSignal<String>,
+    set_single_noun_singular_definite: WriteSignal<String>,
+    single_noun_plural_definite: ReadSignal<String>,
+    set_single_noun_plural_definite: WriteSignal<String>,
+    single_adjective_neuter_form: ReadSignal<String>,
+    set_single_adjective_neuter_form: WriteSignal<String>,
+    single_adjective_plural_form: ReadSignal<String>,
+    set_single_adjective_plural_form: WriteSignal<String>,
     single_adjective_comparative: ReadSignal<String>,
     set_single_adjective_comparative: WriteSignal<String>,
     single_adjective_superlative_indefinite: ReadSignal<String>,
@@ -204,7 +224,8 @@ pub fn AiResearcher(
                             set_status.set("查询失败：AI 返回了空数组。".to_string());
                         } else if parsed_list.len() == 1 {
                             let parsed = parsed_list.first().cloned().unwrap_or_default();
-                            let pos = normalize_part_of_speech(parsed.part_of_speech.clone(), &hint);
+                            let pos =
+                                normalize_part_of_speech(parsed.part_of_speech.clone(), &hint);
                             set_single_pos.set(pos);
 
                             if let Some(v) = normalize_text_opt(parsed.base_form) {
@@ -220,21 +241,42 @@ pub fn AiResearcher(
                                 set_if_blank(single_tags, set_single_tags, v);
                             }
 
-                            maybe_set_opt(single_past_tense, set_single_past_tense, parsed.past_tense);
-                            maybe_set_opt(single_imperative, set_single_imperative, parsed.imperative);
-                            maybe_set_opt(single_plural, set_single_plural, parsed.plural);
                             maybe_set_opt(
-                                single_singular_definite,
-                                set_single_singular_definite,
-                                parsed.singular_definite,
+                                single_verb_present_tense,
+                                set_single_verb_present_tense,
+                                parsed.verb_present_tense,
                             );
                             maybe_set_opt(
-                                single_plural_definite,
-                                set_single_plural_definite,
-                                parsed.plural_definite,
+                                single_verb_past_tense,
+                                set_single_verb_past_tense,
+                                parsed.verb_past_tense,
                             );
-                            maybe_set_opt(single_neuter_form, set_single_neuter_form, parsed.neuter_form);
-                            maybe_set_opt(single_plural_form, set_single_plural_form, parsed.plural_form);
+                            maybe_set_opt(
+                                single_verb_imperative,
+                                set_single_verb_imperative,
+                                parsed.verb_imperative,
+                            );
+                            maybe_set_opt(single_noun_plural, set_single_noun_plural, parsed.noun_plural);
+                            maybe_set_opt(
+                                single_noun_singular_definite,
+                                set_single_noun_singular_definite,
+                                parsed.noun_singular_definite,
+                            );
+                            maybe_set_opt(
+                                single_noun_plural_definite,
+                                set_single_noun_plural_definite,
+                                parsed.noun_plural_definite,
+                            );
+                            maybe_set_opt(
+                                single_adjective_neuter_form,
+                                set_single_adjective_neuter_form,
+                                parsed.adjective_neuter_form,
+                            );
+                            maybe_set_opt(
+                                single_adjective_plural_form,
+                                set_single_adjective_plural_form,
+                                parsed.adjective_plural_form,
+                            );
                             maybe_set_opt(
                                 single_adjective_comparative,
                                 set_single_adjective_comparative,
@@ -384,7 +426,7 @@ fn normalize_text_list(values: &[String]) -> Vec<String> {
 }
 
 fn hint_to_part_of_speech(hint: &str) -> Option<PartOfSpeech> {
-    let prefix = hint.split('-').next().unwrap_or_default().trim();
+    let prefix = hint.split(['-', '_']).next().unwrap_or_default().trim();
     PartOfSpeech::from_key(prefix).ok()
 }
 
@@ -424,13 +466,14 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
   \"chinese\": [],\n\
   \"english\": [],\n\
   \"tags\": [],\n\
-  \"past_tense\": null,\n\
-  \"imperative\": null,\n\
-  \"plural\": null,\n\
-  \"singular_definite\": null,\n\
-  \"plural_definite\": null,\n\
-  \"neuter_form\": null,\n\
-  \"plural_form\": null,\n\
+  \"verb_present_tense\": null,\n\
+  \"verb_past_tense\": null,\n\
+  \"verb_imperative\": null,\n\
+  \"noun_plural\": null,\n\
+  \"noun_singular_definite\": null,\n\
+  \"noun_plural_definite\": null,\n\
+  \"adjective_neuter_form\": null,\n\
+  \"adjective_plural_form\": null,\n\
   \"adjective_comparative\": null,\n\
   \"adjective_superlative_indefinite\": null,\n\
   \"adjective_superlative_definite\": null,\n\
@@ -443,7 +486,8 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {
     let json_text = extract_json_payload(raw_text)
         .ok_or_else(|| "未提取到 JSON 内容。请检查 Gemini 返回格式。".to_string())?;
-    let value = serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON 解析失败：{err}"))?;
+    let value =
+        serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON 解析失败：{err}"))?;
 
     if value.is_object() {
         let one = serde_json::from_value::<GeminiWordResult>(value)

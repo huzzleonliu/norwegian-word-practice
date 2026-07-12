@@ -18,6 +18,8 @@ pub fn LexiconEditorAddSingle(
     set_single_english: WriteSignal<String>,
     single_tags: ReadSignal<String>,
     set_single_tags: WriteSignal<String>,
+    single_verb_present_tense: ReadSignal<String>,
+    set_single_verb_present_tense: WriteSignal<String>,
     single_past_tense: ReadSignal<String>,
     set_single_past_tense: WriteSignal<String>,
     single_imperative: ReadSignal<String>,
@@ -105,14 +107,21 @@ pub fn LexiconEditorAddSingle(
                             <>
                                 <input
                                     type="text"
-                                    placeholder="past_tense（必填）"
+                                    placeholder="verb_present_tense（必填）"
+                                    prop:value=move || single_verb_present_tense.get()
+                                    on:input=move |ev| set_single_verb_present_tense.set(event_target_value(&ev))
+                                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="verb_past_tense（必填）"
                                     prop:value=move || single_past_tense.get()
                                     on:input=move |ev| set_single_past_tense.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="imperative（必填）"
+                                    placeholder="verb_imperative（必填）"
                                     prop:value=move || single_imperative.get()
                                     on:input=move |ev| set_single_imperative.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -125,14 +134,14 @@ pub fn LexiconEditorAddSingle(
                             <>
                                 <input
                                     type="text"
-                                    placeholder="plural（必填）"
+                                    placeholder="noun_plural（必填）"
                                     prop:value=move || single_plural.get()
                                     on:input=move |ev| set_single_plural.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="singular_definite（必填）"
+                                    placeholder="noun_singular_definite（必填）"
                                     prop:value=move || single_singular_definite.get()
                                     on:input=move |ev| {
                                         set_single_singular_definite.set(event_target_value(&ev))
@@ -141,7 +150,7 @@ pub fn LexiconEditorAddSingle(
                                 />
                                 <input
                                     type="text"
-                                    placeholder="plural_definite（必填）"
+                                    placeholder="noun_plural_definite（必填）"
                                     prop:value=move || single_plural_definite.get()
                                     on:input=move |ev| set_single_plural_definite.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -154,14 +163,14 @@ pub fn LexiconEditorAddSingle(
                             <>
                                 <input
                                     type="text"
-                                    placeholder="neuter_form（必填）"
+                                    placeholder="adjective_neuter_form（必填）"
                                     prop:value=move || single_neuter_form.get()
                                     on:input=move |ev| set_single_neuter_form.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="plural_form（必填）"
+                                    placeholder="adjective_plural_form（必填）"
                                     prop:value=move || single_plural_form.get()
                                     on:input=move |ev| set_single_plural_form.set(event_target_value(&ev))
                                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"

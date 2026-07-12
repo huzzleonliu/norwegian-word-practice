@@ -20,13 +20,14 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
             "english",
             "chinese",
             "norwegian_base",
-            "past_tense",
-            "imperative",
-            "plural",
-            "singular_definite",
-            "plural_definite",
-            "neuter_form",
-            "plural_form",
+            "verb_present_tense",
+            "verb_past_tense",
+            "verb_imperative",
+            "noun_plural",
+            "noun_singular_definite",
+            "noun_plural_definite",
+            "adjective_neuter_form",
+            "adjective_plural_form",
             "adjective_comparative",
             "adjective_superlative_indefinite",
             "adjective_superlative_definite",
@@ -47,13 +48,14 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
                 csv_entry.english.as_str(),
                 csv_entry.chinese.as_str(),
                 csv_entry.norwegian_base.as_str(),
-                csv_entry.past_tense.as_str(),
-                csv_entry.imperative.as_str(),
-                csv_entry.plural.as_str(),
-                csv_entry.singular_definite.as_str(),
-                csv_entry.plural_definite.as_str(),
-                csv_entry.neuter_form.as_str(),
-                csv_entry.plural_form.as_str(),
+                csv_entry.verb_present_tense.as_str(),
+                csv_entry.verb_past_tense.as_str(),
+                csv_entry.verb_imperative.as_str(),
+                csv_entry.noun_plural.as_str(),
+                csv_entry.noun_singular_definite.as_str(),
+                csv_entry.noun_plural_definite.as_str(),
+                csv_entry.adjective_neuter_form.as_str(),
+                csv_entry.adjective_plural_form.as_str(),
                 csv_entry.adjective_comparative.as_str(),
                 csv_entry.adjective_superlative_indefinite.as_str(),
                 csv_entry.adjective_superlative_definite.as_str(),
@@ -99,7 +101,7 @@ pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: 
     }
     let query_lower = trimmed.to_lowercase();
 
-    (0..19).any(|idx| {
+    (0..20).any(|idx| {
         columns.get(idx).copied().unwrap_or(false)
             && column_value_text(entry, idx)
                 .to_lowercase()
@@ -116,18 +118,19 @@ pub(super) fn header_name(col_idx: usize) -> &'static str {
         4 => "english",
         5 => "chinese",
         6 => "base_form",
-        7 => "past_tense",
-        8 => "imperative",
-        9 => "plural",
-        10 => "singular_definite",
-        11 => "plural_definite",
-        12 => "neuter_form",
-        13 => "plural_form",
-        14 => "adjective_comparative",
-        15 => "adjective_superlative_indefinite",
-        16 => "adjective_superlative_definite",
-        17 => "adverb_comparative",
-        18 => "adverb_superlative",
+        7 => "verb_present_tense",
+        8 => "verb_past_tense",
+        9 => "verb_imperative",
+        10 => "noun_plural",
+        11 => "noun_singular_definite",
+        12 => "noun_plural_definite",
+        13 => "adjective_neuter_form",
+        14 => "adjective_plural_form",
+        15 => "adjective_comparative",
+        16 => "adjective_superlative_indefinite",
+        17 => "adjective_superlative_definite",
+        18 => "adverb_comparative",
+        19 => "adverb_superlative",
         _ => "unknown",
     }
 }
@@ -206,24 +209,25 @@ fn compare_entries_by_column(
         4 => a.english.join("|").cmp(&b.english.join("|")),
         5 => a.chinese.join("|").cmp(&b.chinese.join("|")),
         6 => a.base_form.cmp(&b.base_form),
-        7 => opt_cmp(&a.past_tense, &b.past_tense),
-        8 => opt_cmp(&a.imperative, &b.imperative),
-        9 => opt_cmp(&a.plural, &b.plural),
-        10 => opt_cmp(&a.singular_definite, &b.singular_definite),
-        11 => opt_cmp(&a.plural_definite, &b.plural_definite),
-        12 => opt_cmp(&a.neuter_form, &b.neuter_form),
-        13 => opt_cmp(&a.plural_form, &b.plural_form),
-        14 => opt_cmp(&a.adjective_comparative, &b.adjective_comparative),
-        15 => opt_cmp(
+        7 => opt_cmp(&a.verb_present_tense, &b.verb_present_tense),
+        8 => opt_cmp(&a.verb_past_tense, &b.verb_past_tense),
+        9 => opt_cmp(&a.verb_imperative, &b.verb_imperative),
+        10 => opt_cmp(&a.noun_plural, &b.noun_plural),
+        11 => opt_cmp(&a.noun_singular_definite, &b.noun_singular_definite),
+        12 => opt_cmp(&a.noun_plural_definite, &b.noun_plural_definite),
+        13 => opt_cmp(&a.adjective_neuter_form, &b.adjective_neuter_form),
+        14 => opt_cmp(&a.adjective_plural_form, &b.adjective_plural_form),
+        15 => opt_cmp(&a.adjective_comparative, &b.adjective_comparative),
+        16 => opt_cmp(
             &a.adjective_superlative_indefinite,
             &b.adjective_superlative_indefinite,
         ),
-        16 => opt_cmp(
+        17 => opt_cmp(
             &a.adjective_superlative_definite,
             &b.adjective_superlative_definite,
         ),
-        17 => opt_cmp(&a.adverb_comparative, &b.adverb_comparative),
-        18 => opt_cmp(&a.adverb_superlative, &b.adverb_superlative),
+        18 => opt_cmp(&a.adverb_comparative, &b.adverb_comparative),
+        19 => opt_cmp(&a.adverb_superlative, &b.adverb_superlative),
         _ => Ordering::Equal,
     };
 
@@ -249,24 +253,25 @@ fn column_value_text(entry: &WordBankEntry, col_idx: usize) -> String {
         4 => entry.english.join("|"),
         5 => entry.chinese.join("|"),
         6 => entry.base_form.clone(),
-        7 => entry.past_tense.clone().unwrap_or_default(),
-        8 => entry.imperative.clone().unwrap_or_default(),
-        9 => entry.plural.clone().unwrap_or_default(),
-        10 => entry.singular_definite.clone().unwrap_or_default(),
-        11 => entry.plural_definite.clone().unwrap_or_default(),
-        12 => entry.neuter_form.clone().unwrap_or_default(),
-        13 => entry.plural_form.clone().unwrap_or_default(),
-        14 => entry.adjective_comparative.clone().unwrap_or_default(),
-        15 => entry
+        7 => entry.verb_present_tense.clone().unwrap_or_default(),
+        8 => entry.verb_past_tense.clone().unwrap_or_default(),
+        9 => entry.verb_imperative.clone().unwrap_or_default(),
+        10 => entry.noun_plural.clone().unwrap_or_default(),
+        11 => entry.noun_singular_definite.clone().unwrap_or_default(),
+        12 => entry.noun_plural_definite.clone().unwrap_or_default(),
+        13 => entry.adjective_neuter_form.clone().unwrap_or_default(),
+        14 => entry.adjective_plural_form.clone().unwrap_or_default(),
+        15 => entry.adjective_comparative.clone().unwrap_or_default(),
+        16 => entry
             .adjective_superlative_indefinite
             .clone()
             .unwrap_or_default(),
-        16 => entry
+        17 => entry
             .adjective_superlative_definite
             .clone()
             .unwrap_or_default(),
-        17 => entry.adverb_comparative.clone().unwrap_or_default(),
-        18 => entry.adverb_superlative.clone().unwrap_or_default(),
+        18 => entry.adverb_comparative.clone().unwrap_or_default(),
+        19 => entry.adverb_superlative.clone().unwrap_or_default(),
         _ => String::new(),
     }
 }

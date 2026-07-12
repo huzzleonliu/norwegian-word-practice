@@ -75,20 +75,22 @@ pub struct WordBankEntry {
     pub chinese: Vec<String>,
     // 原型：不可为空
     pub base_form: String,
+    // 现在时：可为空（动词时必填）
+    pub verb_present_tense: Option<String>,
     // 过去式：可为空
-    pub past_tense: Option<String>,
+    pub verb_past_tense: Option<String>,
     // 祈使式：可为空
-    pub imperative: Option<String>,
+    pub verb_imperative: Option<String>,
     // 复数：可为空
-    pub plural: Option<String>,
+    pub noun_plural: Option<String>,
     // 单数特指：可为空
-    pub singular_definite: Option<String>,
+    pub noun_singular_definite: Option<String>,
     // 复数特指：可为空
-    pub plural_definite: Option<String>,
+    pub noun_plural_definite: Option<String>,
     // 对应中性：可为空
-    pub neuter_form: Option<String>,
+    pub adjective_neuter_form: Option<String>,
     // 对应复数：可为空
-    pub plural_form: Option<String>,
+    pub adjective_plural_form: Option<String>,
     // 形容词比较级：可为空
     pub adjective_comparative: Option<String>,
     // 形容词最高级泛指：可为空

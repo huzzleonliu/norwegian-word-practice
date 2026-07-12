@@ -49,13 +49,14 @@ pub fn validate_and_prepare_single_entry(
         english: normalize_vec(draft.english),
         chinese,
         base_form,
-        past_tense: normalize_optional(draft.past_tense),
-        imperative: normalize_optional(draft.imperative),
-        plural: normalize_optional(draft.plural),
-        singular_definite: normalize_optional(draft.singular_definite),
-        plural_definite: normalize_optional(draft.plural_definite),
-        neuter_form: normalize_optional(draft.neuter_form),
-        plural_form: normalize_optional(draft.plural_form),
+        verb_present_tense: normalize_optional(draft.verb_present_tense),
+        verb_past_tense: normalize_optional(draft.verb_past_tense),
+        verb_imperative: normalize_optional(draft.verb_imperative),
+        noun_plural: normalize_optional(draft.noun_plural),
+        noun_singular_definite: normalize_optional(draft.noun_singular_definite),
+        noun_plural_definite: normalize_optional(draft.noun_plural_definite),
+        adjective_neuter_form: normalize_optional(draft.adjective_neuter_form),
+        adjective_plural_form: normalize_optional(draft.adjective_plural_form),
         adjective_comparative: normalize_optional(draft.adjective_comparative),
         adjective_superlative_indefinite: normalize_optional(
             draft.adjective_superlative_indefinite,
@@ -102,17 +103,18 @@ fn validate_forms_by_part_of_speech(
 ) -> Result<(), String> {
     match pos {
         PartOfSpeech::Verb => {
-            require_option("过去式", &draft.past_tense)?;
-            require_option("祈使式", &draft.imperative)?;
+            require_option("现在时", &draft.verb_present_tense)?;
+            require_option("过去式", &draft.verb_past_tense)?;
+            require_option("祈使式", &draft.verb_imperative)?;
         }
         PartOfSpeech::Noun => {
-            require_option("复数", &draft.plural)?;
-            require_option("单数特指", &draft.singular_definite)?;
-            require_option("复数特指", &draft.plural_definite)?;
+            require_option("复数", &draft.noun_plural)?;
+            require_option("单数特指", &draft.noun_singular_definite)?;
+            require_option("复数特指", &draft.noun_plural_definite)?;
         }
         PartOfSpeech::Adjective => {
-            require_option("对应中性", &draft.neuter_form)?;
-            require_option("对应复数", &draft.plural_form)?;
+            require_option("对应中性", &draft.adjective_neuter_form)?;
+            require_option("对应复数", &draft.adjective_plural_form)?;
             require_option("形容词比较级", &draft.adjective_comparative)?;
             require_option("形容词最高级泛指", &draft.adjective_superlative_indefinite)?;
             require_option("形容词最高级特指", &draft.adjective_superlative_definite)?;

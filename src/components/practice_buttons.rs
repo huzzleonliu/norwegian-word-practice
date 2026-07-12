@@ -257,19 +257,23 @@ fn merge_practiced_entry(
     merge_answer_stats(&mut existing_entry.english, &temp_entry.english);
     merge_answer_stats(&mut existing_entry.chinese, &temp_entry.chinese);
     merge_answer_stats(&mut existing_entry.base_form, &temp_entry.base_form);
-    merge_answer_stats(&mut existing_entry.past_tense, &temp_entry.past_tense);
-    merge_answer_stats(&mut existing_entry.imperative, &temp_entry.imperative);
-    merge_answer_stats(&mut existing_entry.plural, &temp_entry.plural);
     merge_answer_stats(
-        &mut existing_entry.singular_definite,
-        &temp_entry.singular_definite,
+        &mut existing_entry.verb_present_tense,
+        &temp_entry.verb_present_tense,
+    );
+    merge_answer_stats(&mut existing_entry.verb_past_tense, &temp_entry.verb_past_tense);
+    merge_answer_stats(&mut existing_entry.verb_imperative, &temp_entry.verb_imperative);
+    merge_answer_stats(&mut existing_entry.noun_plural, &temp_entry.noun_plural);
+    merge_answer_stats(
+        &mut existing_entry.noun_singular_definite,
+        &temp_entry.noun_singular_definite,
     );
     merge_answer_stats(
-        &mut existing_entry.plural_definite,
-        &temp_entry.plural_definite,
+        &mut existing_entry.noun_plural_definite,
+        &temp_entry.noun_plural_definite,
     );
-    merge_answer_stats(&mut existing_entry.neuter_form, &temp_entry.neuter_form);
-    merge_answer_stats(&mut existing_entry.plural_form, &temp_entry.plural_form);
+    merge_answer_stats(&mut existing_entry.adjective_neuter_form, &temp_entry.adjective_neuter_form);
+    merge_answer_stats(&mut existing_entry.adjective_plural_form, &temp_entry.adjective_plural_form);
     merge_answer_stats(
         &mut existing_entry.adjective_comparative,
         &temp_entry.adjective_comparative,
@@ -349,13 +353,14 @@ fn answer_stats_mut<'a>(
         "english" => Some(&mut practiced_entry.english),
         "chinese" => Some(&mut practiced_entry.chinese),
         "base_form" => Some(&mut practiced_entry.base_form),
-        "past_tense" => Some(&mut practiced_entry.past_tense),
-        "imperative" => Some(&mut practiced_entry.imperative),
-        "plural" => Some(&mut practiced_entry.plural),
-        "singular_definite" => Some(&mut practiced_entry.singular_definite),
-        "plural_definite" => Some(&mut practiced_entry.plural_definite),
-        "neuter_form" => Some(&mut practiced_entry.neuter_form),
-        "plural_form" => Some(&mut practiced_entry.plural_form),
+        "verb_present_tense" => Some(&mut practiced_entry.verb_present_tense),
+        "verb_past_tense" => Some(&mut practiced_entry.verb_past_tense),
+        "verb_imperative" => Some(&mut practiced_entry.verb_imperative),
+        "noun_plural" => Some(&mut practiced_entry.noun_plural),
+        "noun_singular_definite" => Some(&mut practiced_entry.noun_singular_definite),
+        "noun_plural_definite" => Some(&mut practiced_entry.noun_plural_definite),
+        "adjective_neuter_form" => Some(&mut practiced_entry.adjective_neuter_form),
+        "adjective_plural_form" => Some(&mut practiced_entry.adjective_plural_form),
         "adjective_comparative" => Some(&mut practiced_entry.adjective_comparative),
         "adjective_superlative_indefinite" => {
             Some(&mut practiced_entry.adjective_superlative_indefinite)
