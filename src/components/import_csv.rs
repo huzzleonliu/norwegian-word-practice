@@ -120,7 +120,11 @@ fn import_csv_from_file(
                 Err(err) => {
                     set_status.set(format!(
                         "{} {err:?}",
-                        tr(lang, "导入失败：读取文件失败，", "Import failed: read file error,")
+                        tr(
+                            lang,
+                            "导入失败：读取文件失败，",
+                            "Import failed: read file error,"
+                        )
                     ));
                     return;
                 }
@@ -139,13 +143,20 @@ fn import_csv_from_file(
                     }
                     set_status.set(format!(
                         "{} {} {}",
-                        tr(lang, "词库导入成功（已覆盖），共", "Lexicon imported (overwritten),"),
+                        tr(
+                            lang,
+                            "词库导入成功（已覆盖），共",
+                            "Lexicon imported (overwritten),"
+                        ),
                         count,
                         tr(lang, "条。", "entries.")
                     ));
                 }
                 Err(err) => {
-                    set_status.set(format!("{} {err}", tr(lang, "导入失败：", "Import failed:")));
+                    set_status.set(format!(
+                        "{} {err}",
+                        tr(lang, "导入失败：", "Import failed:")
+                    ));
                 }
             }
         });

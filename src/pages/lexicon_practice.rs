@@ -75,8 +75,12 @@ pub fn LexiconPracticePage() -> impl IntoView {
         let current_questions = build_question_items(&active_ids, &entries);
         if current_questions.is_empty() {
             set_status.set(
-                tr(language, "当前没有可检查的题目。", "No questions available for checking.")
-                    .to_string(),
+                tr(
+                    language,
+                    "当前没有可检查的题目。",
+                    "No questions available for checking.",
+                )
+                .to_string(),
             );
             return;
         }
@@ -177,9 +181,12 @@ pub fn LexiconPracticePage() -> impl IntoView {
                 "{} {correct_fields}/{total_fields}，{} {} {}",
                 tr(language, "检查完成：字段正确", "Checked: correct fields"),
                 tr(language, "本轮完成", "solved this round"),
-                newly_solved_ids.len()
-                ,
-                tr(language, "条，已自动补充新题。", "entries, new questions appended.")
+                newly_solved_ids.len(),
+                tr(
+                    language,
+                    "条，已自动补充新题。",
+                    "entries, new questions appended."
+                )
             ));
         }
     });

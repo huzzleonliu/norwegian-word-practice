@@ -36,7 +36,8 @@ pub fn FinishPracticeButton(
             finish_target_page,
         );
     };
-    let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "完成练习", "Finish Practice").to_string());
+    let label = label
+        .unwrap_or_else(|| tr(lang.get_untracked(), "完成练习", "Finish Practice").to_string());
     let class = class.unwrap_or_else(|| {
         "w-full rounded-lg border border-indigo-600 bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-600 sm:w-auto"
             .to_string()
@@ -132,7 +133,12 @@ pub fn handle_finish_click(
     let mut selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
     if selected_ids.is_empty() {
         set_status.set(
-            tr(lang, "当前没有可练习词条。", "No entries available for practice.").to_string(),
+            tr(
+                lang,
+                "当前没有可练习词条。",
+                "No entries available for practice.",
+            )
+            .to_string(),
         );
         return;
     }
@@ -271,8 +277,34 @@ fn merge_practiced_entry(
         &mut existing_entry.verb_present_tense,
         &temp_entry.verb_present_tense,
     );
-    merge_answer_stats(&mut existing_entry.verb_past_tense, &temp_entry.verb_past_tense);
-    merge_answer_stats(&mut existing_entry.verb_imperative, &temp_entry.verb_imperative);
+    merge_answer_stats(
+        &mut existing_entry.verb_past_tense,
+        &temp_entry.verb_past_tense,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_imperative,
+        &temp_entry.verb_imperative,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_present_participle,
+        &temp_entry.verb_present_participle,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_past_participle,
+        &temp_entry.verb_past_participle,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_passive_infinitive,
+        &temp_entry.verb_passive_infinitive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_passive_present,
+        &temp_entry.verb_passive_present,
+    );
+    merge_answer_stats(
+        &mut existing_entry.verb_passive_past,
+        &temp_entry.verb_passive_past,
+    );
     merge_answer_stats(&mut existing_entry.noun_plural, &temp_entry.noun_plural);
     merge_answer_stats(
         &mut existing_entry.noun_singular_definite,
@@ -282,8 +314,34 @@ fn merge_practiced_entry(
         &mut existing_entry.noun_plural_definite,
         &temp_entry.noun_plural_definite,
     );
-    merge_answer_stats(&mut existing_entry.adjective_neuter_form, &temp_entry.adjective_neuter_form);
-    merge_answer_stats(&mut existing_entry.adjective_plural_form, &temp_entry.adjective_plural_form);
+    merge_answer_stats(
+        &mut existing_entry.noun_singular_definite_genitive,
+        &temp_entry.noun_singular_definite_genitive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.noun_plural_definite_genitive,
+        &temp_entry.noun_plural_definite_genitive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.noun_singular_indefinite_genitive,
+        &temp_entry.noun_singular_indefinite_genitive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.noun_plural_indefinite_genitive,
+        &temp_entry.noun_plural_indefinite_genitive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.adjective_feminine_form,
+        &temp_entry.adjective_feminine_form,
+    );
+    merge_answer_stats(
+        &mut existing_entry.adjective_neuter_form,
+        &temp_entry.adjective_neuter_form,
+    );
+    merge_answer_stats(
+        &mut existing_entry.adjective_plural_form,
+        &temp_entry.adjective_plural_form,
+    );
     merge_answer_stats(
         &mut existing_entry.adjective_comparative,
         &temp_entry.adjective_comparative,
@@ -295,6 +353,38 @@ fn merge_practiced_entry(
     merge_answer_stats(
         &mut existing_entry.adjective_superlative_definite,
         &temp_entry.adjective_superlative_definite,
+    );
+    merge_answer_stats(
+        &mut existing_entry.pronoun_object,
+        &temp_entry.pronoun_object,
+    );
+    merge_answer_stats(
+        &mut existing_entry.pronoun_reflexive,
+        &temp_entry.pronoun_reflexive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.pronoun_plural_subject,
+        &temp_entry.pronoun_plural_subject,
+    );
+    merge_answer_stats(
+        &mut existing_entry.pronoun_plural_object,
+        &temp_entry.pronoun_plural_object,
+    );
+    merge_answer_stats(
+        &mut existing_entry.pronoun_plural_reflexive,
+        &temp_entry.pronoun_plural_reflexive,
+    );
+    merge_answer_stats(
+        &mut existing_entry.determinative_feminine_form,
+        &temp_entry.determinative_feminine_form,
+    );
+    merge_answer_stats(
+        &mut existing_entry.determinative_neuter_form,
+        &temp_entry.determinative_neuter_form,
+    );
+    merge_answer_stats(
+        &mut existing_entry.determinative_plural_form,
+        &temp_entry.determinative_plural_form,
     );
     merge_answer_stats(
         &mut existing_entry.adverb_comparative,
@@ -366,9 +456,25 @@ fn answer_stats_mut<'a>(
         "verb_present_tense" => Some(&mut practiced_entry.verb_present_tense),
         "verb_past_tense" => Some(&mut practiced_entry.verb_past_tense),
         "verb_imperative" => Some(&mut practiced_entry.verb_imperative),
+        "verb_present_participle" => Some(&mut practiced_entry.verb_present_participle),
+        "verb_past_participle" => Some(&mut practiced_entry.verb_past_participle),
+        "verb_passive_infinitive" => Some(&mut practiced_entry.verb_passive_infinitive),
+        "verb_passive_present" => Some(&mut practiced_entry.verb_passive_present),
+        "verb_passive_past" => Some(&mut practiced_entry.verb_passive_past),
         "noun_plural" => Some(&mut practiced_entry.noun_plural),
         "noun_singular_definite" => Some(&mut practiced_entry.noun_singular_definite),
         "noun_plural_definite" => Some(&mut practiced_entry.noun_plural_definite),
+        "noun_singular_definite_genitive" => {
+            Some(&mut practiced_entry.noun_singular_definite_genitive)
+        }
+        "noun_plural_definite_genitive" => Some(&mut practiced_entry.noun_plural_definite_genitive),
+        "noun_singular_indefinite_genitive" => {
+            Some(&mut practiced_entry.noun_singular_indefinite_genitive)
+        }
+        "noun_plural_indefinite_genitive" => {
+            Some(&mut practiced_entry.noun_plural_indefinite_genitive)
+        }
+        "adjective_feminine_form" => Some(&mut practiced_entry.adjective_feminine_form),
         "adjective_neuter_form" => Some(&mut practiced_entry.adjective_neuter_form),
         "adjective_plural_form" => Some(&mut practiced_entry.adjective_plural_form),
         "adjective_comparative" => Some(&mut practiced_entry.adjective_comparative),
@@ -378,6 +484,14 @@ fn answer_stats_mut<'a>(
         "adjective_superlative_definite" => {
             Some(&mut practiced_entry.adjective_superlative_definite)
         }
+        "pronoun_object" => Some(&mut practiced_entry.pronoun_object),
+        "pronoun_reflexive" => Some(&mut practiced_entry.pronoun_reflexive),
+        "pronoun_plural_subject" => Some(&mut practiced_entry.pronoun_plural_subject),
+        "pronoun_plural_object" => Some(&mut practiced_entry.pronoun_plural_object),
+        "pronoun_plural_reflexive" => Some(&mut practiced_entry.pronoun_plural_reflexive),
+        "determinative_feminine_form" => Some(&mut practiced_entry.determinative_feminine_form),
+        "determinative_neuter_form" => Some(&mut practiced_entry.determinative_neuter_form),
+        "determinative_plural_form" => Some(&mut practiced_entry.determinative_plural_form),
         "adverb_comparative" => Some(&mut practiced_entry.adverb_comparative),
         "adverb_superlative" => Some(&mut practiced_entry.adverb_superlative),
         _ => None,

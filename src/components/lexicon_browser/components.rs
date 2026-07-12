@@ -1,14 +1,14 @@
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
 use super::structures::LexiconBrowserMode;
 use super::utils::{
-    compare_entries_by_rules, entry_matches_filter, format_sort_rules, header_name,
-    input_to_option, option_to_input, parse_pipe_list,
+    DATA_COLUMN_KEYS, compare_entries_by_rules, entry_matches_filter, format_sort_rules,
+    header_name, input_to_option, option_to_input, parse_pipe_list,
 };
+use crate::app_state::WordBankState;
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
-use crate::utils::i18n::{field_label, tr};
 use crate::utils::dictionary::validate_existing_entry;
+use crate::utils::i18n::{field_label, tr};
 
 #[component]
 pub fn LexiconBrowser(
@@ -19,12 +19,18 @@ pub fn LexiconBrowser(
     mode: LexiconBrowserMode,
 ) -> impl IntoView {
     let lang = expect_context::<WordBankState>().ui_language;
-    const DATA_COLUMN_COUNT: usize = 20;
+    const DATA_COLUMN_COUNT: usize = DATA_COLUMN_KEYS.len();
     let is_query_mode = mode == LexiconBrowserMode::Query;
-    let (col_widths, set_col_widths) = signal(vec![
-        120_u16, 90, 140, 160, 180, 180, 150, 120, 120, 120, 140, 140, 130, 130, 160, 210, 210,
-        160, 160, 160, 210,
-    ]);
+    let (col_widths, set_col_widths) = signal({
+        let mut widths = vec![160_u16; DATA_COLUMN_COUNT + 1];
+        if let Some(selected_col) = widths.get_mut(1) {
+            *selected_col = 90;
+        }
+        if let Some(operation_col) = widths.get_mut(DATA_COLUMN_COUNT) {
+            *operation_col = 220;
+        }
+        widths
+    });
     let (baseline_entries, set_baseline_entries) = signal(entries.get_untracked());
     let (draft_entries, set_draft_entries) = signal(entries.get_untracked());
     let (row_undo, set_row_undo) =
@@ -70,7 +76,8 @@ pub fn LexiconBrowser(
     let min_width_for = |idx: usize| -> u16 {
         match idx {
             1 => 70,
-            7..=19 => 100,
+            idx if idx == DATA_COLUMN_COUNT => 260,
+            7..=37 => 100,
             _ => 160,
         }
     };
@@ -191,7 +198,11 @@ pub fn LexiconBrowser(
         if query.is_empty() {
             set_status.set(format!(
                 "{} {} {}",
-                tr(lang.get_untracked(), "已显示全部条目，共", "Showing all entries,"),
+                tr(
+                    lang.get_untracked(),
+                    "已显示全部条目，共",
+                    "Showing all entries,"
+                ),
                 draft_entries.get_untracked().len(),
                 tr(lang.get_untracked(), "条。", "entries.")
             ));
@@ -205,7 +216,11 @@ pub fn LexiconBrowser(
             .count();
         set_status.set(format!(
             "{} {} {}",
-            tr(lang.get_untracked(), "查找完成：匹配", "Search complete: matched"),
+            tr(
+                lang.get_untracked(),
+                "查找完成：匹配",
+                "Search complete: matched"
+            ),
             count,
             tr(lang.get_untracked(), "条。", "entries.")
         ));
@@ -391,9 +406,11 @@ pub fn LexiconBrowser(
                                 <div class="mt-3 space-y-3">
                                     {[
                                         ("core", vec![0, 1, 2, 3, 4, 5, 6]),
-                                        ("verb", vec![7, 8, 9]),
-                                        ("noun", vec![10, 11, 12]),
-                                        ("adjective", vec![13, 14, 15, 16, 17]),
+                                        ("verb", vec![7, 8, 9, 20, 21, 22, 23, 24]),
+                                        ("noun", vec![10, 11, 12, 25, 26, 27, 28]),
+                                        ("adjective", vec![29, 13, 14, 15, 16, 17]),
+                                        ("pronoun", vec![30, 31, 32, 33, 34]),
+                                        ("determinative", vec![35, 36, 37]),
                                         ("adverb", vec![18, 19]),
                                     ]
                                         .into_iter()
@@ -406,6 +423,8 @@ pub fn LexiconBrowser(
                                                             "verb" => tr(lang.get(), "动词变体组", "Verb Forms"),
                                                             "noun" => tr(lang.get(), "名词变体组", "Noun Forms"),
                                                             "adjective" => tr(lang.get(), "形容词变体组", "Adjective Forms"),
+                                                            "pronoun" => tr(lang.get(), "代词变体组", "Pronoun Forms"),
+                                                            "determinative" => tr(lang.get(), "限定词变体组", "Determinative Forms"),
                                                             "adverb" => tr(lang.get(), "副词变体组", "Adverb Forms"),
                                                             _ => group_name,
                                                         }}
@@ -450,10 +469,14 @@ pub fn LexiconBrowser(
                 </div>
             </div>
             <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
-                <table class="w-full border-collapse text-sm table-fixed">
+                <table class="w-max min-w-full border-collapse text-sm table-fixed whitespace-nowrap">
                     <colgroup>
                         {move || {
-                            let total_columns = if is_query_mode { DATA_COLUMN_COUNT } else { 21 };
+                            let total_columns = if is_query_mode {
+                                DATA_COLUMN_COUNT
+                            } else {
+                                DATA_COLUMN_COUNT + 1
+                            };
                             (0..total_columns)
                                 .map(|idx| {
                                     view! {
@@ -479,34 +502,12 @@ pub fn LexiconBrowser(
                     <thead>
                         <tr class="sticky top-0 z-10 bg-slate-900/95 text-left text-slate-300">
                             {move || {
-                                let headers = [
-                                    "id",
-                                    "selected",
-                                    "part_of_speech",
-                                    "tags",
-                                    "english",
-                                    "chinese",
-                                    "base_form",
-                                    "verb_present_tense",
-                                    "verb_past_tense",
-                                    "verb_imperative",
-                                    "noun_plural",
-                                    "noun_singular_definite",
-                                    "noun_plural_definite",
-                                    "adjective_neuter_form",
-                                    "adjective_plural_form",
-                                    "adjective_comparative",
-                                    "adjective_superlative_indefinite",
-                                    "adjective_superlative_definite",
-                                    "adverb_comparative",
-                                    "adverb_superlative",
-                                ];
                                 let op_header = if is_query_mode {
                                     Vec::new()
                                 } else {
                                     vec!["operation"]
                                 };
-                                let headers = headers
+                                let headers = DATA_COLUMN_KEYS
                                     .into_iter()
                                     .chain(op_header)
                                     .collect::<Vec<_>>();
@@ -516,7 +517,7 @@ pub fn LexiconBrowser(
                                     .iter()
                                     .enumerate()
                                     .map(|(idx, title)| {
-                                        let sortable = idx < 20;
+                                        let sortable = idx < DATA_COLUMN_COUNT;
                                         let indicator = current_sort
                                             .iter()
                                             .enumerate()
@@ -720,6 +721,114 @@ pub fn LexiconBrowser(
                                             >
                                                 {option_to_input(&entry.adverb_superlative)}
                                             </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(20).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.verb_present_participle)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(21).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.verb_past_participle)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(22).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.verb_passive_infinitive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(23).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.verb_passive_present)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(24).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.verb_passive_past)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(25).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.noun_singular_definite_genitive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(26).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.noun_plural_definite_genitive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(27).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.noun_singular_indefinite_genitive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(28).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.noun_plural_indefinite_genitive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(29).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.adjective_feminine_form)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(30).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.pronoun_object)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(31).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.pronoun_reflexive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(32).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.pronoun_plural_subject)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(33).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.pronoun_plural_object)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(34).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.pronoun_plural_reflexive)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(35).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.determinative_feminine_form)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(36).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.determinative_neuter_form)}
+                                            </td>
+                                            <td
+                                                class="border border-slate-800 p-2"
+                                                class:hidden=move || !search_columns.get().get(37).copied().unwrap_or(false)
+                                            >
+                                                {option_to_input(&entry.determinative_plural_form)}
+                                            </td>
                                         </tr>
                                     }
                                         .into_any()
@@ -818,8 +927,26 @@ pub fn LexiconBrowser(
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(17).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_superlative_definite) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_superlative_definite = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(18).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adverb_comparative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adverb_comparative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(19).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adverb_superlative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adverb_superlative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(20).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_present_participle) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_present_participle = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(21).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_past_participle) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_past_participle = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(22).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_infinitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_infinitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(23).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_present) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_present = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(24).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_past) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_past = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(25).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_singular_definite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_singular_definite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(26).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural_definite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural_definite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(27).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_singular_indefinite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_singular_indefinite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(28).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural_indefinite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural_indefinite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(29).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_feminine_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_feminine_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(30).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_object) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_object = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(31).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_reflexive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_reflexive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(32).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_subject) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_subject = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(33).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_object) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_object = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(34).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_reflexive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_reflexive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(35).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_feminine_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_feminine_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(36).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_neuter_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_neuter_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
+                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(37).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_plural_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_plural_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1">
-                                            <div class="flex flex-wrap gap-1">
+                                            <div class="flex flex-nowrap gap-1">
                                                 <button type="button" on:click=move |_| {
                                                     if let Some(original) = baseline_entries.get_untracked().get(idx).cloned() {
                                                         set_entries.update(|list| {

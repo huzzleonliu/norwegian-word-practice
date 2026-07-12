@@ -57,21 +57,39 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 如果只有一个词条，可返回单个 JSON 对象。\n\
 对象结构严格如下（字段可为 null 或空数组）：\n\
 {{\n\
-  \"part_of_speech\": \"noun|verb|adjective|adverb|cardinal_number|ordinal_number|month|pronoun|interrogative\",\n\
+  \"part_of_speech\": \"noun|verb|adjective|pronoun|determinative|adverb|preposition|conjunction|subjunction|interjection\",\n\
   \"base_form\": \"\",\n\
   \"chinese\": [],\n\
   \"english\": [],\n\
   \"verb_present_tense\": null,\n\
   \"verb_past_tense\": null,\n\
   \"verb_imperative\": null,\n\
+  \"verb_present_participle\": null,\n\
+  \"verb_past_participle\": null,\n\
+  \"verb_passive_infinitive\": null,\n\
+  \"verb_passive_present\": null,\n\
+  \"verb_passive_past\": null,\n\
   \"noun_plural\": null,\n\
   \"noun_singular_definite\": null,\n\
   \"noun_plural_definite\": null,\n\
+  \"noun_singular_definite_genitive\": null,\n\
+  \"noun_plural_definite_genitive\": null,\n\
+  \"noun_singular_indefinite_genitive\": null,\n\
+  \"noun_plural_indefinite_genitive\": null,\n\
+  \"adjective_feminine_form\": null,\n\
   \"adjective_neuter_form\": null,\n\
   \"adjective_plural_form\": null,\n\
   \"adjective_comparative\": null,\n\
   \"adjective_superlative_indefinite\": null,\n\
   \"adjective_superlative_definite\": null,\n\
+  \"pronoun_object\": null,\n\
+  \"pronoun_reflexive\": null,\n\
+  \"pronoun_plural_subject\": null,\n\
+  \"pronoun_plural_object\": null,\n\
+  \"pronoun_plural_reflexive\": null,\n\
+  \"determinative_feminine_form\": null,\n\
+  \"determinative_neuter_form\": null,\n\
+  \"determinative_plural_form\": null,\n\
   \"adverb_comparative\": null,\n\
   \"adverb_superlative\": null\n\
 }}"
@@ -79,10 +97,11 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 }
 
 fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {
-    let json_text = extract_json_payload(raw_text)
-        .ok_or_else(|| "No JSON payload extracted. Please check Gemini response format.".to_string())?;
-    let value =
-        serde_json::from_str::<Value>(&json_text).map_err(|err| format!("JSON parse failed: {err}"))?;
+    let json_text = extract_json_payload(raw_text).ok_or_else(|| {
+        "No JSON payload extracted. Please check Gemini response format.".to_string()
+    })?;
+    let value = serde_json::from_str::<Value>(&json_text)
+        .map_err(|err| format!("JSON parse failed: {err}"))?;
 
     if value.is_object() {
         let one = serde_json::from_value::<GeminiWordResult>(value)

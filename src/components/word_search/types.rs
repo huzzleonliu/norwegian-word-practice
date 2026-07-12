@@ -4,17 +4,39 @@ use crate::structures::word_bank_entry::WordBankEntry;
 
 use super::shared::{normalize_part_of_speech_enum, normalize_text_list, normalize_text_opt};
 
-pub(crate) const WORD_FORM_HINT_OPTIONS: [(&str, &str); 23] = [
+pub(crate) const WORD_FORM_HINT_OPTIONS: [(&str, &str); 42] = [
     ("unknown", "未知"),
     ("noun-baseform", "noun-baseform"),
     ("noun_plural", "noun_plural"),
     ("noun_singular_definite", "noun_singular_definite"),
     ("noun_plural_definite", "noun_plural_definite"),
+    (
+        "noun_singular_definite_genitive",
+        "noun_singular_definite_genitive",
+    ),
+    (
+        "noun_plural_definite_genitive",
+        "noun_plural_definite_genitive",
+    ),
+    (
+        "noun_singular_indefinite_genitive",
+        "noun_singular_indefinite_genitive",
+    ),
+    (
+        "noun_plural_indefinite_genitive",
+        "noun_plural_indefinite_genitive",
+    ),
     ("verb-baseform", "verb-baseform"),
     ("verb_present_tense", "verb_present_tense"),
     ("verb_past_tense", "verb_past_tense"),
     ("verb_imperative", "verb_imperative"),
+    ("verb_present_participle", "verb_present_participle"),
+    ("verb_past_participle", "verb_past_participle"),
+    ("verb_passive_infinitive", "verb_passive_infinitive"),
+    ("verb_passive_present", "verb_passive_present"),
+    ("verb_passive_past", "verb_passive_past"),
     ("adjective-baseform", "adjective-baseform"),
+    ("adjective_feminine_form", "adjective_feminine_form"),
     ("adjective_neuter_form", "adjective_neuter_form"),
     ("adjective_plural_form", "adjective_plural_form"),
     ("adjective_comparative", "adjective_comparative"),
@@ -29,11 +51,20 @@ pub(crate) const WORD_FORM_HINT_OPTIONS: [(&str, &str); 23] = [
     ("adverb-baseform", "adverb-baseform"),
     ("adverb_comparative", "adverb_comparative"),
     ("adverb_superlative", "adverb_superlative"),
-    ("cardinal_number-baseform", "cardinal_number-baseform"),
-    ("ordinal_number-baseform", "ordinal_number-baseform"),
-    ("month-baseform", "month-baseform"),
     ("pronoun-baseform", "pronoun-baseform"),
-    ("interrogative-baseform", "interrogative-baseform"),
+    ("pronoun_object", "pronoun_object"),
+    ("pronoun_reflexive", "pronoun_reflexive"),
+    ("pronoun_plural_subject", "pronoun_plural_subject"),
+    ("pronoun_plural_object", "pronoun_plural_object"),
+    ("pronoun_plural_reflexive", "pronoun_plural_reflexive"),
+    ("determinative-baseform", "determinative-baseform"),
+    ("determinative_feminine_form", "determinative_feminine_form"),
+    ("determinative_neuter_form", "determinative_neuter_form"),
+    ("determinative_plural_form", "determinative_plural_form"),
+    ("preposition-baseform", "preposition-baseform"),
+    ("conjunction-baseform", "conjunction-baseform"),
+    ("subjunction-baseform", "subjunction-baseform"),
+    ("interjection-baseform", "interjection-baseform"),
 ];
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -49,12 +80,22 @@ pub(crate) struct GeminiWordResult {
     pub verb_past_tense: Option<String>,
     #[serde(alias = "imperative")]
     pub verb_imperative: Option<String>,
+    pub verb_present_participle: Option<String>,
+    pub verb_past_participle: Option<String>,
+    pub verb_passive_infinitive: Option<String>,
+    pub verb_passive_present: Option<String>,
+    pub verb_passive_past: Option<String>,
     #[serde(alias = "plural")]
     pub noun_plural: Option<String>,
     #[serde(alias = "singular_definite")]
     pub noun_singular_definite: Option<String>,
     #[serde(alias = "plural_definite")]
     pub noun_plural_definite: Option<String>,
+    pub noun_singular_definite_genitive: Option<String>,
+    pub noun_plural_definite_genitive: Option<String>,
+    pub noun_singular_indefinite_genitive: Option<String>,
+    pub noun_plural_indefinite_genitive: Option<String>,
+    pub adjective_feminine_form: Option<String>,
     #[serde(alias = "neuter_form")]
     pub adjective_neuter_form: Option<String>,
     #[serde(alias = "plural_form")]
@@ -62,6 +103,14 @@ pub(crate) struct GeminiWordResult {
     pub adjective_comparative: Option<String>,
     pub adjective_superlative_indefinite: Option<String>,
     pub adjective_superlative_definite: Option<String>,
+    pub pronoun_object: Option<String>,
+    pub pronoun_reflexive: Option<String>,
+    pub pronoun_plural_subject: Option<String>,
+    pub pronoun_plural_object: Option<String>,
+    pub pronoun_plural_reflexive: Option<String>,
+    pub determinative_feminine_form: Option<String>,
+    pub determinative_neuter_form: Option<String>,
+    pub determinative_plural_form: Option<String>,
     pub adverb_comparative: Option<String>,
     pub adverb_superlative: Option<String>,
 }
@@ -81,9 +130,27 @@ impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
             verb_present_tense: normalize_text_opt(value.verb_present_tense.clone()),
             verb_past_tense: normalize_text_opt(value.verb_past_tense.clone()),
             verb_imperative: normalize_text_opt(value.verb_imperative.clone()),
+            verb_present_participle: normalize_text_opt(value.verb_present_participle.clone()),
+            verb_past_participle: normalize_text_opt(value.verb_past_participle.clone()),
+            verb_passive_infinitive: normalize_text_opt(value.verb_passive_infinitive.clone()),
+            verb_passive_present: normalize_text_opt(value.verb_passive_present.clone()),
+            verb_passive_past: normalize_text_opt(value.verb_passive_past.clone()),
             noun_plural: normalize_text_opt(value.noun_plural.clone()),
             noun_singular_definite: normalize_text_opt(value.noun_singular_definite.clone()),
             noun_plural_definite: normalize_text_opt(value.noun_plural_definite.clone()),
+            noun_singular_definite_genitive: normalize_text_opt(
+                value.noun_singular_definite_genitive.clone(),
+            ),
+            noun_plural_definite_genitive: normalize_text_opt(
+                value.noun_plural_definite_genitive.clone(),
+            ),
+            noun_singular_indefinite_genitive: normalize_text_opt(
+                value.noun_singular_indefinite_genitive.clone(),
+            ),
+            noun_plural_indefinite_genitive: normalize_text_opt(
+                value.noun_plural_indefinite_genitive.clone(),
+            ),
+            adjective_feminine_form: normalize_text_opt(value.adjective_feminine_form.clone()),
             adjective_neuter_form: normalize_text_opt(value.adjective_neuter_form.clone()),
             adjective_plural_form: normalize_text_opt(value.adjective_plural_form.clone()),
             adjective_comparative: normalize_text_opt(value.adjective_comparative.clone()),
@@ -93,6 +160,16 @@ impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
             adjective_superlative_definite: normalize_text_opt(
                 value.adjective_superlative_definite.clone(),
             ),
+            pronoun_object: normalize_text_opt(value.pronoun_object.clone()),
+            pronoun_reflexive: normalize_text_opt(value.pronoun_reflexive.clone()),
+            pronoun_plural_subject: normalize_text_opt(value.pronoun_plural_subject.clone()),
+            pronoun_plural_object: normalize_text_opt(value.pronoun_plural_object.clone()),
+            pronoun_plural_reflexive: normalize_text_opt(value.pronoun_plural_reflexive.clone()),
+            determinative_feminine_form: normalize_text_opt(
+                value.determinative_feminine_form.clone(),
+            ),
+            determinative_neuter_form: normalize_text_opt(value.determinative_neuter_form.clone()),
+            determinative_plural_form: normalize_text_opt(value.determinative_plural_form.clone()),
             adverb_comparative: normalize_text_opt(value.adverb_comparative.clone()),
             adverb_superlative: normalize_text_opt(value.adverb_superlative.clone()),
         })

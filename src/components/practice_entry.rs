@@ -313,9 +313,31 @@ pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
         "verb_present_tense" => entry.verb_present_tense.clone().unwrap_or_default(),
         "verb_past_tense" => entry.verb_past_tense.clone().unwrap_or_default(),
         "verb_imperative" => entry.verb_imperative.clone().unwrap_or_default(),
+        "verb_present_participle" => entry.verb_present_participle.clone().unwrap_or_default(),
+        "verb_past_participle" => entry.verb_past_participle.clone().unwrap_or_default(),
+        "verb_passive_infinitive" => entry.verb_passive_infinitive.clone().unwrap_or_default(),
+        "verb_passive_present" => entry.verb_passive_present.clone().unwrap_or_default(),
+        "verb_passive_past" => entry.verb_passive_past.clone().unwrap_or_default(),
         "noun_plural" => entry.noun_plural.clone().unwrap_or_default(),
         "noun_singular_definite" => entry.noun_singular_definite.clone().unwrap_or_default(),
         "noun_plural_definite" => entry.noun_plural_definite.clone().unwrap_or_default(),
+        "noun_singular_definite_genitive" => entry
+            .noun_singular_definite_genitive
+            .clone()
+            .unwrap_or_default(),
+        "noun_plural_definite_genitive" => entry
+            .noun_plural_definite_genitive
+            .clone()
+            .unwrap_or_default(),
+        "noun_singular_indefinite_genitive" => entry
+            .noun_singular_indefinite_genitive
+            .clone()
+            .unwrap_or_default(),
+        "noun_plural_indefinite_genitive" => entry
+            .noun_plural_indefinite_genitive
+            .clone()
+            .unwrap_or_default(),
+        "adjective_feminine_form" => entry.adjective_feminine_form.clone().unwrap_or_default(),
         "adjective_neuter_form" => entry.adjective_neuter_form.clone().unwrap_or_default(),
         "adjective_plural_form" => entry.adjective_plural_form.clone().unwrap_or_default(),
         "adjective_comparative" => entry.adjective_comparative.clone().unwrap_or_default(),
@@ -327,6 +349,17 @@ pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
             .adjective_superlative_definite
             .clone()
             .unwrap_or_default(),
+        "pronoun_object" => entry.pronoun_object.clone().unwrap_or_default(),
+        "pronoun_reflexive" => entry.pronoun_reflexive.clone().unwrap_or_default(),
+        "pronoun_plural_subject" => entry.pronoun_plural_subject.clone().unwrap_or_default(),
+        "pronoun_plural_object" => entry.pronoun_plural_object.clone().unwrap_or_default(),
+        "pronoun_plural_reflexive" => entry.pronoun_plural_reflexive.clone().unwrap_or_default(),
+        "determinative_feminine_form" => entry
+            .determinative_feminine_form
+            .clone()
+            .unwrap_or_default(),
+        "determinative_neuter_form" => entry.determinative_neuter_form.clone().unwrap_or_default(),
+        "determinative_plural_form" => entry.determinative_plural_form.clone().unwrap_or_default(),
         "adverb_comparative" => entry.adverb_comparative.clone().unwrap_or_default(),
         "adverb_superlative" => entry.adverb_superlative.clone().unwrap_or_default(),
         _ => String::new(),

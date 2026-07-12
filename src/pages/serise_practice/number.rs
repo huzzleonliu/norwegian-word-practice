@@ -153,7 +153,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
 
                         let check_group_click = Callback::new(move |_| {
                             let language = lang.get_untracked();
-                            let entries = word_bank_state.entries.get_untracked();
+                            let entries = selected_series_entries(word_bank_state);
                             let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                             if rows.is_empty() {
                                 let no_data_message = tr(
@@ -270,7 +270,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
 
                                 <div class="mt-4 space-y-3">
                                     {move || {
-                                        let entries = word_bank_state.entries.get();
+                                        let entries = selected_series_entries(word_bank_state);
                                         let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                                         if rows.is_empty() {
                                             return view! { <p class="text-sm text-amber-300">
@@ -441,15 +441,21 @@ fn build_number_question_rows(
         };
         let ordinal_chinese = format!("第{cardinal_chinese}");
 
-        let Some(cardinal_entry) =
-            find_entry_by_pos_and_chinese(entries, PartOfSpeech::CardinalNumber, cardinal_chinese)
-        else {
+        let Some(cardinal_entry) = find_entry_by_tag_and_chinese(
+            entries,
+            PartOfSpeech::Determinative,
+            "cardinal_number",
+            cardinal_chinese,
+        ) else {
             missing_numbers.push(*number);
             continue;
         };
-        let Some(ordinal_entry) =
-            find_entry_by_pos_and_chinese(entries, PartOfSpeech::OrdinalNumber, &ordinal_chinese)
-        else {
+        let Some(ordinal_entry) = find_entry_by_tag_and_chinese(
+            entries,
+            PartOfSpeech::Adjective,
+            "ordinal_number",
+            &ordinal_chinese,
+        ) else {
             missing_numbers.push(*number);
             continue;
         };
@@ -466,13 +472,15 @@ fn build_number_question_rows(
     (rows, missing_numbers)
 }
 
-fn find_entry_by_pos_and_chinese<'a>(
+fn find_entry_by_tag_and_chinese<'a>(
     entries: &'a [WordBankEntry],
     part_of_speech: PartOfSpeech,
+    expected_tag: &str,
     chinese: &str,
 ) -> Option<&'a WordBankEntry> {
     entries.iter().find(|entry| {
         entry.part_of_speech.as_key() == part_of_speech.as_key()
+            && entry.tags.iter().any(|tag| tag == expected_tag)
             && entry
                 .chinese
                 .iter()
@@ -527,4 +535,16 @@ fn number_to_cardinal_chinese(number: u32) -> Option<&'static str> {
         100000 => Some("十万"),
         _ => None,
     }
+}
+
+fn selected_series_entries(word_bank_state: WordBankState) -> Vec<WordBankEntry> {
+    let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
+    let entries = word_bank_state.entries.get_untracked();
+    if selected_ids.is_empty() {
+        return entries;
+    }
+    entries
+        .into_iter()
+        .filter(|entry| selected_ids.iter().any(|id| id == &entry.id))
+        .collect()
 }

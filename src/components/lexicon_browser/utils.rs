@@ -6,6 +6,47 @@ use crate::utils::i18n::tr;
 
 use super::structures::CsvWordEntry;
 
+pub const DATA_COLUMN_KEYS: [&str; 38] = [
+    "id",
+    "selected",
+    "part_of_speech",
+    "tags",
+    "english",
+    "chinese",
+    "base_form",
+    "verb_present_tense",
+    "verb_past_tense",
+    "verb_imperative",
+    "noun_plural",
+    "noun_singular_definite",
+    "noun_plural_definite",
+    "adjective_neuter_form",
+    "adjective_plural_form",
+    "adjective_comparative",
+    "adjective_superlative_indefinite",
+    "adjective_superlative_definite",
+    "adverb_comparative",
+    "adverb_superlative",
+    "verb_present_participle",
+    "verb_past_participle",
+    "verb_passive_infinitive",
+    "verb_passive_present",
+    "verb_passive_past",
+    "noun_singular_definite_genitive",
+    "noun_plural_definite_genitive",
+    "noun_singular_indefinite_genitive",
+    "noun_plural_indefinite_genitive",
+    "adjective_feminine_form",
+    "pronoun_object",
+    "pronoun_reflexive",
+    "pronoun_plural_subject",
+    "pronoun_plural_object",
+    "pronoun_plural_reflexive",
+    "determinative_feminine_form",
+    "determinative_neuter_form",
+    "determinative_plural_form",
+];
+
 pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordBankEntry>, String> {
     let has_header = detect_word_bank_header(content);
     parse_word_bank_csv_inner(content, has_header)
@@ -35,6 +76,24 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
             "adjective_superlative_definite",
             "adverb_comparative",
             "adverb_superlative",
+            "verb_present_participle",
+            "verb_past_participle",
+            "verb_passive_infinitive",
+            "verb_passive_present",
+            "verb_passive_past",
+            "noun_singular_definite_genitive",
+            "noun_plural_definite_genitive",
+            "noun_singular_indefinite_genitive",
+            "noun_plural_indefinite_genitive",
+            "adjective_feminine_form",
+            "pronoun_object",
+            "pronoun_reflexive",
+            "pronoun_plural_subject",
+            "pronoun_plural_object",
+            "pronoun_plural_reflexive",
+            "determinative_feminine_form",
+            "determinative_neuter_form",
+            "determinative_plural_form",
         ])
         .map_err(|err| format!("CSV 写入失败: {err}"))?;
 
@@ -63,6 +122,24 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
                 csv_entry.adjective_superlative_definite.as_str(),
                 csv_entry.adverb_comparative.as_str(),
                 csv_entry.adverb_superlative.as_str(),
+                csv_entry.verb_present_participle.as_str(),
+                csv_entry.verb_past_participle.as_str(),
+                csv_entry.verb_passive_infinitive.as_str(),
+                csv_entry.verb_passive_present.as_str(),
+                csv_entry.verb_passive_past.as_str(),
+                csv_entry.noun_singular_definite_genitive.as_str(),
+                csv_entry.noun_plural_definite_genitive.as_str(),
+                csv_entry.noun_singular_indefinite_genitive.as_str(),
+                csv_entry.noun_plural_indefinite_genitive.as_str(),
+                csv_entry.adjective_feminine_form.as_str(),
+                csv_entry.pronoun_object.as_str(),
+                csv_entry.pronoun_reflexive.as_str(),
+                csv_entry.pronoun_plural_subject.as_str(),
+                csv_entry.pronoun_plural_object.as_str(),
+                csv_entry.pronoun_plural_reflexive.as_str(),
+                csv_entry.determinative_feminine_form.as_str(),
+                csv_entry.determinative_neuter_form.as_str(),
+                csv_entry.determinative_plural_form.as_str(),
             ])
             .map_err(|err| format!("CSV 写入失败: {err}"))?;
     }
@@ -103,7 +180,7 @@ pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: 
     }
     let query_lower = trimmed.to_lowercase();
 
-    (0..20).any(|idx| {
+    (0..DATA_COLUMN_KEYS.len()).any(|idx| {
         columns.get(idx).copied().unwrap_or(false)
             && column_value_text(entry, idx)
                 .to_lowercase()
@@ -112,29 +189,7 @@ pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: 
 }
 
 pub(super) fn header_name(col_idx: usize) -> &'static str {
-    match col_idx {
-        0 => "id",
-        1 => "selected",
-        2 => "part_of_speech",
-        3 => "tags",
-        4 => "english",
-        5 => "chinese",
-        6 => "base_form",
-        7 => "verb_present_tense",
-        8 => "verb_past_tense",
-        9 => "verb_imperative",
-        10 => "noun_plural",
-        11 => "noun_singular_definite",
-        12 => "noun_plural_definite",
-        13 => "adjective_neuter_form",
-        14 => "adjective_plural_form",
-        15 => "adjective_comparative",
-        16 => "adjective_superlative_indefinite",
-        17 => "adjective_superlative_definite",
-        18 => "adverb_comparative",
-        19 => "adverb_superlative",
-        _ => "unknown",
-    }
+    DATA_COLUMN_KEYS.get(col_idx).copied().unwrap_or("unknown")
 }
 
 pub(super) fn format_sort_rules(rules: &[(usize, bool)], lang: UiLanguage) -> String {
@@ -193,7 +248,11 @@ fn parse_word_bank_csv_inner(
     for (row_index, row) in reader.deserialize::<CsvWordEntry>().enumerate() {
         let row = row.map_err(|err| format!("CSV 解析失败: {err}"))?;
         let entry = WordBankEntry::try_from(row)?;
-        let current_line = if has_headers { row_index + 2 } else { row_index + 1 };
+        let current_line = if has_headers {
+            row_index + 2
+        } else {
+            row_index + 1
+        };
         if let Some(first_line) = seen_entry_rows.insert(entry.id.clone(), current_line) {
             return Err(format!(
                 "CSV 存在重复词条（同词性+词形组合），首行 {first_line} 与第 {current_line} 行冲突。"
@@ -211,35 +270,7 @@ fn compare_entries_by_column(
     col_idx: usize,
     ascending: bool,
 ) -> Ordering {
-    let ordering = match col_idx {
-        0 => a.id.cmp(&b.id),
-        1 => a.selected.cmp(&b.selected),
-        2 => a.part_of_speech.as_key().cmp(b.part_of_speech.as_key()),
-        3 => a.tags.join("|").cmp(&b.tags.join("|")),
-        4 => a.english.join("|").cmp(&b.english.join("|")),
-        5 => a.chinese.join("|").cmp(&b.chinese.join("|")),
-        6 => a.base_form.cmp(&b.base_form),
-        7 => opt_cmp(&a.verb_present_tense, &b.verb_present_tense),
-        8 => opt_cmp(&a.verb_past_tense, &b.verb_past_tense),
-        9 => opt_cmp(&a.verb_imperative, &b.verb_imperative),
-        10 => opt_cmp(&a.noun_plural, &b.noun_plural),
-        11 => opt_cmp(&a.noun_singular_definite, &b.noun_singular_definite),
-        12 => opt_cmp(&a.noun_plural_definite, &b.noun_plural_definite),
-        13 => opt_cmp(&a.adjective_neuter_form, &b.adjective_neuter_form),
-        14 => opt_cmp(&a.adjective_plural_form, &b.adjective_plural_form),
-        15 => opt_cmp(&a.adjective_comparative, &b.adjective_comparative),
-        16 => opt_cmp(
-            &a.adjective_superlative_indefinite,
-            &b.adjective_superlative_indefinite,
-        ),
-        17 => opt_cmp(
-            &a.adjective_superlative_definite,
-            &b.adjective_superlative_definite,
-        ),
-        18 => opt_cmp(&a.adverb_comparative, &b.adverb_comparative),
-        19 => opt_cmp(&a.adverb_superlative, &b.adverb_superlative),
-        _ => Ordering::Equal,
-    };
+    let ordering = column_value_text(a, col_idx).cmp(&column_value_text(b, col_idx));
 
     if ascending {
         ordering
@@ -282,10 +313,39 @@ fn column_value_text(entry: &WordBankEntry, col_idx: usize) -> String {
             .unwrap_or_default(),
         18 => entry.adverb_comparative.clone().unwrap_or_default(),
         19 => entry.adverb_superlative.clone().unwrap_or_default(),
+        20 => entry.verb_present_participle.clone().unwrap_or_default(),
+        21 => entry.verb_past_participle.clone().unwrap_or_default(),
+        22 => entry.verb_passive_infinitive.clone().unwrap_or_default(),
+        23 => entry.verb_passive_present.clone().unwrap_or_default(),
+        24 => entry.verb_passive_past.clone().unwrap_or_default(),
+        25 => entry
+            .noun_singular_definite_genitive
+            .clone()
+            .unwrap_or_default(),
+        26 => entry
+            .noun_plural_definite_genitive
+            .clone()
+            .unwrap_or_default(),
+        27 => entry
+            .noun_singular_indefinite_genitive
+            .clone()
+            .unwrap_or_default(),
+        28 => entry
+            .noun_plural_indefinite_genitive
+            .clone()
+            .unwrap_or_default(),
+        29 => entry.adjective_feminine_form.clone().unwrap_or_default(),
+        30 => entry.pronoun_object.clone().unwrap_or_default(),
+        31 => entry.pronoun_reflexive.clone().unwrap_or_default(),
+        32 => entry.pronoun_plural_subject.clone().unwrap_or_default(),
+        33 => entry.pronoun_plural_object.clone().unwrap_or_default(),
+        34 => entry.pronoun_plural_reflexive.clone().unwrap_or_default(),
+        35 => entry
+            .determinative_feminine_form
+            .clone()
+            .unwrap_or_default(),
+        36 => entry.determinative_neuter_form.clone().unwrap_or_default(),
+        37 => entry.determinative_plural_form.clone().unwrap_or_default(),
         _ => String::new(),
     }
-}
-
-fn opt_cmp(a: &Option<String>, b: &Option<String>) -> Ordering {
-    a.as_deref().unwrap_or("").cmp(b.as_deref().unwrap_or(""))
 }

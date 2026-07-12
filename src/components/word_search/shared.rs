@@ -40,7 +40,9 @@ pub(crate) fn hint_to_part_of_speech(hint: &str) -> Option<PartOfSpeech> {
 }
 
 pub(crate) fn normalize_part_of_speech(raw: Option<String>, hint: &str) -> String {
-    normalize_part_of_speech_enum(raw, hint).as_key().to_string()
+    normalize_part_of_speech_enum(raw, hint)
+        .as_key()
+        .to_string()
 }
 
 pub(crate) fn normalize_part_of_speech_enum(raw: Option<String>, hint: &str) -> PartOfSpeech {
@@ -107,6 +109,21 @@ fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
     if target.verb_imperative.is_none() {
         target.verb_imperative = source.verb_imperative;
     }
+    if target.verb_present_participle.is_none() {
+        target.verb_present_participle = source.verb_present_participle;
+    }
+    if target.verb_past_participle.is_none() {
+        target.verb_past_participle = source.verb_past_participle;
+    }
+    if target.verb_passive_infinitive.is_none() {
+        target.verb_passive_infinitive = source.verb_passive_infinitive;
+    }
+    if target.verb_passive_present.is_none() {
+        target.verb_passive_present = source.verb_passive_present;
+    }
+    if target.verb_passive_past.is_none() {
+        target.verb_passive_past = source.verb_passive_past;
+    }
     if target.noun_plural.is_none() {
         target.noun_plural = source.noun_plural;
     }
@@ -115,6 +132,21 @@ fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
     }
     if target.noun_plural_definite.is_none() {
         target.noun_plural_definite = source.noun_plural_definite;
+    }
+    if target.noun_singular_definite_genitive.is_none() {
+        target.noun_singular_definite_genitive = source.noun_singular_definite_genitive;
+    }
+    if target.noun_plural_definite_genitive.is_none() {
+        target.noun_plural_definite_genitive = source.noun_plural_definite_genitive;
+    }
+    if target.noun_singular_indefinite_genitive.is_none() {
+        target.noun_singular_indefinite_genitive = source.noun_singular_indefinite_genitive;
+    }
+    if target.noun_plural_indefinite_genitive.is_none() {
+        target.noun_plural_indefinite_genitive = source.noun_plural_indefinite_genitive;
+    }
+    if target.adjective_feminine_form.is_none() {
+        target.adjective_feminine_form = source.adjective_feminine_form;
     }
     if target.adjective_neuter_form.is_none() {
         target.adjective_neuter_form = source.adjective_neuter_form;
@@ -130,6 +162,30 @@ fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
     }
     if target.adjective_superlative_definite.is_none() {
         target.adjective_superlative_definite = source.adjective_superlative_definite;
+    }
+    if target.pronoun_object.is_none() {
+        target.pronoun_object = source.pronoun_object;
+    }
+    if target.pronoun_reflexive.is_none() {
+        target.pronoun_reflexive = source.pronoun_reflexive;
+    }
+    if target.pronoun_plural_subject.is_none() {
+        target.pronoun_plural_subject = source.pronoun_plural_subject;
+    }
+    if target.pronoun_plural_object.is_none() {
+        target.pronoun_plural_object = source.pronoun_plural_object;
+    }
+    if target.pronoun_plural_reflexive.is_none() {
+        target.pronoun_plural_reflexive = source.pronoun_plural_reflexive;
+    }
+    if target.determinative_feminine_form.is_none() {
+        target.determinative_feminine_form = source.determinative_feminine_form;
+    }
+    if target.determinative_neuter_form.is_none() {
+        target.determinative_neuter_form = source.determinative_neuter_form;
+    }
+    if target.determinative_plural_form.is_none() {
+        target.determinative_plural_form = source.determinative_plural_form;
     }
     if target.adverb_comparative.is_none() {
         target.adverb_comparative = source.adverb_comparative;

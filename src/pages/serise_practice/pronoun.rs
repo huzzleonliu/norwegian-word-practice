@@ -11,7 +11,7 @@ use crate::components::practice_buttons::{
 use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
-use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::i18n::tr;
 
 use super::initialize_temp_practice_result;
@@ -463,7 +463,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
 
                         let check_group_click = Callback::new(move |_| {
                             let language = lang.get_untracked();
-                            let entries = word_bank_state.entries.get_untracked();
+                            let entries = selected_series_entries(word_bank_state);
                             let (rows, missing_fields) = build_pronoun_rows(&entries, group_rows);
                             if rows.is_empty() {
                                 let message = tr(
@@ -564,7 +564,7 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
 
                                 <div class="mt-4 space-y-3">
                                     {move || {
-                                        let entries = word_bank_state.entries.get();
+                                        let entries = selected_series_entries(word_bank_state);
                                         let (rows, missing_fields) = build_pronoun_rows(&entries, group_rows);
                                         if rows.is_empty() {
                                             return view! {
@@ -715,7 +715,9 @@ pub fn PronounSerisePracticePage() -> impl IntoView {
 fn pronoun_group_title_en(zh: &str) -> &'static str {
     match zh {
         "第一块：我 / 你 / 他 / 她" => "Group 1: I / You / He / She",
-        "第二块：我们 / 你们 / 他们 / 她们" => "Group 2: We / You(pl) / They(m) / They(f)",
+        "第二块：我们 / 你们 / 他们 / 她们" => {
+            "Group 2: We / You(pl) / They(m) / They(f)"
+        }
         "第三块：这 / 那 / 这些 / 那些" => "Group 3: This / That / These / Those",
         _ => "Pronoun Group",
     }
@@ -729,7 +731,9 @@ fn pronoun_group_hint_en(zh: &str) -> &'static str {
         "同样填写 7 类形式；每行对应一个人称。" => {
             "Fill the same 7 forms; each row corresponds to one person."
         }
-        "指示代词按行填写对应原型。" => "Fill the base forms of demonstrative pronouns by row.",
+        "指示代词按行填写对应原型。" => {
+            "Fill the base forms of demonstrative pronouns by row."
+        }
         _ => "Fill the required pronoun forms for each row.",
     }
 }
@@ -801,10 +805,21 @@ fn find_pronoun_entry_by_chinese<'a>(
     chinese: &str,
 ) -> Option<&'a WordBankEntry> {
     entries.iter().find(|entry| {
-        entry.part_of_speech.as_key() == PartOfSpeech::Pronoun.as_key()
-            && entry
-                .chinese
-                .iter()
-                .any(|candidate| normalize_for_compare(candidate) == normalize_for_compare(chinese))
+        entry
+            .chinese
+            .iter()
+            .any(|candidate| normalize_for_compare(candidate) == normalize_for_compare(chinese))
     })
+}
+
+fn selected_series_entries(word_bank_state: WordBankState) -> Vec<WordBankEntry> {
+    let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
+    let entries = word_bank_state.entries.get_untracked();
+    if selected_ids.is_empty() {
+        return entries;
+    }
+    entries
+        .into_iter()
+        .filter(|entry| selected_ids.iter().any(|id| id == &entry.id))
+        .collect()
 }

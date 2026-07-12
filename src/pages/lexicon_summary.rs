@@ -31,7 +31,10 @@ pub fn LexiconSummaryPage() -> impl IntoView {
         let content = match serialize_practice_result_for_export(&practice_result) {
             Ok(content) => content,
             Err(err) => {
-                set_flow_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:")));
+                set_flow_status.set(format!(
+                    "{} {err}",
+                    tr(language, "导出失败：", "Export failed:")
+                ));
                 return;
             }
         };
@@ -41,9 +44,10 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                 "{}：{filename}",
                 tr(language, "导出成功", "Export success")
             )),
-            Err(err) => {
-                set_flow_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:")))
-            }
+            Err(err) => set_flow_status.set(format!(
+                "{} {err}",
+                tr(language, "导出失败：", "Export failed:")
+            )),
         }
     };
 
@@ -252,8 +256,12 @@ fn build_wrong_summary_items(
                 WrongSummaryItem {
                     chinese: tr(language, "（词库中未找到）", "(Not found in lexicon)").to_string(),
                     part_of_speech: tr(language, "（未知）", "(Unknown)").to_string(),
-                    correct_answer: tr(language, "（无法给出正确答案）", "(No valid correct answer)")
-                        .to_string(),
+                    correct_answer: tr(
+                        language,
+                        "（无法给出正确答案）",
+                        "(No valid correct answer)",
+                    )
+                    .to_string(),
                     wrong_answers: build_wrong_answers_summary(practiced_entry, language),
                 }
             }
@@ -261,7 +269,10 @@ fn build_wrong_summary_items(
         .collect()
 }
 
-fn build_wrong_answers_summary(practiced_entry: &PracticedWordEntryResult, language: UiLanguage) -> String {
+fn build_wrong_answers_summary(
+    practiced_entry: &PracticedWordEntryResult,
+    language: UiLanguage,
+) -> String {
     let mut parts = Vec::<String>::new();
     for (label, stats) in practiced_entry_stats_with_labels(practiced_entry) {
         if stats.wrong_count == 0 {
@@ -322,6 +333,31 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLangua
                 tr(language, "祈使式", "Imperative"),
                 entry.verb_imperative.as_deref(),
             );
+            push_answer_part(
+                &mut parts,
+                tr(language, "现在分词", "Present Participle"),
+                entry.verb_present_participle.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "过去分词", "Past Participle"),
+                entry.verb_past_participle.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "被动不定式", "Passive Infinitive"),
+                entry.verb_passive_infinitive.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "被动现在时", "Passive Present"),
+                entry.verb_passive_present.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "被动过去时", "Passive Past"),
+                entry.verb_passive_past.as_deref(),
+            );
         }
         PartOfSpeech::Noun => {
             push_answer_part(
@@ -339,8 +375,33 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLangua
                 tr(language, "复数特指", "Plural Definite"),
                 entry.noun_plural_definite.as_deref(),
             );
+            push_answer_part(
+                &mut parts,
+                tr(language, "单数特指所有格", "Singular Definite Genitive"),
+                entry.noun_singular_definite_genitive.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数特指所有格", "Plural Definite Genitive"),
+                entry.noun_plural_definite_genitive.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "单数泛指所有格", "Singular Indefinite Genitive"),
+                entry.noun_singular_indefinite_genitive.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数泛指所有格", "Plural Indefinite Genitive"),
+                entry.noun_plural_indefinite_genitive.as_deref(),
+            );
         }
         PartOfSpeech::Adjective => {
+            push_answer_part(
+                &mut parts,
+                tr(language, "对应阴性", "Feminine"),
+                entry.adjective_feminine_form.as_deref(),
+            );
             push_answer_part(
                 &mut parts,
                 tr(language, "对应中性", "Neuter"),
@@ -367,6 +428,50 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLangua
                 entry.adjective_superlative_definite.as_deref(),
             );
         }
+        PartOfSpeech::Pronoun => {
+            push_answer_part(
+                &mut parts,
+                tr(language, "宾格", "Object"),
+                entry.pronoun_object.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "反身", "Reflexive"),
+                entry.pronoun_reflexive.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数主格", "Plural Subject"),
+                entry.pronoun_plural_subject.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数宾格", "Plural Object"),
+                entry.pronoun_plural_object.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数反身", "Plural Reflexive"),
+                entry.pronoun_plural_reflexive.as_deref(),
+            );
+        }
+        PartOfSpeech::Determinative => {
+            push_answer_part(
+                &mut parts,
+                tr(language, "阴性", "Feminine"),
+                entry.determinative_feminine_form.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "中性", "Neuter"),
+                entry.determinative_neuter_form.as_deref(),
+            );
+            push_answer_part(
+                &mut parts,
+                tr(language, "复数", "Plural"),
+                entry.determinative_plural_form.as_deref(),
+            );
+        }
         PartOfSpeech::Adverb => {
             push_answer_part(
                 &mut parts,
@@ -379,11 +484,10 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLangua
                 entry.adverb_superlative.as_deref(),
             );
         }
-        PartOfSpeech::CardinalNumber
-        | PartOfSpeech::OrdinalNumber
-        | PartOfSpeech::Month
-        | PartOfSpeech::Pronoun
-        | PartOfSpeech::Interrogative => {}
+        PartOfSpeech::Preposition
+        | PartOfSpeech::Conjunction
+        | PartOfSpeech::Subjunction
+        | PartOfSpeech::Interjection => {}
     }
 
     if parts.is_empty() {
@@ -420,13 +524,13 @@ fn practiced_entry_has_wrong(practiced_entry: &PracticedWordEntryResult) -> bool
         .any(|stats| stats.wrong_count > 0)
 }
 
-fn practiced_entry_stats(practiced_entry: &PracticedWordEntryResult) -> [&AnswerStats; 16] {
+fn practiced_entry_stats(practiced_entry: &PracticedWordEntryResult) -> [&AnswerStats; 34] {
     practiced_entry_stats_with_labels(practiced_entry).map(|(_, stats)| stats)
 }
 
 fn practiced_entry_stats_with_labels(
     practiced_entry: &PracticedWordEntryResult,
-) -> [(&'static str, &AnswerStats); 16] {
+) -> [(&'static str, &AnswerStats); 34] {
     [
         ("english", &practiced_entry.english),
         ("chinese", &practiced_entry.chinese),
@@ -434,11 +538,60 @@ fn practiced_entry_stats_with_labels(
         ("verb_present_tense", &practiced_entry.verb_present_tense),
         ("verb_past_tense", &practiced_entry.verb_past_tense),
         ("verb_imperative", &practiced_entry.verb_imperative),
+        (
+            "verb_present_participle",
+            &practiced_entry.verb_present_participle,
+        ),
+        (
+            "verb_past_participle",
+            &practiced_entry.verb_past_participle,
+        ),
+        (
+            "verb_passive_infinitive",
+            &practiced_entry.verb_passive_infinitive,
+        ),
+        (
+            "verb_passive_present",
+            &practiced_entry.verb_passive_present,
+        ),
+        ("verb_passive_past", &practiced_entry.verb_passive_past),
         ("noun_plural", &practiced_entry.noun_plural),
-        ("noun_singular_definite", &practiced_entry.noun_singular_definite),
-        ("noun_plural_definite", &practiced_entry.noun_plural_definite),
-        ("adjective_neuter_form", &practiced_entry.adjective_neuter_form),
-        ("adjective_plural_form", &practiced_entry.adjective_plural_form),
+        (
+            "noun_singular_definite",
+            &practiced_entry.noun_singular_definite,
+        ),
+        (
+            "noun_plural_definite",
+            &practiced_entry.noun_plural_definite,
+        ),
+        (
+            "noun_singular_definite_genitive",
+            &practiced_entry.noun_singular_definite_genitive,
+        ),
+        (
+            "noun_plural_definite_genitive",
+            &practiced_entry.noun_plural_definite_genitive,
+        ),
+        (
+            "noun_singular_indefinite_genitive",
+            &practiced_entry.noun_singular_indefinite_genitive,
+        ),
+        (
+            "noun_plural_indefinite_genitive",
+            &practiced_entry.noun_plural_indefinite_genitive,
+        ),
+        (
+            "adjective_feminine_form",
+            &practiced_entry.adjective_feminine_form,
+        ),
+        (
+            "adjective_neuter_form",
+            &practiced_entry.adjective_neuter_form,
+        ),
+        (
+            "adjective_plural_form",
+            &practiced_entry.adjective_plural_form,
+        ),
         (
             "adjective_comparative",
             &practiced_entry.adjective_comparative,
@@ -450,6 +603,32 @@ fn practiced_entry_stats_with_labels(
         (
             "adjective_superlative_definite",
             &practiced_entry.adjective_superlative_definite,
+        ),
+        ("pronoun_object", &practiced_entry.pronoun_object),
+        ("pronoun_reflexive", &practiced_entry.pronoun_reflexive),
+        (
+            "pronoun_plural_subject",
+            &practiced_entry.pronoun_plural_subject,
+        ),
+        (
+            "pronoun_plural_object",
+            &practiced_entry.pronoun_plural_object,
+        ),
+        (
+            "pronoun_plural_reflexive",
+            &practiced_entry.pronoun_plural_reflexive,
+        ),
+        (
+            "determinative_feminine_form",
+            &practiced_entry.determinative_feminine_form,
+        ),
+        (
+            "determinative_neuter_form",
+            &practiced_entry.determinative_neuter_form,
+        ),
+        (
+            "determinative_plural_form",
+            &practiced_entry.determinative_plural_form,
         ),
         ("adverb_comparative", &practiced_entry.adverb_comparative),
         ("adverb_superlative", &practiced_entry.adverb_superlative),

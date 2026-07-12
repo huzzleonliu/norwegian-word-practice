@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
 
-pub const PART_OF_SPEECH_OPTIONS: [&str; 9] = [
+pub const PART_OF_SPEECH_OPTIONS: [&str; 10] = [
     "verb",
     "noun",
     "adjective",
-    "adverb",
-    "cardinal_number",
-    "ordinal_number",
-    "month",
     "pronoun",
-    "interrogative",
+    "determinative",
+    "adverb",
+    "preposition",
+    "conjunction",
+    "subjunction",
+    "interjection",
 ];
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -32,12 +33,13 @@ pub enum PartOfSpeech {
     Verb,
     Noun,
     Adjective,
-    Adverb,
-    CardinalNumber,
-    OrdinalNumber,
-    Month,
     Pronoun,
-    Interrogative,
+    Determinative,
+    Adverb,
+    Preposition,
+    Conjunction,
+    Subjunction,
+    Interjection,
 }
 
 impl PartOfSpeech {
@@ -46,12 +48,13 @@ impl PartOfSpeech {
             PartOfSpeech::Verb => "verb",
             PartOfSpeech::Noun => "noun",
             PartOfSpeech::Adjective => "adjective",
-            PartOfSpeech::Adverb => "adverb",
-            PartOfSpeech::CardinalNumber => "cardinal_number",
-            PartOfSpeech::OrdinalNumber => "ordinal_number",
-            PartOfSpeech::Month => "month",
             PartOfSpeech::Pronoun => "pronoun",
-            PartOfSpeech::Interrogative => "interrogative",
+            PartOfSpeech::Determinative => "determinative",
+            PartOfSpeech::Adverb => "adverb",
+            PartOfSpeech::Preposition => "preposition",
+            PartOfSpeech::Conjunction => "conjunction",
+            PartOfSpeech::Subjunction => "subjunction",
+            PartOfSpeech::Interjection => "interjection",
         }
     }
 
@@ -60,12 +63,13 @@ impl PartOfSpeech {
             "verb" => Ok(PartOfSpeech::Verb),
             "noun" => Ok(PartOfSpeech::Noun),
             "adjective" => Ok(PartOfSpeech::Adjective),
-            "adverb" => Ok(PartOfSpeech::Adverb),
-            "cardinal_number" => Ok(PartOfSpeech::CardinalNumber),
-            "ordinal_number" => Ok(PartOfSpeech::OrdinalNumber),
-            "month" => Ok(PartOfSpeech::Month),
             "pronoun" => Ok(PartOfSpeech::Pronoun),
-            "interrogative" => Ok(PartOfSpeech::Interrogative),
+            "determinative" => Ok(PartOfSpeech::Determinative),
+            "adverb" => Ok(PartOfSpeech::Adverb),
+            "preposition" => Ok(PartOfSpeech::Preposition),
+            "conjunction" => Ok(PartOfSpeech::Conjunction),
+            "subjunction" => Ok(PartOfSpeech::Subjunction),
+            "interjection" => Ok(PartOfSpeech::Interjection),
             _ => Err(format!(
                 "词性不合法，请从预设选项中选择：{}",
                 PART_OF_SPEECH_OPTIONS.join(", ")
@@ -79,23 +83,25 @@ impl PartOfSpeech {
                 PartOfSpeech::Verb => "动词",
                 PartOfSpeech::Noun => "名词",
                 PartOfSpeech::Adjective => "形容词",
-                PartOfSpeech::Adverb => "副词",
-                PartOfSpeech::CardinalNumber => "基数词",
-                PartOfSpeech::OrdinalNumber => "序数词",
-                PartOfSpeech::Month => "月份",
                 PartOfSpeech::Pronoun => "代词",
-                PartOfSpeech::Interrogative => "疑问词",
+                PartOfSpeech::Determinative => "限定词",
+                PartOfSpeech::Adverb => "副词",
+                PartOfSpeech::Preposition => "介词",
+                PartOfSpeech::Conjunction => "并列连词",
+                PartOfSpeech::Subjunction => "从属连词",
+                PartOfSpeech::Interjection => "感叹词",
             },
             UiLanguage::En => match self {
                 PartOfSpeech::Verb => "Verb",
                 PartOfSpeech::Noun => "Noun",
                 PartOfSpeech::Adjective => "Adjective",
-                PartOfSpeech::Adverb => "Adverb",
-                PartOfSpeech::CardinalNumber => "Cardinal Number",
-                PartOfSpeech::OrdinalNumber => "Ordinal Number",
-                PartOfSpeech::Month => "Month",
                 PartOfSpeech::Pronoun => "Pronoun",
-                PartOfSpeech::Interrogative => "Interrogative",
+                PartOfSpeech::Determinative => "Determinative",
+                PartOfSpeech::Adverb => "Adverb",
+                PartOfSpeech::Preposition => "Preposition",
+                PartOfSpeech::Conjunction => "Conjunction",
+                PartOfSpeech::Subjunction => "Subjunction",
+                PartOfSpeech::Interjection => "Interjection",
             },
         }
     }
@@ -123,12 +129,32 @@ pub struct WordBankEntry {
     pub verb_past_tense: Option<String>,
     // 祈使式：可为空
     pub verb_imperative: Option<String>,
+    // 现在分词：可为空
+    pub verb_present_participle: Option<String>,
+    // 过去分词：可为空
+    pub verb_past_participle: Option<String>,
+    // 被动不定式：可为空
+    pub verb_passive_infinitive: Option<String>,
+    // 被动现在时：可为空
+    pub verb_passive_present: Option<String>,
+    // 被动过去时：可为空（较少见）
+    pub verb_passive_past: Option<String>,
     // 复数：可为空
     pub noun_plural: Option<String>,
     // 单数特指：可为空
     pub noun_singular_definite: Option<String>,
     // 复数特指：可为空
     pub noun_plural_definite: Option<String>,
+    // 单数特指所有格：可为空
+    pub noun_singular_definite_genitive: Option<String>,
+    // 复数特指所有格：可为空
+    pub noun_plural_definite_genitive: Option<String>,
+    // 单数泛指所有格：可为空（极少见）
+    pub noun_singular_indefinite_genitive: Option<String>,
+    // 复数泛指所有格：可为空（极少见）
+    pub noun_plural_indefinite_genitive: Option<String>,
+    // 对应阴性：可为空
+    pub adjective_feminine_form: Option<String>,
     // 对应中性：可为空
     pub adjective_neuter_form: Option<String>,
     // 对应复数：可为空
@@ -139,6 +165,22 @@ pub struct WordBankEntry {
     pub adjective_superlative_indefinite: Option<String>,
     // 形容词最高级特指：可为空
     pub adjective_superlative_definite: Option<String>,
+    // 代词宾格：可为空
+    pub pronoun_object: Option<String>,
+    // 代词反身：可为空
+    pub pronoun_reflexive: Option<String>,
+    // 代词复数主格：可为空
+    pub pronoun_plural_subject: Option<String>,
+    // 代词复数宾格：可为空
+    pub pronoun_plural_object: Option<String>,
+    // 代词复数反身：可为空
+    pub pronoun_plural_reflexive: Option<String>,
+    // 限定词阴性：可为空
+    pub determinative_feminine_form: Option<String>,
+    // 限定词中性：可为空
+    pub determinative_neuter_form: Option<String>,
+    // 限定词复数：可为空
+    pub determinative_plural_form: Option<String>,
     // 副词比较级：可为空
     pub adverb_comparative: Option<String>,
     // 副词最高级：可为空

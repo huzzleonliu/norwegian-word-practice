@@ -5,7 +5,7 @@ use crate::utils::i18n::{field_label, tr};
 
 pub const NONE_FIELD_KEY: &str = "none";
 
-const PROMPT_FIELD_OPTIONS: [&str; 19] = [
+const PROMPT_FIELD_OPTIONS: [&str; 37] = [
     NONE_FIELD_KEY,
     "part_of_speech",
     "tags",
@@ -15,33 +15,69 @@ const PROMPT_FIELD_OPTIONS: [&str; 19] = [
     "verb_present_tense",
     "verb_past_tense",
     "verb_imperative",
+    "verb_present_participle",
+    "verb_past_participle",
+    "verb_passive_infinitive",
+    "verb_passive_present",
+    "verb_passive_past",
     "noun_plural",
     "noun_singular_definite",
     "noun_plural_definite",
+    "noun_singular_definite_genitive",
+    "noun_plural_definite_genitive",
+    "noun_singular_indefinite_genitive",
+    "noun_plural_indefinite_genitive",
+    "adjective_feminine_form",
     "adjective_neuter_form",
     "adjective_plural_form",
     "adjective_comparative",
     "adjective_superlative_indefinite",
     "adjective_superlative_definite",
+    "pronoun_object",
+    "pronoun_reflexive",
+    "pronoun_plural_subject",
+    "pronoun_plural_object",
+    "pronoun_plural_reflexive",
+    "determinative_feminine_form",
+    "determinative_neuter_form",
+    "determinative_plural_form",
     "adverb_comparative",
     "adverb_superlative",
 ];
 
-const ANSWER_FIELD_OPTIONS: [&str; 16] = [
+const ANSWER_FIELD_OPTIONS: [&str; 34] = [
     "english",
     "chinese",
     "base_form",
     "verb_present_tense",
     "verb_past_tense",
     "verb_imperative",
+    "verb_present_participle",
+    "verb_past_participle",
+    "verb_passive_infinitive",
+    "verb_passive_present",
+    "verb_passive_past",
     "noun_plural",
     "noun_singular_definite",
     "noun_plural_definite",
+    "noun_singular_definite_genitive",
+    "noun_plural_definite_genitive",
+    "noun_singular_indefinite_genitive",
+    "noun_plural_indefinite_genitive",
+    "adjective_feminine_form",
     "adjective_neuter_form",
     "adjective_plural_form",
     "adjective_comparative",
     "adjective_superlative_indefinite",
     "adjective_superlative_definite",
+    "pronoun_object",
+    "pronoun_reflexive",
+    "pronoun_plural_subject",
+    "pronoun_plural_object",
+    "pronoun_plural_reflexive",
+    "determinative_feminine_form",
+    "determinative_neuter_form",
+    "determinative_plural_form",
     "adverb_comparative",
     "adverb_superlative",
 ];
@@ -138,10 +174,12 @@ pub fn PracticeSettings(
             <div class="space-y-3">
                 {[
                     ("core", vec![0_usize, 1, 2]),
-                    ("verb", vec![3, 4, 5]),
-                    ("noun", vec![6, 7, 8]),
-                    ("adjective", vec![9, 10, 11, 12, 13]),
-                    ("adverb", vec![14, 15]),
+                    ("verb", vec![3, 4, 5, 6, 7, 8, 9, 10]),
+                    ("noun", vec![11, 12, 13, 14, 15, 16, 17]),
+                    ("adjective", vec![18, 19, 20, 21, 22, 23]),
+                    ("pronoun", vec![24, 25, 26, 27, 28]),
+                    ("determinative", vec![29, 30, 31]),
+                    ("adverb", vec![32, 33]),
                 ]
                     .into_iter()
                     .map(|(group_name, indices)| {
@@ -154,6 +192,10 @@ pub fn PracticeSettings(
                                         "verb" => tr(lang.get(), "动词变体组", "Verb Forms"),
                                         "noun" => tr(lang.get(), "名词变体组", "Noun Forms"),
                                         "adjective" => tr(lang.get(), "形容词变体组", "Adjective Forms"),
+                                        "pronoun" => tr(lang.get(), "代词变体组", "Pronoun Forms"),
+                                        "determinative" => {
+                                            tr(lang.get(), "限定词变体组", "Determinative Forms")
+                                        }
                                         "adverb" => tr(lang.get(), "副词变体组", "Adverb Forms"),
                                         _ => group_name_key,
                                     }}

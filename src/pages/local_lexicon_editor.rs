@@ -3,11 +3,12 @@ use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
 use crate::components::import_csv::ImportCsvButton;
+use crate::components::lexicon_browser::{
+    LexiconBrowser, LexiconBrowserMode, parse_pipe_list, parse_word_bank_csv,
+    serialize_word_bank_csv,
+};
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
-use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode, parse_pipe_list, parse_word_bank_csv, serialize_word_bank_csv,
-};
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::components::word_search::AiResearcher;
@@ -56,15 +57,44 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (single_verb_present_tense, set_single_verb_present_tense) = signal(String::new());
     let (single_past_tense, set_single_past_tense) = signal(String::new());
     let (single_imperative, set_single_imperative) = signal(String::new());
+    let (single_verb_present_participle, set_single_verb_present_participle) =
+        signal(String::new());
+    let (single_verb_past_participle, set_single_verb_past_participle) = signal(String::new());
+    let (single_verb_passive_infinitive, set_single_verb_passive_infinitive) =
+        signal(String::new());
+    let (single_verb_passive_present, set_single_verb_passive_present) = signal(String::new());
+    let (single_verb_passive_past, set_single_verb_passive_past) = signal(String::new());
     let (single_plural, set_single_plural) = signal(String::new());
     let (single_singular_definite, set_single_singular_definite) = signal(String::new());
     let (single_plural_definite, set_single_plural_definite) = signal(String::new());
+    let (single_noun_singular_definite_genitive, set_single_noun_singular_definite_genitive) =
+        signal(String::new());
+    let (single_noun_plural_definite_genitive, set_single_noun_plural_definite_genitive) =
+        signal(String::new());
+    let (single_noun_singular_indefinite_genitive, set_single_noun_singular_indefinite_genitive) =
+        signal(String::new());
+    let (single_noun_plural_indefinite_genitive, set_single_noun_plural_indefinite_genitive) =
+        signal(String::new());
+    let (single_adjective_feminine_form, set_single_adjective_feminine_form) =
+        signal(String::new());
     let (single_neuter_form, set_single_neuter_form) = signal(String::new());
     let (single_plural_form, set_single_plural_form) = signal(String::new());
     let (single_adjective_comparative, set_single_adjective_comparative) = signal(String::new());
     let (single_adjective_superlative_indefinite, set_single_adjective_superlative_indefinite) =
         signal(String::new());
     let (single_adjective_superlative_definite, set_single_adjective_superlative_definite) =
+        signal(String::new());
+    let (single_pronoun_object, set_single_pronoun_object) = signal(String::new());
+    let (single_pronoun_reflexive, set_single_pronoun_reflexive) = signal(String::new());
+    let (single_pronoun_plural_subject, set_single_pronoun_plural_subject) = signal(String::new());
+    let (single_pronoun_plural_object, set_single_pronoun_plural_object) = signal(String::new());
+    let (single_pronoun_plural_reflexive, set_single_pronoun_plural_reflexive) =
+        signal(String::new());
+    let (single_determinative_feminine_form, set_single_determinative_feminine_form) =
+        signal(String::new());
+    let (single_determinative_neuter_form, set_single_determinative_neuter_form) =
+        signal(String::new());
+    let (single_determinative_plural_form, set_single_determinative_plural_form) =
         signal(String::new());
     let (single_adverb_comparative, set_single_adverb_comparative) = signal(String::new());
     let (single_adverb_superlative, set_single_adverb_superlative) = signal(String::new());
@@ -82,7 +112,10 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             part_of_speech: match parse_part_of_speech(&single_pos.get()) {
                 Ok(value) => value,
                 Err(err) => {
-                    set_status.set(format!("{} {err}", tr(language, "单条添加失败：", "Single add failed:")));
+                    set_status.set(format!(
+                        "{} {err}",
+                        tr(language, "单条添加失败：", "Single add failed:")
+                    ));
                     return;
                 }
             },
@@ -93,9 +126,27 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             verb_present_tense: parse_optional_input(&single_verb_present_tense.get()),
             verb_past_tense: parse_optional_input(&single_past_tense.get()),
             verb_imperative: parse_optional_input(&single_imperative.get()),
+            verb_present_participle: parse_optional_input(&single_verb_present_participle.get()),
+            verb_past_participle: parse_optional_input(&single_verb_past_participle.get()),
+            verb_passive_infinitive: parse_optional_input(&single_verb_passive_infinitive.get()),
+            verb_passive_present: parse_optional_input(&single_verb_passive_present.get()),
+            verb_passive_past: parse_optional_input(&single_verb_passive_past.get()),
             noun_plural: parse_optional_input(&single_plural.get()),
             noun_singular_definite: parse_optional_input(&single_singular_definite.get()),
             noun_plural_definite: parse_optional_input(&single_plural_definite.get()),
+            noun_singular_definite_genitive: parse_optional_input(
+                &single_noun_singular_definite_genitive.get(),
+            ),
+            noun_plural_definite_genitive: parse_optional_input(
+                &single_noun_plural_definite_genitive.get(),
+            ),
+            noun_singular_indefinite_genitive: parse_optional_input(
+                &single_noun_singular_indefinite_genitive.get(),
+            ),
+            noun_plural_indefinite_genitive: parse_optional_input(
+                &single_noun_plural_indefinite_genitive.get(),
+            ),
+            adjective_feminine_form: parse_optional_input(&single_adjective_feminine_form.get()),
             adjective_neuter_form: parse_optional_input(&single_neuter_form.get()),
             adjective_plural_form: parse_optional_input(&single_plural_form.get()),
             adjective_comparative: parse_optional_input(&single_adjective_comparative.get()),
@@ -105,6 +156,20 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             adjective_superlative_definite: parse_optional_input(
                 &single_adjective_superlative_definite.get(),
             ),
+            pronoun_object: parse_optional_input(&single_pronoun_object.get()),
+            pronoun_reflexive: parse_optional_input(&single_pronoun_reflexive.get()),
+            pronoun_plural_subject: parse_optional_input(&single_pronoun_plural_subject.get()),
+            pronoun_plural_object: parse_optional_input(&single_pronoun_plural_object.get()),
+            pronoun_plural_reflexive: parse_optional_input(&single_pronoun_plural_reflexive.get()),
+            determinative_feminine_form: parse_optional_input(
+                &single_determinative_feminine_form.get(),
+            ),
+            determinative_neuter_form: parse_optional_input(
+                &single_determinative_neuter_form.get(),
+            ),
+            determinative_plural_form: parse_optional_input(
+                &single_determinative_plural_form.get(),
+            ),
             adverb_comparative: parse_optional_input(&single_adverb_comparative.get()),
             adverb_superlative: parse_optional_input(&single_adverb_superlative.get()),
         };
@@ -112,7 +177,10 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         let new_entry = match validate_and_prepare_single_entry(draft, &existing_entries) {
             Ok(entry) => entry,
             Err(err) => {
-                set_status.set(format!("{} {err}", tr(language, "单条添加失败：", "Single add failed:")));
+                set_status.set(format!(
+                    "{} {err}",
+                    tr(language, "单条添加失败：", "Single add failed:")
+                ));
                 return;
             }
         };
@@ -126,7 +194,11 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_data_version.update(|ver| *ver += 1);
         set_status.set(format!(
             "{}（id: {generated_id}），{} {total_after_add} {}。",
-            tr(language, "已添加 1 条到本地缓存词库", "Added 1 entry to local cache"),
+            tr(
+                language,
+                "已添加 1 条到本地缓存词库",
+                "Added 1 entry to local cache"
+            ),
             tr(language, "当前共", "now total"),
             tr(language, "条", "entries")
         ));
@@ -140,14 +212,32 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_single_verb_present_tense.set(String::new());
         set_single_past_tense.set(String::new());
         set_single_imperative.set(String::new());
+        set_single_verb_present_participle.set(String::new());
+        set_single_verb_past_participle.set(String::new());
+        set_single_verb_passive_infinitive.set(String::new());
+        set_single_verb_passive_present.set(String::new());
+        set_single_verb_passive_past.set(String::new());
         set_single_plural.set(String::new());
         set_single_singular_definite.set(String::new());
         set_single_plural_definite.set(String::new());
+        set_single_noun_singular_definite_genitive.set(String::new());
+        set_single_noun_plural_definite_genitive.set(String::new());
+        set_single_noun_singular_indefinite_genitive.set(String::new());
+        set_single_noun_plural_indefinite_genitive.set(String::new());
+        set_single_adjective_feminine_form.set(String::new());
         set_single_neuter_form.set(String::new());
         set_single_plural_form.set(String::new());
         set_single_adjective_comparative.set(String::new());
         set_single_adjective_superlative_indefinite.set(String::new());
         set_single_adjective_superlative_definite.set(String::new());
+        set_single_pronoun_object.set(String::new());
+        set_single_pronoun_reflexive.set(String::new());
+        set_single_pronoun_plural_subject.set(String::new());
+        set_single_pronoun_plural_object.set(String::new());
+        set_single_pronoun_plural_reflexive.set(String::new());
+        set_single_determinative_feminine_form.set(String::new());
+        set_single_determinative_neuter_form.set(String::new());
+        set_single_determinative_plural_form.set(String::new());
         set_single_adverb_comparative.set(String::new());
         set_single_adverb_superlative.set(String::new());
     });
@@ -161,8 +251,12 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         let content = bulk_input.get();
         if content.trim().is_empty() {
             set_status.set(
-                tr(language, "多条添加失败：文本框不能为空。", "Bulk add failed: input is empty.")
-                    .to_string(),
+                tr(
+                    language,
+                    "多条添加失败：文本框不能为空。",
+                    "Bulk add failed: input is empty.",
+                )
+                .to_string(),
             );
             set_bulk_errors.set(vec![
                 tr(
@@ -267,14 +361,21 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
             Ok(content) => content,
             Err(err) => {
-                set_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:")));
+                set_status.set(format!(
+                    "{} {err}",
+                    tr(language, "导出失败：", "Export failed:")
+                ));
                 return;
             }
         };
 
         match export_csv_download("word-bank.csv", &csv_content) {
-            Ok(()) => set_status.set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
-            Err(err) => set_status.set(format!("{} {err}", tr(language, "导出失败：", "Export failed:"))),
+            Ok(()) => set_status
+                .set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
+            Err(err) => set_status.set(format!(
+                "{} {err}",
+                tr(language, "导出失败：", "Export failed:")
+            )),
         }
     };
 
@@ -326,12 +427,32 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_past_tense=set_single_past_tense
                     single_imperative=single_imperative
                     set_single_imperative=set_single_imperative
+                    single_verb_present_participle=single_verb_present_participle
+                    set_single_verb_present_participle=set_single_verb_present_participle
+                    single_verb_past_participle=single_verb_past_participle
+                    set_single_verb_past_participle=set_single_verb_past_participle
+                    single_verb_passive_infinitive=single_verb_passive_infinitive
+                    set_single_verb_passive_infinitive=set_single_verb_passive_infinitive
+                    single_verb_passive_present=single_verb_passive_present
+                    set_single_verb_passive_present=set_single_verb_passive_present
+                    single_verb_passive_past=single_verb_passive_past
+                    set_single_verb_passive_past=set_single_verb_passive_past
                     single_plural=single_plural
                     set_single_plural=set_single_plural
                     single_singular_definite=single_singular_definite
                     set_single_singular_definite=set_single_singular_definite
                     single_plural_definite=single_plural_definite
                     set_single_plural_definite=set_single_plural_definite
+                    single_noun_singular_definite_genitive=single_noun_singular_definite_genitive
+                    set_single_noun_singular_definite_genitive=set_single_noun_singular_definite_genitive
+                    single_noun_plural_definite_genitive=single_noun_plural_definite_genitive
+                    set_single_noun_plural_definite_genitive=set_single_noun_plural_definite_genitive
+                    single_noun_singular_indefinite_genitive=single_noun_singular_indefinite_genitive
+                    set_single_noun_singular_indefinite_genitive=set_single_noun_singular_indefinite_genitive
+                    single_noun_plural_indefinite_genitive=single_noun_plural_indefinite_genitive
+                    set_single_noun_plural_indefinite_genitive=set_single_noun_plural_indefinite_genitive
+                    single_adjective_feminine_form=single_adjective_feminine_form
+                    set_single_adjective_feminine_form=set_single_adjective_feminine_form
                     single_neuter_form=single_neuter_form
                     set_single_neuter_form=set_single_neuter_form
                     single_plural_form=single_plural_form
@@ -342,6 +463,22 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_adjective_superlative_indefinite=set_single_adjective_superlative_indefinite
                     single_adjective_superlative_definite=single_adjective_superlative_definite
                     set_single_adjective_superlative_definite=set_single_adjective_superlative_definite
+                    single_pronoun_object=single_pronoun_object
+                    set_single_pronoun_object=set_single_pronoun_object
+                    single_pronoun_reflexive=single_pronoun_reflexive
+                    set_single_pronoun_reflexive=set_single_pronoun_reflexive
+                    single_pronoun_plural_subject=single_pronoun_plural_subject
+                    set_single_pronoun_plural_subject=set_single_pronoun_plural_subject
+                    single_pronoun_plural_object=single_pronoun_plural_object
+                    set_single_pronoun_plural_object=set_single_pronoun_plural_object
+                    single_pronoun_plural_reflexive=single_pronoun_plural_reflexive
+                    set_single_pronoun_plural_reflexive=set_single_pronoun_plural_reflexive
+                    single_determinative_feminine_form=single_determinative_feminine_form
+                    set_single_determinative_feminine_form=set_single_determinative_feminine_form
+                    single_determinative_neuter_form=single_determinative_neuter_form
+                    set_single_determinative_neuter_form=set_single_determinative_neuter_form
+                    single_determinative_plural_form=single_determinative_plural_form
+                    set_single_determinative_plural_form=set_single_determinative_plural_form
                     single_adverb_comparative=single_adverb_comparative
                     set_single_adverb_comparative=set_single_adverb_comparative
                     single_adverb_superlative=single_adverb_superlative
@@ -366,12 +503,32 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_verb_past_tense=set_single_past_tense
                     single_verb_imperative=single_imperative
                     set_single_verb_imperative=set_single_imperative
+                    single_verb_present_participle=single_verb_present_participle
+                    set_single_verb_present_participle=set_single_verb_present_participle
+                    single_verb_past_participle=single_verb_past_participle
+                    set_single_verb_past_participle=set_single_verb_past_participle
+                    single_verb_passive_infinitive=single_verb_passive_infinitive
+                    set_single_verb_passive_infinitive=set_single_verb_passive_infinitive
+                    single_verb_passive_present=single_verb_passive_present
+                    set_single_verb_passive_present=set_single_verb_passive_present
+                    single_verb_passive_past=single_verb_passive_past
+                    set_single_verb_passive_past=set_single_verb_passive_past
                     single_noun_plural=single_plural
                     set_single_noun_plural=set_single_plural
                     single_noun_singular_definite=single_singular_definite
                     set_single_noun_singular_definite=set_single_singular_definite
                     single_noun_plural_definite=single_plural_definite
                     set_single_noun_plural_definite=set_single_plural_definite
+                    single_noun_singular_definite_genitive=single_noun_singular_definite_genitive
+                    set_single_noun_singular_definite_genitive=set_single_noun_singular_definite_genitive
+                    single_noun_plural_definite_genitive=single_noun_plural_definite_genitive
+                    set_single_noun_plural_definite_genitive=set_single_noun_plural_definite_genitive
+                    single_noun_singular_indefinite_genitive=single_noun_singular_indefinite_genitive
+                    set_single_noun_singular_indefinite_genitive=set_single_noun_singular_indefinite_genitive
+                    single_noun_plural_indefinite_genitive=single_noun_plural_indefinite_genitive
+                    set_single_noun_plural_indefinite_genitive=set_single_noun_plural_indefinite_genitive
+                    single_adjective_feminine_form=single_adjective_feminine_form
+                    set_single_adjective_feminine_form=set_single_adjective_feminine_form
                     single_adjective_neuter_form=single_neuter_form
                     set_single_adjective_neuter_form=set_single_neuter_form
                     single_adjective_plural_form=single_plural_form
@@ -382,6 +539,22 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_adjective_superlative_indefinite=set_single_adjective_superlative_indefinite
                     single_adjective_superlative_definite=single_adjective_superlative_definite
                     set_single_adjective_superlative_definite=set_single_adjective_superlative_definite
+                    single_pronoun_object=single_pronoun_object
+                    set_single_pronoun_object=set_single_pronoun_object
+                    single_pronoun_reflexive=single_pronoun_reflexive
+                    set_single_pronoun_reflexive=set_single_pronoun_reflexive
+                    single_pronoun_plural_subject=single_pronoun_plural_subject
+                    set_single_pronoun_plural_subject=set_single_pronoun_plural_subject
+                    single_pronoun_plural_object=single_pronoun_plural_object
+                    set_single_pronoun_plural_object=set_single_pronoun_plural_object
+                    single_pronoun_plural_reflexive=single_pronoun_plural_reflexive
+                    set_single_pronoun_plural_reflexive=set_single_pronoun_plural_reflexive
+                    single_determinative_feminine_form=single_determinative_feminine_form
+                    set_single_determinative_feminine_form=set_single_determinative_feminine_form
+                    single_determinative_neuter_form=single_determinative_neuter_form
+                    set_single_determinative_neuter_form=set_single_determinative_neuter_form
+                    single_determinative_plural_form=single_determinative_plural_form
+                    set_single_determinative_plural_form=set_single_determinative_plural_form
                     single_adverb_comparative=single_adverb_comparative
                     set_single_adverb_comparative=set_single_adverb_comparative
                     single_adverb_superlative=single_adverb_superlative

@@ -36,6 +36,11 @@ pub struct PracticedWordEntryResult {
     pub verb_past_tense: AnswerStats,
     #[serde(alias = "imperative")]
     pub verb_imperative: AnswerStats,
+    pub verb_present_participle: AnswerStats,
+    pub verb_past_participle: AnswerStats,
+    pub verb_passive_infinitive: AnswerStats,
+    pub verb_passive_present: AnswerStats,
+    pub verb_passive_past: AnswerStats,
 
     #[serde(alias = "plural")]
     pub noun_plural: AnswerStats,
@@ -43,7 +48,12 @@ pub struct PracticedWordEntryResult {
     pub noun_singular_definite: AnswerStats,
     #[serde(alias = "plural_definite")]
     pub noun_plural_definite: AnswerStats,
+    pub noun_singular_definite_genitive: AnswerStats,
+    pub noun_plural_definite_genitive: AnswerStats,
+    pub noun_singular_indefinite_genitive: AnswerStats,
+    pub noun_plural_indefinite_genitive: AnswerStats,
 
+    pub adjective_feminine_form: AnswerStats,
     #[serde(alias = "neuter_form")]
     pub adjective_neuter_form: AnswerStats,
     #[serde(alias = "plural_form")]
@@ -51,6 +61,16 @@ pub struct PracticedWordEntryResult {
     pub adjective_comparative: AnswerStats,
     pub adjective_superlative_indefinite: AnswerStats,
     pub adjective_superlative_definite: AnswerStats,
+
+    pub pronoun_object: AnswerStats,
+    pub pronoun_reflexive: AnswerStats,
+    pub pronoun_plural_subject: AnswerStats,
+    pub pronoun_plural_object: AnswerStats,
+    pub pronoun_plural_reflexive: AnswerStats,
+
+    pub determinative_feminine_form: AnswerStats,
+    pub determinative_neuter_form: AnswerStats,
+    pub determinative_plural_form: AnswerStats,
 
     pub adverb_comparative: AnswerStats,
     pub adverb_superlative: AnswerStats,

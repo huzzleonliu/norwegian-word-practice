@@ -13,14 +13,32 @@ fn base_entry() -> WordBankEntry {
         verb_present_tense: Some("vet".to_string()),
         verb_past_tense: Some("visste".to_string()),
         verb_imperative: Some("vit".to_string()),
+        verb_present_participle: Some("vitende".to_string()),
+        verb_past_participle: Some("visst".to_string()),
+        verb_passive_infinitive: Some("vites".to_string()),
+        verb_passive_present: Some("vites".to_string()),
+        verb_passive_past: None,
         noun_plural: None,
         noun_singular_definite: None,
         noun_plural_definite: None,
+        noun_singular_definite_genitive: None,
+        noun_plural_definite_genitive: None,
+        noun_singular_indefinite_genitive: None,
+        noun_plural_indefinite_genitive: None,
+        adjective_feminine_form: None,
         adjective_neuter_form: None,
         adjective_plural_form: None,
         adjective_comparative: None,
         adjective_superlative_indefinite: None,
         adjective_superlative_definite: None,
+        pronoun_object: None,
+        pronoun_reflexive: None,
+        pronoun_plural_subject: None,
+        pronoun_plural_object: None,
+        pronoun_plural_reflexive: None,
+        determinative_feminine_form: None,
+        determinative_neuter_form: None,
+        determinative_plural_form: None,
         adverb_comparative: None,
         adverb_superlative: None,
     }
@@ -51,16 +69,22 @@ fn hash_id_differs_when_lexeme_fields_change() {
     b.noun_plural = Some("viter".to_string());
     b.noun_singular_definite = Some("viten".to_string());
     b.noun_plural_definite = Some("vitene".to_string());
+    b.noun_singular_definite_genitive = Some("vitens".to_string());
+    b.noun_plural_definite_genitive = Some("vitenes".to_string());
 
     assert_ne!(compute_word_entry_id(&a), compute_word_entry_id(&b));
 
     a.verb_present_tense = Some("veit".to_string());
-    assert_ne!(compute_word_entry_id(&a), compute_word_entry_id(&base_entry()));
+    assert_ne!(
+        compute_word_entry_id(&a),
+        compute_word_entry_id(&base_entry())
+    );
 }
 
 #[test]
 fn allow_same_base_form_with_different_pos_or_forms() {
-    let first = validate_and_prepare_single_entry(base_entry(), &[]).expect("first entry should pass");
+    let first =
+        validate_and_prepare_single_entry(base_entry(), &[]).expect("first entry should pass");
 
     let mut second = base_entry();
     second.part_of_speech = PartOfSpeech::Noun;
@@ -70,6 +94,8 @@ fn allow_same_base_form_with_different_pos_or_forms() {
     second.noun_plural = Some("viter".to_string());
     second.noun_singular_definite = Some("viten".to_string());
     second.noun_plural_definite = Some("vitene".to_string());
+    second.noun_singular_definite_genitive = Some("vitens".to_string());
+    second.noun_plural_definite_genitive = Some("vitenes".to_string());
 
     let second = validate_and_prepare_single_entry(second, &[first.clone()])
         .expect("same base form with different lexeme fields should pass");
@@ -78,7 +104,8 @@ fn allow_same_base_form_with_different_pos_or_forms() {
 
 #[test]
 fn reject_duplicate_lexeme_combination() {
-    let first = validate_and_prepare_single_entry(base_entry(), &[]).expect("first entry should pass");
+    let first =
+        validate_and_prepare_single_entry(base_entry(), &[]).expect("first entry should pass");
     let duplicate = validate_and_prepare_single_entry(base_entry(), &[first])
         .expect_err("same lexeme fields should be considered duplicate");
     assert!(duplicate.contains("词条重复"));

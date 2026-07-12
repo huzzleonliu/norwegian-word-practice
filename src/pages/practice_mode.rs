@@ -70,15 +70,17 @@ pub fn PracticeModePage() -> impl IntoView {
                     let count = word_list.len();
                     word_bank_state.set_entries.set(word_list);
                     word_bank_state.set_data_version.update(|ver| *ver += 1);
-                    word_bank_state
-                        .set_source_name
-                        .set(format!(
-                            "{}：{selected_file}",
-                            tr(language, "内置词库", "Built-in Lexicon")
-                        ));
+                    word_bank_state.set_source_name.set(format!(
+                        "{}：{selected_file}",
+                        tr(language, "内置词库", "Built-in Lexicon")
+                    ));
                     set_status.set(format!(
                         "{} {count} {}",
-                        tr(language, "词库切换成功（已覆盖），共", "Lexicon switched (overwritten),"),
+                        tr(
+                            language,
+                            "词库切换成功（已覆盖），共",
+                            "Lexicon switched (overwritten),"
+                        ),
                         tr(language, "条。", "entries.")
                     ));
                 }

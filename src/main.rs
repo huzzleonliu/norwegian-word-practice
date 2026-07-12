@@ -4,9 +4,9 @@ mod app_state;
 mod components;
 mod pages;
 mod structures;
-mod utils;
 #[cfg(test)]
 mod tests;
+mod utils;
 
 use structures::word_bank_entry::UiLanguage;
 use utils::i18n::tr;

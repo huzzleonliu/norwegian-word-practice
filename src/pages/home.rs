@@ -8,9 +8,9 @@ use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
 use crate::structures::word_bank_entry::UiLanguage;
+use crate::utils::i18n::tr;
 #[cfg(target_arch = "wasm32")]
 use crate::utils::pracresult_crypto::parse_practice_result_from_import;
-use crate::utils::i18n::tr;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -186,7 +186,11 @@ fn import_pracresult_from_file(
                 Err(err) => {
                     set_status.set(format!(
                         "{} {err:?}",
-                        tr(lang, "导入失败：读取文件失败，", "Import failed: read file error,")
+                        tr(
+                            lang,
+                            "导入失败：读取文件失败，",
+                            "Import failed: read file error,"
+                        )
                     ));
                     return;
                 }

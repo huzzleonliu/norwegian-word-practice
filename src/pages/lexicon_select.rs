@@ -6,8 +6,8 @@ use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::WordBankEntry;
-use crate::utils::shuffle::shuffle_strings;
 use crate::utils::i18n::tr;
+use crate::utils::shuffle::shuffle_strings;
 
 #[component]
 pub fn LexiconSelectPage() -> impl IntoView {

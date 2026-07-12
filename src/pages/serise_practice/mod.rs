@@ -10,12 +10,21 @@ pub mod pronoun;
 
 pub fn initialize_temp_practice_result(word_bank_state: WordBankState) {
     let base_result = word_bank_state.practice_result.get_untracked();
-    let selected_ids = word_bank_state
+    let all_ids = word_bank_state
         .entries
         .get_untracked()
         .iter()
         .map(|entry| entry.id.clone())
         .collect::<Vec<_>>();
+    let selected_from_state = word_bank_state.selected_word_entry_ids.get_untracked();
+    let selected_ids = if selected_from_state.is_empty() {
+        all_ids
+    } else {
+        selected_from_state
+            .into_iter()
+            .filter(|id| all_ids.iter().any(|existing| existing == id))
+            .collect::<Vec<_>>()
+    };
 
     word_bank_state
         .set_selected_word_entry_ids

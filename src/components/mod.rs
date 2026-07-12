@@ -1,7 +1,7 @@
 pub mod import_csv;
+pub mod lexicon_browser;
 pub mod lexicon_editor_add_multi;
 pub mod lexicon_editor_add_single;
-pub mod lexicon_browser;
 #[path = "mini-console.rs"]
 pub mod mini_console;
 pub mod practice_buttons;

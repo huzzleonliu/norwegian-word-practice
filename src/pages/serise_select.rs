@@ -26,7 +26,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
 
     let cardinal_click = move |_| {
         load_series_word_bank(
-            "number-bank.csv",
+            &["cardinal_number", "ordinal_number"],
             "数词",
             "Number",
             AppPage::SeriseNumberPractice,
@@ -38,7 +38,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
     };
     let month_click = move |_| {
         load_series_word_bank(
-            "month-bank.csv",
+            &["month"],
             "月份",
             "Month",
             AppPage::SeriseMonthPractice,
@@ -50,7 +50,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
     };
     let pronoun_click = move |_| {
         load_series_word_bank(
-            "pronoun-bank.csv",
+            &["pronoun"],
             "代词",
             "Pronoun",
             AppPage::SerisePronounPractice,
@@ -62,7 +62,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
     };
     let interrogative_click = move |_| {
         load_series_word_bank(
-            "interrogative-bank.csv",
+            &["interrogative"],
             "疑问词",
             "Interrogative",
             AppPage::SeriseInterrogativePractice,
@@ -123,7 +123,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
 }
 
 fn load_series_word_bank(
-    selected_file: &'static str,
+    selected_tags: &'static [&'static str],
     series_name_zh: &'static str,
     series_name_en: &'static str,
     target_page: AppPage,
@@ -132,6 +132,7 @@ fn load_series_word_bank(
     set_current_page: WriteSignal<AppPage>,
     lang: ReadSignal<UiLanguage>,
 ) {
+    let selected_file = "series-word-bank.csv";
     let language = lang.get_untracked();
     let series_name = tr(language, series_name_zh, series_name_en);
     set_status.set(format!(
@@ -159,24 +160,45 @@ fn load_series_word_bank(
                 let count = word_list.len();
                 let selected_ids = word_list
                     .iter()
+                    .filter(|entry| {
+                        entry
+                            .tags
+                            .iter()
+                            .any(|tag| selected_tags.iter().any(|expected| tag == expected))
+                    })
                     .map(|entry| entry.id.clone())
                     .collect::<Vec<_>>();
+                if selected_ids.is_empty() {
+                    set_status.set(format!(
+                        "{} {series_name} {}",
+                        tr(language, "加载失败：", "Load failed:"),
+                        tr(
+                            language,
+                            "未找到与该系列标签匹配的词条。",
+                            "No entries matched the selected series tags.",
+                        )
+                    ));
+                    return;
+                }
                 word_bank_state.set_entries.set(word_list);
                 word_bank_state
                     .set_selected_word_entry_ids
                     .set(selected_ids);
                 word_bank_state.set_data_version.update(|ver| *ver += 1);
-                word_bank_state
-                    .set_source_name
-                    .set(format!(
-                        "{}：{series_name}（{selected_file}）",
-                        tr(language, "系列词库", "Series Lexicon")
-                    ));
+                word_bank_state.set_source_name.set(format!(
+                    "{}：{series_name}（{selected_file}; tags={}）",
+                    tr(language, "系列词库", "Series Lexicon"),
+                    selected_tags.join("|")
+                ));
                 set_status.set(format!(
                     "{} {series_name} {} {count} {}",
                     tr(language, "已加载", "Loaded"),
                     tr(language, "词库，共", "lexicon,"),
-                    tr(language, "条。正在进入练习页面。", "entries. Entering practice page.")
+                    tr(
+                        language,
+                        "条。正在进入练习页面。",
+                        "entries. Entering practice page."
+                    )
                 ));
                 set_current_page.set(target_page);
             }

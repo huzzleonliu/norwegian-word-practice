@@ -5,7 +5,8 @@ use crate::app_state::WordBankState;
 use crate::utils::i18n::tr;
 
 use super::dictionary_search::{
-    enrich_results_with_google_translate, query_word_with_ordbok, test_google_translate_connectivity,
+    enrich_results_with_google_translate, query_word_with_ordbok,
+    test_google_translate_connectivity,
 };
 use super::gemini_search::{query_word_with_gemini, test_gemini_connectivity};
 use super::{
@@ -32,12 +33,32 @@ pub fn AiResearcher(
     set_single_verb_past_tense: WriteSignal<String>,
     single_verb_imperative: ReadSignal<String>,
     set_single_verb_imperative: WriteSignal<String>,
+    single_verb_present_participle: ReadSignal<String>,
+    set_single_verb_present_participle: WriteSignal<String>,
+    single_verb_past_participle: ReadSignal<String>,
+    set_single_verb_past_participle: WriteSignal<String>,
+    single_verb_passive_infinitive: ReadSignal<String>,
+    set_single_verb_passive_infinitive: WriteSignal<String>,
+    single_verb_passive_present: ReadSignal<String>,
+    set_single_verb_passive_present: WriteSignal<String>,
+    single_verb_passive_past: ReadSignal<String>,
+    set_single_verb_passive_past: WriteSignal<String>,
     single_noun_plural: ReadSignal<String>,
     set_single_noun_plural: WriteSignal<String>,
     single_noun_singular_definite: ReadSignal<String>,
     set_single_noun_singular_definite: WriteSignal<String>,
     single_noun_plural_definite: ReadSignal<String>,
     set_single_noun_plural_definite: WriteSignal<String>,
+    single_noun_singular_definite_genitive: ReadSignal<String>,
+    set_single_noun_singular_definite_genitive: WriteSignal<String>,
+    single_noun_plural_definite_genitive: ReadSignal<String>,
+    set_single_noun_plural_definite_genitive: WriteSignal<String>,
+    single_noun_singular_indefinite_genitive: ReadSignal<String>,
+    set_single_noun_singular_indefinite_genitive: WriteSignal<String>,
+    single_noun_plural_indefinite_genitive: ReadSignal<String>,
+    set_single_noun_plural_indefinite_genitive: WriteSignal<String>,
+    single_adjective_feminine_form: ReadSignal<String>,
+    set_single_adjective_feminine_form: WriteSignal<String>,
     single_adjective_neuter_form: ReadSignal<String>,
     set_single_adjective_neuter_form: WriteSignal<String>,
     single_adjective_plural_form: ReadSignal<String>,
@@ -48,6 +69,22 @@ pub fn AiResearcher(
     set_single_adjective_superlative_indefinite: WriteSignal<String>,
     single_adjective_superlative_definite: ReadSignal<String>,
     set_single_adjective_superlative_definite: WriteSignal<String>,
+    single_pronoun_object: ReadSignal<String>,
+    set_single_pronoun_object: WriteSignal<String>,
+    single_pronoun_reflexive: ReadSignal<String>,
+    set_single_pronoun_reflexive: WriteSignal<String>,
+    single_pronoun_plural_subject: ReadSignal<String>,
+    set_single_pronoun_plural_subject: WriteSignal<String>,
+    single_pronoun_plural_object: ReadSignal<String>,
+    set_single_pronoun_plural_object: WriteSignal<String>,
+    single_pronoun_plural_reflexive: ReadSignal<String>,
+    set_single_pronoun_plural_reflexive: WriteSignal<String>,
+    single_determinative_feminine_form: ReadSignal<String>,
+    set_single_determinative_feminine_form: WriteSignal<String>,
+    single_determinative_neuter_form: ReadSignal<String>,
+    set_single_determinative_neuter_form: WriteSignal<String>,
+    single_determinative_plural_form: ReadSignal<String>,
+    set_single_determinative_plural_form: WriteSignal<String>,
     single_adverb_comparative: ReadSignal<String>,
     set_single_adverb_comparative: WriteSignal<String>,
     single_adverb_superlative: ReadSignal<String>,
@@ -86,12 +123,21 @@ pub fn AiResearcher(
             match test_gemini_connectivity(&token).await {
                 Ok(()) => {
                     set_status.set(
-                        tr(language, "Gemini 连通成功。", "Gemini connection succeeded.").to_string(),
+                        tr(
+                            language,
+                            "Gemini 连通成功。",
+                            "Gemini connection succeeded.",
+                        )
+                        .to_string(),
                     );
                 }
                 Err(err) => set_status.set(format!(
                     "{} {err}",
-                    tr(language, "Gemini 连接检测失败：", "Gemini connectivity check failed:")
+                    tr(
+                        language,
+                        "Gemini 连接检测失败：",
+                        "Gemini connectivity check failed:"
+                    )
                 )),
             }
             set_is_testing.set(false);
@@ -191,8 +237,11 @@ pub fn AiResearcher(
                     let mut used_google_translate = false;
 
                     if can_use_google_translate {
-                        match enrich_results_with_google_translate(&mut results, &google_translate_token)
-                            .await
+                        match enrich_results_with_google_translate(
+                            &mut results,
+                            &google_translate_token,
+                        )
+                        .await
                         {
                             Ok(()) => {
                                 used_google_translate = true;
@@ -403,7 +452,36 @@ pub fn AiResearcher(
                     set_single_verb_imperative,
                     parsed.verb_imperative,
                 );
-                maybe_set_opt(single_noun_plural, set_single_noun_plural, parsed.noun_plural);
+                maybe_set_opt(
+                    single_verb_present_participle,
+                    set_single_verb_present_participle,
+                    parsed.verb_present_participle,
+                );
+                maybe_set_opt(
+                    single_verb_past_participle,
+                    set_single_verb_past_participle,
+                    parsed.verb_past_participle,
+                );
+                maybe_set_opt(
+                    single_verb_passive_infinitive,
+                    set_single_verb_passive_infinitive,
+                    parsed.verb_passive_infinitive,
+                );
+                maybe_set_opt(
+                    single_verb_passive_present,
+                    set_single_verb_passive_present,
+                    parsed.verb_passive_present,
+                );
+                maybe_set_opt(
+                    single_verb_passive_past,
+                    set_single_verb_passive_past,
+                    parsed.verb_passive_past,
+                );
+                maybe_set_opt(
+                    single_noun_plural,
+                    set_single_noun_plural,
+                    parsed.noun_plural,
+                );
                 maybe_set_opt(
                     single_noun_singular_definite,
                     set_single_noun_singular_definite,
@@ -413,6 +491,31 @@ pub fn AiResearcher(
                     single_noun_plural_definite,
                     set_single_noun_plural_definite,
                     parsed.noun_plural_definite,
+                );
+                maybe_set_opt(
+                    single_noun_singular_definite_genitive,
+                    set_single_noun_singular_definite_genitive,
+                    parsed.noun_singular_definite_genitive,
+                );
+                maybe_set_opt(
+                    single_noun_plural_definite_genitive,
+                    set_single_noun_plural_definite_genitive,
+                    parsed.noun_plural_definite_genitive,
+                );
+                maybe_set_opt(
+                    single_noun_singular_indefinite_genitive,
+                    set_single_noun_singular_indefinite_genitive,
+                    parsed.noun_singular_indefinite_genitive,
+                );
+                maybe_set_opt(
+                    single_noun_plural_indefinite_genitive,
+                    set_single_noun_plural_indefinite_genitive,
+                    parsed.noun_plural_indefinite_genitive,
+                );
+                maybe_set_opt(
+                    single_adjective_feminine_form,
+                    set_single_adjective_feminine_form,
+                    parsed.adjective_feminine_form,
                 );
                 maybe_set_opt(
                     single_adjective_neuter_form,
@@ -440,6 +543,46 @@ pub fn AiResearcher(
                     parsed.adjective_superlative_definite,
                 );
                 maybe_set_opt(
+                    single_pronoun_object,
+                    set_single_pronoun_object,
+                    parsed.pronoun_object,
+                );
+                maybe_set_opt(
+                    single_pronoun_reflexive,
+                    set_single_pronoun_reflexive,
+                    parsed.pronoun_reflexive,
+                );
+                maybe_set_opt(
+                    single_pronoun_plural_subject,
+                    set_single_pronoun_plural_subject,
+                    parsed.pronoun_plural_subject,
+                );
+                maybe_set_opt(
+                    single_pronoun_plural_object,
+                    set_single_pronoun_plural_object,
+                    parsed.pronoun_plural_object,
+                );
+                maybe_set_opt(
+                    single_pronoun_plural_reflexive,
+                    set_single_pronoun_plural_reflexive,
+                    parsed.pronoun_plural_reflexive,
+                );
+                maybe_set_opt(
+                    single_determinative_feminine_form,
+                    set_single_determinative_feminine_form,
+                    parsed.determinative_feminine_form,
+                );
+                maybe_set_opt(
+                    single_determinative_neuter_form,
+                    set_single_determinative_neuter_form,
+                    parsed.determinative_neuter_form,
+                );
+                maybe_set_opt(
+                    single_determinative_plural_form,
+                    set_single_determinative_plural_form,
+                    parsed.determinative_plural_form,
+                );
+                maybe_set_opt(
                     single_adverb_comparative,
                     set_single_adverb_comparative,
                     parsed.adverb_comparative,
@@ -452,7 +595,11 @@ pub fn AiResearcher(
 
                 set_status.set(format!(
                     "{source_label} \"{word}\" {}",
-                    tr(language, "查询成功：已填充单条结果。", "Query succeeded: single-entry result filled.")
+                    tr(
+                        language,
+                        "查询成功：已填充单条结果。",
+                        "Query succeeded: single-entry result filled."
+                    )
                 ));
             } else {
                 match build_bulk_csv_from_results(&parsed_list, &hint) {

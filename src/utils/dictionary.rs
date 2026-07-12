@@ -66,28 +66,43 @@ fn validate_forms_by_part_of_speech(
             require_option("现在时", &draft.verb_present_tense)?;
             require_option("过去式", &draft.verb_past_tense)?;
             require_option("祈使式", &draft.verb_imperative)?;
+            require_option("现在分词", &draft.verb_present_participle)?;
+            require_option("过去分词", &draft.verb_past_participle)?;
+            require_option("被动不定式", &draft.verb_passive_infinitive)?;
+            require_option("被动现在时", &draft.verb_passive_present)?;
         }
         PartOfSpeech::Noun => {
             require_option("复数", &draft.noun_plural)?;
             require_option("单数特指", &draft.noun_singular_definite)?;
             require_option("复数特指", &draft.noun_plural_definite)?;
+            require_option("单数特指所有格", &draft.noun_singular_definite_genitive)?;
+            require_option("复数特指所有格", &draft.noun_plural_definite_genitive)?;
         }
         PartOfSpeech::Adjective => {
-            require_option("对应中性", &draft.adjective_neuter_form)?;
-            require_option("对应复数", &draft.adjective_plural_form)?;
-            require_option("形容词比较级", &draft.adjective_comparative)?;
-            require_option("形容词最高级泛指", &draft.adjective_superlative_indefinite)?;
-            require_option("形容词最高级特指", &draft.adjective_superlative_definite)?;
+            require_option("阴性形式", &draft.adjective_feminine_form)?;
+            require_option("中性形式", &draft.adjective_neuter_form)?;
+            require_option("复数形式", &draft.adjective_plural_form)?;
+            require_option("比较级", &draft.adjective_comparative)?;
+            require_option("最高级泛指", &draft.adjective_superlative_indefinite)?;
+            require_option("最高级特指", &draft.adjective_superlative_definite)?;
         }
-        PartOfSpeech::Adverb => {
-            require_option("副词比较级", &draft.adverb_comparative)?;
-            require_option("副词最高级", &draft.adverb_superlative)?;
+        PartOfSpeech::Pronoun => {
+            require_option("宾格形式", &draft.pronoun_object)?;
+            require_option("反身形式", &draft.pronoun_reflexive)?;
+            require_option("复数主格", &draft.pronoun_plural_subject)?;
+            require_option("复数宾格", &draft.pronoun_plural_object)?;
+            require_option("复数反身", &draft.pronoun_plural_reflexive)?;
         }
-        PartOfSpeech::CardinalNumber
-        | PartOfSpeech::OrdinalNumber
-        | PartOfSpeech::Month
-        | PartOfSpeech::Pronoun
-        | PartOfSpeech::Interrogative => {}
+        PartOfSpeech::Determinative => {
+            require_option("限定词阴性", &draft.determinative_feminine_form)?;
+            require_option("限定词中性", &draft.determinative_neuter_form)?;
+            require_option("限定词复数", &draft.determinative_plural_form)?;
+        }
+        PartOfSpeech::Adverb
+        | PartOfSpeech::Preposition
+        | PartOfSpeech::Conjunction
+        | PartOfSpeech::Subjunction
+        | PartOfSpeech::Interjection => {}
     }
     Ok(())
 }
@@ -141,9 +156,21 @@ fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, S
         verb_present_tense: normalize_optional(draft.verb_present_tense),
         verb_past_tense: normalize_optional(draft.verb_past_tense),
         verb_imperative: normalize_optional(draft.verb_imperative),
+        verb_present_participle: normalize_optional(draft.verb_present_participle),
+        verb_past_participle: normalize_optional(draft.verb_past_participle),
+        verb_passive_infinitive: normalize_optional(draft.verb_passive_infinitive),
+        verb_passive_present: normalize_optional(draft.verb_passive_present),
+        verb_passive_past: normalize_optional(draft.verb_passive_past),
         noun_plural: normalize_optional(draft.noun_plural),
         noun_singular_definite: normalize_optional(draft.noun_singular_definite),
         noun_plural_definite: normalize_optional(draft.noun_plural_definite),
+        noun_singular_definite_genitive: normalize_optional(draft.noun_singular_definite_genitive),
+        noun_plural_definite_genitive: normalize_optional(draft.noun_plural_definite_genitive),
+        noun_singular_indefinite_genitive: normalize_optional(
+            draft.noun_singular_indefinite_genitive,
+        ),
+        noun_plural_indefinite_genitive: normalize_optional(draft.noun_plural_indefinite_genitive),
+        adjective_feminine_form: normalize_optional(draft.adjective_feminine_form),
         adjective_neuter_form: normalize_optional(draft.adjective_neuter_form),
         adjective_plural_form: normalize_optional(draft.adjective_plural_form),
         adjective_comparative: normalize_optional(draft.adjective_comparative),
@@ -151,6 +178,14 @@ fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, S
             draft.adjective_superlative_indefinite,
         ),
         adjective_superlative_definite: normalize_optional(draft.adjective_superlative_definite),
+        pronoun_object: normalize_optional(draft.pronoun_object),
+        pronoun_reflexive: normalize_optional(draft.pronoun_reflexive),
+        pronoun_plural_subject: normalize_optional(draft.pronoun_plural_subject),
+        pronoun_plural_object: normalize_optional(draft.pronoun_plural_object),
+        pronoun_plural_reflexive: normalize_optional(draft.pronoun_plural_reflexive),
+        determinative_feminine_form: normalize_optional(draft.determinative_feminine_form),
+        determinative_neuter_form: normalize_optional(draft.determinative_neuter_form),
+        determinative_plural_form: normalize_optional(draft.determinative_plural_form),
         adverb_comparative: normalize_optional(draft.adverb_comparative),
         adverb_superlative: normalize_optional(draft.adverb_superlative),
     };
@@ -160,20 +195,38 @@ fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, S
 
 pub fn compute_word_entry_id(entry: &WordBankEntry) -> String {
     let payload = format!(
-        "v1|pos={}|base={}|verb_present={}|verb_past={}|verb_imperative={}|noun_plural={}|noun_singular_definite={}|noun_plural_definite={}|adjective_neuter_form={}|adjective_plural_form={}|adjective_comparative={}|adjective_superlative_indefinite={}|adjective_superlative_definite={}|adverb_comparative={}|adverb_superlative={}",
+        "v2|pos={}|base={}|verb_present={}|verb_past={}|verb_imperative={}|verb_present_participle={}|verb_past_participle={}|verb_passive_infinitive={}|verb_passive_present={}|verb_passive_past={}|noun_plural={}|noun_singular_definite={}|noun_plural_definite={}|noun_singular_definite_genitive={}|noun_plural_definite_genitive={}|noun_singular_indefinite_genitive={}|noun_plural_indefinite_genitive={}|adjective_feminine_form={}|adjective_neuter_form={}|adjective_plural_form={}|adjective_comparative={}|adjective_superlative_indefinite={}|adjective_superlative_definite={}|pronoun_object={}|pronoun_reflexive={}|pronoun_plural_subject={}|pronoun_plural_object={}|pronoun_plural_reflexive={}|determinative_feminine_form={}|determinative_neuter_form={}|determinative_plural_form={}|adverb_comparative={}|adverb_superlative={}",
         normalize_for_hash(entry.part_of_speech.as_key()),
         normalize_for_hash(&entry.base_form),
         normalize_option_for_hash(&entry.verb_present_tense),
         normalize_option_for_hash(&entry.verb_past_tense),
         normalize_option_for_hash(&entry.verb_imperative),
+        normalize_option_for_hash(&entry.verb_present_participle),
+        normalize_option_for_hash(&entry.verb_past_participle),
+        normalize_option_for_hash(&entry.verb_passive_infinitive),
+        normalize_option_for_hash(&entry.verb_passive_present),
+        normalize_option_for_hash(&entry.verb_passive_past),
         normalize_option_for_hash(&entry.noun_plural),
         normalize_option_for_hash(&entry.noun_singular_definite),
         normalize_option_for_hash(&entry.noun_plural_definite),
+        normalize_option_for_hash(&entry.noun_singular_definite_genitive),
+        normalize_option_for_hash(&entry.noun_plural_definite_genitive),
+        normalize_option_for_hash(&entry.noun_singular_indefinite_genitive),
+        normalize_option_for_hash(&entry.noun_plural_indefinite_genitive),
+        normalize_option_for_hash(&entry.adjective_feminine_form),
         normalize_option_for_hash(&entry.adjective_neuter_form),
         normalize_option_for_hash(&entry.adjective_plural_form),
         normalize_option_for_hash(&entry.adjective_comparative),
         normalize_option_for_hash(&entry.adjective_superlative_indefinite),
         normalize_option_for_hash(&entry.adjective_superlative_definite),
+        normalize_option_for_hash(&entry.pronoun_object),
+        normalize_option_for_hash(&entry.pronoun_reflexive),
+        normalize_option_for_hash(&entry.pronoun_plural_subject),
+        normalize_option_for_hash(&entry.pronoun_plural_object),
+        normalize_option_for_hash(&entry.pronoun_plural_reflexive),
+        normalize_option_for_hash(&entry.determinative_feminine_form),
+        normalize_option_for_hash(&entry.determinative_neuter_form),
+        normalize_option_for_hash(&entry.determinative_plural_form),
         normalize_option_for_hash(&entry.adverb_comparative),
         normalize_option_for_hash(&entry.adverb_superlative),
     );
