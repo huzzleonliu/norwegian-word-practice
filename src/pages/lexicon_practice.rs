@@ -34,6 +34,8 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
     let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
     let (answer_fields, set_answer_fields) = signal(default_answer_fields());
+    let (allow_answer_reveal, set_allow_answer_reveal) = signal(true);
+    let (revealed_answer_keys, set_revealed_answer_keys) = signal(HashSet::<String>::new());
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
     let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
@@ -135,6 +137,13 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
                 });
             });
+            set_revealed_answer_keys.update(|keys| {
+                keys.retain(|key| {
+                    !solved_set
+                        .iter()
+                        .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
+                });
+            });
         }
 
         if newly_solved_ids.is_empty() {
@@ -153,6 +162,11 @@ pub fn LexiconPracticePage() -> impl IntoView {
         set_solved_question_ids.set(Vec::new());
         set_answer_inputs.set(HashMap::new());
         set_active_question_ids.set(Vec::new());
+        set_revealed_answer_keys.set(HashSet::new());
+    });
+
+    let hide_all_revealed_answers = Callback::new(move |_| {
+        set_revealed_answer_keys.set(HashSet::new());
     });
 
     view! {
@@ -193,6 +207,9 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         set_prompt_field_b=set_prompt_field_b
                         answer_fields=answer_fields
                         set_answer_fields=set_answer_fields
+                        allow_answer_reveal=allow_answer_reveal
+                        set_allow_answer_reveal=set_allow_answer_reveal
+                        hide_all_revealed_answers=hide_all_revealed_answers
                     />
                 </section>
 
@@ -207,6 +224,9 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         answer_fields=answer_fields
                         answer_inputs=answer_inputs
                         set_answer_inputs=set_answer_inputs
+                        allow_answer_reveal=Some(allow_answer_reveal)
+                        revealed_answer_keys=Some(revealed_answer_keys)
+                        set_revealed_answer_keys=Some(set_revealed_answer_keys)
                     />
                 </section>
 

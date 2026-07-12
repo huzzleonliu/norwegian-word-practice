@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
@@ -35,6 +35,9 @@ pub fn PracticeEntry(
     answer_fields: ReadSignal<Vec<String>>,
     answer_inputs: ReadSignal<HashMap<String, String>>,
     set_answer_inputs: WriteSignal<HashMap<String, String>>,
+    allow_answer_reveal: Option<ReadSignal<bool>>,
+    revealed_answer_keys: Option<ReadSignal<HashSet<String>>>,
+    set_revealed_answer_keys: Option<WriteSignal<HashSet<String>>>,
 ) -> impl IntoView {
     view! {
         <div class="mt-4 space-y-4">
@@ -109,15 +112,56 @@ pub fn PracticeEntry(
                                                 let expected = entry_field_value(&entry_for_answers, &field);
                                                 let key_for_value = answer_input_key(&entry_id, &field_for_key);
                                                 let key_for_input = key_for_value.clone();
+                                                let key_for_reveal_check = key_for_value.clone();
+                                                let key_for_reveal_toggle = key_for_value.clone();
+                                                let key_for_value_read = key_for_value.clone();
+                                                let key_for_value_revealed = key_for_value.clone();
                                                 view! {
                                                     <label class="flex flex-col gap-1 text-xs text-slate-300">
-                                                        <span>{field_for_label}</span>
+                                                        <div class="flex items-center justify-between gap-2">
+                                                            <span>{field_for_label}</span>
+                                                            {move || {
+                                                                let allow_reveal = allow_answer_reveal
+                                                                    .map(|signal| signal.get())
+                                                                    .unwrap_or(false);
+                                                                if allow_reveal {
+                                                                    let is_revealed = revealed_answer_keys
+                                                                        .map(|signal| signal.get().contains(&key_for_reveal_check))
+                                                                        .unwrap_or(false);
+                                                                    let label = if is_revealed { "隐藏" } else { "显示" };
+                                                                    let toggle_key = key_for_reveal_toggle.clone();
+                                                                    view! {
+                                                                        <button
+                                                                            type="button"
+                                                                            on:click=move |_| {
+                                                                                let reveal_key = toggle_key.clone();
+                                                                                if let Some(set_signal) = set_revealed_answer_keys {
+                                                                                    set_signal.update(|keys| {
+                                                                                        if keys.contains(&reveal_key) {
+                                                                                            keys.remove(&reveal_key);
+                                                                                        } else {
+                                                                                            keys.insert(reveal_key);
+                                                                                        }
+                                                                                    });
+                                                                                }
+                                                                            }
+                                                                            class="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-200 hover:bg-slate-800"
+                                                                        >
+                                                                            {label}
+                                                                        </button>
+                                                                    }
+                                                                        .into_any()
+                                                                } else {
+                                                                    view! { <></> }.into_any()
+                                                                }
+                                                            }}
+                                                        </div>
                                                         <input
                                                             type="text"
                                                             prop:value=move || {
                                                                 answer_inputs
                                                                     .get()
-                                                                    .get(&key_for_value)
+                                                                    .get(&key_for_value_read)
                                                                     .cloned()
                                                                     .unwrap_or_default()
                                                             }
@@ -127,9 +171,28 @@ pub fn PracticeEntry(
                                                                     inputs.insert(key_for_input.clone(), value);
                                                                 });
                                                             }
-                                                            placeholder=format!("参考值：{expected}")
+                                                            placeholder="填写答案"
                                                             class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
                                                         />
+                                                        {move || {
+                                                            let allow_reveal = allow_answer_reveal
+                                                                .map(|signal| signal.get())
+                                                                .unwrap_or(false);
+                                                            let is_revealed = revealed_answer_keys
+                                                                .map(|signal| signal.get().contains(&key_for_value_revealed))
+                                                                .unwrap_or(false);
+                                                            if allow_reveal && is_revealed
+                                                            {
+                                                                view! {
+                                                                    <span class="text-[11px] text-amber-300">
+                                                                        {format!("参考答案：{expected}")}
+                                                                    </span>
+                                                                }
+                                                                    .into_any()
+                                                            } else {
+                                                                view! { <></> }.into_any()
+                                                            }
+                                                        }}
                                                     </label>
                                                 }
                                             })

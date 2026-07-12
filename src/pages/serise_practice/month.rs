@@ -191,6 +191,9 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
                         answer_fields=answer_fields
                         answer_inputs=answer_inputs
                         set_answer_inputs=set_answer_inputs
+                        allow_answer_reveal=None
+                        revealed_answer_keys=None
+                        set_revealed_answer_keys=None
                     />
                 </section>
 

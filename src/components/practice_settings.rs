@@ -76,6 +76,9 @@ pub fn PracticeSettings(
     set_prompt_field_b: WriteSignal<String>,
     answer_fields: ReadSignal<Vec<String>>,
     set_answer_fields: WriteSignal<Vec<String>>,
+    allow_answer_reveal: ReadSignal<bool>,
+    set_allow_answer_reveal: WriteSignal<bool>,
+    hide_all_revealed_answers: Callback<()>,
 ) -> impl IntoView {
     view! {
         <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -180,6 +183,27 @@ pub fn PracticeSettings(
                         }
                     })
                     .collect_view()}
+            </div>
+        </div>
+
+        <div class="mt-4 rounded border border-slate-800 bg-slate-950/40 p-3">
+            <p class="text-sm text-slate-300">"答案显隐"</p>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+                <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || allow_answer_reveal.get()
+                        on:change=move |ev| set_allow_answer_reveal.set(event_target_checked(&ev))
+                    />
+                    <span>"允许在练习区临时亮出答案（默认隐藏）"</span>
+                </label>
+                <button
+                    type="button"
+                    on:click=move |_| hide_all_revealed_answers.run(())
+                    class="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                >
+                    "隐藏所有已亮出的答案"
+                </button>
             </div>
         </div>
     }
