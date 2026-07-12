@@ -34,7 +34,13 @@ pub fn LexiconBrowser(
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
     let (search_text, set_search_text) = signal(String::new());
     let (search_query, set_search_query) = signal(String::new());
-    let (search_columns, set_search_columns) = signal(vec![true; DATA_COLUMN_COUNT]);
+    let (search_columns, set_search_columns) = signal({
+        let mut cols = vec![true; DATA_COLUMN_COUNT];
+        if let Some(id_col) = cols.get_mut(0) {
+            *id_col = false;
+        }
+        cols
+    });
     let (search_scope_expanded, set_search_scope_expanded) = signal(false);
     let (confirm_error, set_confirm_error) = signal(String::new());
     let (confirm_success, set_confirm_success) = signal(String::new());
@@ -209,12 +215,15 @@ pub fn LexiconBrowser(
         set_confirm_success.set(String::new());
 
         let current_entries = draft_entries.get_untracked();
+        let mut entries_to_commit = current_entries.clone();
 
         if !is_query_mode {
             let mut errors = Vec::new();
+            let mut validated_entries = Vec::with_capacity(current_entries.len());
             for (idx, item) in current_entries.iter().enumerate() {
-                if let Err(err) = validate_existing_entry(item, &current_entries, idx) {
-                    errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err));
+                match validate_existing_entry(item, &current_entries, idx) {
+                    Ok(validated_entry) => validated_entries.push(validated_entry),
+                    Err(err) => errors.push(format!("第 {} 行（id: {}）{}", idx + 1, item.id, err)),
                 }
             }
 
@@ -231,12 +240,14 @@ pub fn LexiconBrowser(
                 );
                 return;
             }
+
+            entries_to_commit = validated_entries;
         }
 
-        set_committed_entries.set(current_entries.clone());
-        set_draft_entries.set(current_entries.clone());
-        set_baseline_entries.set(current_entries.clone());
-        set_row_undo.set(vec![None; current_entries.len()]);
+        set_committed_entries.set(entries_to_commit.clone());
+        set_draft_entries.set(entries_to_commit.clone());
+        set_baseline_entries.set(entries_to_commit.clone());
+        set_row_undo.set(vec![None; entries_to_commit.len()]);
         set_confirm_success.set(tr(lang.get_untracked(), "修改成功", "Saved").to_string());
         if is_query_mode {
             set_status.set(
@@ -719,25 +730,9 @@ pub fn LexiconBrowser(
                                             class="border border-slate-800 p-1"
                                             class:hidden=move || !search_columns.get().get(0).copied().unwrap_or(false)
                                         >
-                                            <input
-                                                type="text"
-                                                prop:value=entry.id.clone()
-                                                on:input=move |ev| {
-                                                    let value = event_target_value(&ev);
-                                                    set_entries.update(|list| {
-                                                        if let Some(item) = list.get_mut(idx) {
-                                                            set_row_undo.update(|undo| {
-                                                                if undo.len() <= idx {
-                                                                    undo.resize(idx + 1, None);
-                                                                }
-                                                                undo[idx] = Some(item.clone());
-                                                            });
-                                                            item.id = value;
-                                                        }
-                                                    });
-                                                }
-                                                class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"
-                                            />
+                                            <span class="block rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-300">
+                                                {entry.id.clone()}
+                                            </span>
                                         </td>
                                         <td
                                             class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"

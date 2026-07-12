@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
+use crate::utils::dictionary::compute_word_entry_id;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LexiconBrowserMode {
@@ -44,8 +45,8 @@ impl TryFrom<CsvWordEntry> for WordBankEntry {
     type Error = String;
 
     fn try_from(value: CsvWordEntry) -> Result<Self, Self::Error> {
-        Ok(Self {
-            id: value.id,
+        let mut entry = Self {
+            id: String::new(),
             selected: value.selected,
             part_of_speech: PartOfSpeech::from_key(&value.part_of_speech)?,
             tags: parse_pipe_list(&value.tags),
@@ -69,14 +70,16 @@ impl TryFrom<CsvWordEntry> for WordBankEntry {
             ),
             adverb_comparative: parse_optional_text(&value.adverb_comparative),
             adverb_superlative: parse_optional_text(&value.adverb_superlative),
-        })
+        };
+        entry.id = compute_word_entry_id(&entry);
+        Ok(entry)
     }
 }
 
 impl From<&WordBankEntry> for CsvWordEntry {
     fn from(value: &WordBankEntry) -> Self {
         Self {
-            id: value.id.clone(),
+            id: compute_word_entry_id(value),
             selected: value.selected,
             part_of_speech: value.part_of_speech.as_key().to_string(),
             tags: value.tags.join("|"),

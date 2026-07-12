@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use sha2::{Digest, Sha256};
 
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
 
@@ -17,80 +17,40 @@ pub fn validate_and_prepare_single_entry(
     draft: SingleEntryDraft,
     existing_entries: &[WordBankEntry],
 ) -> Result<WordBankEntry, String> {
-    let base_form = draft.base_form.trim().to_string();
-    if base_form.is_empty() {
-        return Err("原型不能为空。".to_string());
-    }
+    let prepared_entry = prepare_entry_for_storage(draft)?;
     if existing_entries
         .iter()
-        .any(|entry| entry.base_form.trim() == base_form)
+        .any(|entry| compute_word_entry_id(entry) == prepared_entry.id)
     {
-        return Err(format!("原型 `{base_form}` 已存在，不能重复插入。"));
+        return Err(format!(
+            "词条重复：词性 `{}` + 词形组合已存在（原型 `{}`）。",
+            prepared_entry.part_of_speech.as_key(),
+            prepared_entry.base_form
+        ));
     }
 
-    validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)?;
-
-    let chinese = normalize_vec(draft.chinese);
-    if chinese.is_empty() {
-        return Err("对应中文不能为空。".to_string());
-    }
-
-    let existing_ids = existing_entries
-        .iter()
-        .map(|entry| entry.id.as_str())
-        .collect::<HashSet<_>>();
-    let id = make_unique_id_from_base_form(&base_form, &existing_ids);
-
-    Ok(WordBankEntry {
-        id,
-        selected: draft.selected,
-        part_of_speech: draft.part_of_speech,
-        tags: normalize_vec(draft.tags),
-        english: normalize_vec(draft.english),
-        chinese,
-        base_form,
-        verb_present_tense: normalize_optional(draft.verb_present_tense),
-        verb_past_tense: normalize_optional(draft.verb_past_tense),
-        verb_imperative: normalize_optional(draft.verb_imperative),
-        noun_plural: normalize_optional(draft.noun_plural),
-        noun_singular_definite: normalize_optional(draft.noun_singular_definite),
-        noun_plural_definite: normalize_optional(draft.noun_plural_definite),
-        adjective_neuter_form: normalize_optional(draft.adjective_neuter_form),
-        adjective_plural_form: normalize_optional(draft.adjective_plural_form),
-        adjective_comparative: normalize_optional(draft.adjective_comparative),
-        adjective_superlative_indefinite: normalize_optional(
-            draft.adjective_superlative_indefinite,
-        ),
-        adjective_superlative_definite: normalize_optional(draft.adjective_superlative_definite),
-        adverb_comparative: normalize_optional(draft.adverb_comparative),
-        adverb_superlative: normalize_optional(draft.adverb_superlative),
-    })
+    Ok(prepared_entry)
 }
 
 pub fn validate_existing_entry(
     entry: &WordBankEntry,
     existing_entries: &[WordBankEntry],
     self_index: usize,
-) -> Result<(), String> {
-    let base_form = entry.base_form.trim().to_string();
-    if base_form.is_empty() {
-        return Err("原型不能为空。".to_string());
-    }
+) -> Result<WordBankEntry, String> {
+    let prepared_entry = prepare_entry_for_storage(draft_from_word_entry(entry))?;
     if existing_entries
         .iter()
         .enumerate()
-        .any(|(idx, item)| idx != self_index && item.base_form.trim() == base_form)
+        .any(|(idx, item)| idx != self_index && compute_word_entry_id(item) == prepared_entry.id)
     {
-        return Err(format!("原型 `{base_form}` 已存在，不能重复。"));
+        return Err(format!(
+            "词条重复：词性 `{}` + 词形组合已存在（原型 `{}`）。",
+            prepared_entry.part_of_speech.as_key(),
+            prepared_entry.base_form
+        ));
     }
 
-    let draft = draft_from_word_entry(entry);
-    let chinese = normalize_vec(draft.chinese.clone());
-    if chinese.is_empty() {
-        return Err("对应中文不能为空。".to_string());
-    }
-
-    validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)
+    Ok(prepared_entry)
 }
 
 pub fn draft_from_word_entry(entry: &WordBankEntry) -> SingleEntryDraft {
@@ -157,17 +117,88 @@ fn normalize_vec(values: Vec<String>) -> Vec<String> {
         .collect()
 }
 
-fn make_unique_id_from_base_form(base_form: &str, existing_ids: &HashSet<&str>) -> String {
-    if !existing_ids.contains(base_form) {
-        return base_form.to_string();
+fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, String> {
+    let base_form = draft.base_form.trim().to_string();
+    if base_form.is_empty() {
+        return Err("原型不能为空。".to_string());
     }
 
-    let mut index = 2_usize;
-    loop {
-        let candidate = format!("{base_form}-{index}");
-        if !existing_ids.contains(candidate.as_str()) {
-            return candidate;
-        }
-        index += 1;
+    validate_forms_by_part_of_speech(&draft.part_of_speech, &draft)?;
+
+    let chinese = normalize_vec(draft.chinese);
+    if chinese.is_empty() {
+        return Err("对应中文不能为空。".to_string());
     }
+
+    let mut entry = WordBankEntry {
+        id: String::new(),
+        selected: draft.selected,
+        part_of_speech: draft.part_of_speech,
+        tags: normalize_vec(draft.tags),
+        english: normalize_vec(draft.english),
+        chinese,
+        base_form,
+        verb_present_tense: normalize_optional(draft.verb_present_tense),
+        verb_past_tense: normalize_optional(draft.verb_past_tense),
+        verb_imperative: normalize_optional(draft.verb_imperative),
+        noun_plural: normalize_optional(draft.noun_plural),
+        noun_singular_definite: normalize_optional(draft.noun_singular_definite),
+        noun_plural_definite: normalize_optional(draft.noun_plural_definite),
+        adjective_neuter_form: normalize_optional(draft.adjective_neuter_form),
+        adjective_plural_form: normalize_optional(draft.adjective_plural_form),
+        adjective_comparative: normalize_optional(draft.adjective_comparative),
+        adjective_superlative_indefinite: normalize_optional(
+            draft.adjective_superlative_indefinite,
+        ),
+        adjective_superlative_definite: normalize_optional(draft.adjective_superlative_definite),
+        adverb_comparative: normalize_optional(draft.adverb_comparative),
+        adverb_superlative: normalize_optional(draft.adverb_superlative),
+    };
+    entry.id = compute_word_entry_id(&entry);
+    Ok(entry)
+}
+
+pub fn compute_word_entry_id(entry: &WordBankEntry) -> String {
+    let payload = format!(
+        "v1|pos={}|base={}|verb_present={}|verb_past={}|verb_imperative={}|noun_plural={}|noun_singular_definite={}|noun_plural_definite={}|adjective_neuter_form={}|adjective_plural_form={}|adjective_comparative={}|adjective_superlative_indefinite={}|adjective_superlative_definite={}|adverb_comparative={}|adverb_superlative={}",
+        normalize_for_hash(entry.part_of_speech.as_key()),
+        normalize_for_hash(&entry.base_form),
+        normalize_option_for_hash(&entry.verb_present_tense),
+        normalize_option_for_hash(&entry.verb_past_tense),
+        normalize_option_for_hash(&entry.verb_imperative),
+        normalize_option_for_hash(&entry.noun_plural),
+        normalize_option_for_hash(&entry.noun_singular_definite),
+        normalize_option_for_hash(&entry.noun_plural_definite),
+        normalize_option_for_hash(&entry.adjective_neuter_form),
+        normalize_option_for_hash(&entry.adjective_plural_form),
+        normalize_option_for_hash(&entry.adjective_comparative),
+        normalize_option_for_hash(&entry.adjective_superlative_indefinite),
+        normalize_option_for_hash(&entry.adjective_superlative_definite),
+        normalize_option_for_hash(&entry.adverb_comparative),
+        normalize_option_for_hash(&entry.adverb_superlative),
+    );
+
+    let mut hasher = Sha256::new();
+    hasher.update(payload.as_bytes());
+    let hash = hasher.finalize();
+    let hash_hex = hash
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("wb_{hash_hex}")
+}
+
+fn normalize_for_hash(raw: &str) -> String {
+    raw.trim()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+fn normalize_option_for_hash(value: &Option<String>) -> String {
+    value
+        .as_ref()
+        .map(|item| normalize_for_hash(item))
+        .unwrap_or_default()
 }

@@ -103,7 +103,7 @@ impl PartOfSpeech {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct WordBankEntry {
-    // 序号：唯一，不可为空；建议与原型关联
+    // 序号：唯一，不可为空；由词性+词形字段哈希生成
     pub id: String,
     // 是否选中：默认 true
     pub selected: bool,

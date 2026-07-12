@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
@@ -188,9 +189,17 @@ fn parse_word_bank_csv_inner(
         .from_reader(content.as_bytes());
 
     let mut entries = Vec::new();
-    for row in reader.deserialize::<CsvWordEntry>() {
+    let mut seen_entry_rows = HashMap::<String, usize>::new();
+    for (row_index, row) in reader.deserialize::<CsvWordEntry>().enumerate() {
         let row = row.map_err(|err| format!("CSV 解析失败: {err}"))?;
-        entries.push(WordBankEntry::try_from(row)?);
+        let entry = WordBankEntry::try_from(row)?;
+        let current_line = if has_headers { row_index + 2 } else { row_index + 1 };
+        if let Some(first_line) = seen_entry_rows.insert(entry.id.clone(), current_line) {
+            return Err(format!(
+                "CSV 存在重复词条（同词性+词形组合），首行 {first_line} 与第 {current_line} 行冲突。"
+            ));
+        }
+        entries.push(entry);
     }
 
     Ok(entries)

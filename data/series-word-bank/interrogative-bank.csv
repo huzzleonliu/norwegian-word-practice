@@ -1,7 +1,7 @@
 id,selected,part_of_speech,tags,english,chinese,norwegian_base,verb_present_tense,verb_past_tense,verb_imperative,noun_plural,noun_singular_definite,noun_plural_definite,adjective_neuter_form,adjective_plural_form,adjective_comparative,adjective_superlative_indefinite,adjective_superlative_definite,adverb_comparative,adverb_superlative
-interrogative-001,true,interrogative,series,what,什么,hva,,,,,,,,,,,,,
-interrogative-002,true,interrogative,series,where,哪里,hvor,,,,,,,,,,,,,
-interrogative-003,true,interrogative,series,why,为什么,hvorfor,,,,,,,,,,,,,
-interrogative-004,true,interrogative,series,when,什么时候,når,,,,,,,,,,,,,
-interrogative-005,true,interrogative,series,who,谁,hvem,,,,,,,,,,,,,
-interrogative-006,true,interrogative,series,which,哪个,hvilken,,,,,,,,,,,,,
+wb_fcca202c5e8095bd24c8ac69991bf999f7c80f4a64844126ce701250dd00d042,true,interrogative,series,what,什么,hva,,,,,,,,,,,,,
+wb_68392ce51382d90512e3cda5e805055e923d9a6f8d8e9f6b3a0944bc2cda51f2,true,interrogative,series,where,哪里,hvor,,,,,,,,,,,,,
+wb_c6e19ef858d8a6276c98e6fe96ff9c4ca816e732e6dfdba2e91427d60b2a71e8,true,interrogative,series,why,为什么,hvorfor,,,,,,,,,,,,,
+wb_611b6cc2f34a55a800b7264df4c3b13a98bcf548cff8fd35ed4dbbc32786cd3d,true,interrogative,series,when,什么时候,når,,,,,,,,,,,,,
+wb_c78122b813615de64a5a5c6d9c1dd6d26fad539bffa77c9fd919f054e209d37c,true,interrogative,series,who,谁,hvem,,,,,,,,,,,,,
+wb_a3103b2d38dbbb64ccf5b9d58f4897a7587ac966530a26279bca4040e5aa6444,true,interrogative,series,which,哪个,hvilken,,,,,,,,,,,,,

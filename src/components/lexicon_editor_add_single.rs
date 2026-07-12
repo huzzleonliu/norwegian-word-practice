@@ -58,8 +58,8 @@ pub fn LexiconEditorAddSingle(
                 {move || {
                     tr(
                         lang.get(),
-                        "序号会自动使用原型值生成；如重复将自动追加后缀（如 -2）。",
-                        "ID is auto-generated from base form. Duplicate appends suffix (e.g. -2).",
+                        "序号会自动由词性与词形字段计算哈希生成。",
+                        "ID is auto-generated as a hash from part-of-speech and inflection fields.",
                     )
                 }}
             </p>
