@@ -9,15 +9,28 @@ use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 
+include!(concat!(env!("OUT_DIR"), "/lexicon_word_bank_catalog.rs"));
+
 #[component]
 pub fn PracticeModePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let word_bank_state = expect_context::<WordBankState>();
-    let (selected_word_bank, set_selected_word_bank) = signal("word-bank.csv".to_string());
+    let default_word_bank = LEXICON_WORD_BANK_FILES
+        .iter()
+        .copied()
+        .find(|file| *file == "word-bank.csv")
+        .or_else(|| LEXICON_WORD_BANK_FILES.first().copied())
+        .unwrap_or("")
+        .to_string();
+    let (selected_word_bank, set_selected_word_bank) = signal(default_word_bank);
     let (status, set_status) = signal(String::new());
 
     let choose_word_bank_click = move |_| {
         let selected_file = selected_word_bank.get_untracked();
+        if selected_file.trim().is_empty() {
+            set_status.set("未检测到可用内置词库，请检查 data/lexicon-word-bank 目录。".to_string());
+            return;
+        }
         let word_bank_state = word_bank_state;
         set_status.set(format!("正在加载内置词库：{selected_file} ..."));
 
@@ -92,13 +105,21 @@ pub fn PracticeModePage() -> impl IntoView {
                                 on:change=move |ev| set_selected_word_bank.set(event_target_value(&ev))
                                 class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
                             >
-                                <option value="word-bank-mini.csv">"word-bank-mini.csv"</option>
-                                <option value="word-bank.csv">"word-bank.csv"</option>
-                                <option value="word-bank-full.csv">"word-bank-full.csv"</option>
+                                {if LEXICON_WORD_BANK_FILES.is_empty() {
+                                    view! { <option value="">"未检测到词库文件"</option> }
+                                        .into_any()
+                                } else {
+                                    LEXICON_WORD_BANK_FILES
+                                        .iter()
+                                        .map(|file| view! { <option value=*file>{*file}</option> })
+                                        .collect_view()
+                                        .into_any()
+                                }}
                             </select>
                             <button
                                 type="button"
                                 on:click=choose_word_bank_click
+                                disabled=LEXICON_WORD_BANK_FILES.is_empty()
                                 class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700"
                             >
                                 "选择词库"
