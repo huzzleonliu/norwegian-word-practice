@@ -5,6 +5,8 @@ mod components;
 mod pages;
 mod structures;
 mod utils;
+#[cfg(test)]
+mod tests;
 
 fn main() {
     leptos::mount::mount_to_body(App)

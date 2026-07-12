@@ -185,6 +185,9 @@ pub fn normalize_for_compare(value: &str) -> String {
         .collect::<Vec<_>>()
         .join("|")
         .to_lowercase()
+        .replace('æ', "ae")
+        .replace('ø', "oe")
+        .replace('å', "aa")
 }
 
 pub fn record_field_check_result(
