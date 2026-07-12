@@ -43,6 +43,33 @@ const WORD_FORM_HINT_OPTIONS: [(&str, &str); 23] = [
 
 const GEMINI_MODEL_CANDIDATES: [&str; 3] =
     ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+const ORDBOK_GRAPHQL_ENDPOINT: &str = "https://api.ordbokapi.org/graphql";
+const ORDBOK_LOOKUP_QUERY: &str = r#"
+query LookUp($word: String!) {
+  suggestions(word: $word) {
+    exact {
+      word
+      articles {
+        wordClass
+        lemmas {
+          lemma
+          paradigms {
+            inflections {
+              tags
+              wordForm
+            }
+          }
+        }
+        flatDefinitions {
+          content {
+            textContent
+          }
+        }
+      }
+    }
+  }
+}
+"#;
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
@@ -51,7 +78,6 @@ struct GeminiWordResult {
     base_form: Option<String>,
     chinese: Vec<String>,
     english: Vec<String>,
-    tags: Vec<String>,
     #[serde(alias = "present_tense")]
     verb_present_tense: Option<String>,
     #[serde(alias = "past_tense")]
@@ -83,7 +109,7 @@ impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
             id: String::new(),
             selected: true,
             part_of_speech: normalize_part_of_speech_enum(value.part_of_speech.clone(), hint),
-            tags: normalize_text_list(&value.tags),
+            tags: Vec::new(),
             english: normalize_text_list(&value.english),
             chinese: normalize_text_list(&value.chinese),
             base_form: normalize_text_opt(value.base_form.clone()).unwrap_or_default(),
@@ -130,6 +156,79 @@ struct GeminiPart {
     text: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct OrdbokGraphQlResponse {
+    data: Option<OrdbokGraphQlData>,
+    #[serde(default)]
+    errors: Vec<OrdbokGraphQlError>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokGraphQlError {
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokGraphQlData {
+    suggestions: OrdbokSuggestions,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokSuggestions {
+    #[serde(default)]
+    exact: Vec<OrdbokExactSuggestion>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokExactSuggestion {
+    word: String,
+    #[serde(default)]
+    articles: Vec<OrdbokArticle>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OrdbokArticle {
+    word_class: Option<String>,
+    #[serde(default)]
+    lemmas: Vec<OrdbokLemma>,
+    #[serde(default)]
+    flat_definitions: Vec<OrdbokFlatDefinition>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokLemma {
+    lemma: String,
+    #[serde(default)]
+    paradigms: Vec<OrdbokParadigm>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokParadigm {
+    #[serde(default)]
+    inflections: Vec<OrdbokInflection>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OrdbokInflection {
+    #[serde(default)]
+    tags: Vec<String>,
+    word_form: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokFlatDefinition {
+    #[serde(default)]
+    content: Vec<OrdbokRichContentItem>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OrdbokRichContentItem {
+    text_content: Option<String>,
+}
+
 #[component]
 pub fn AiResearcher(
     set_status: WriteSignal<String>,
@@ -143,8 +242,6 @@ pub fn AiResearcher(
     set_single_chinese: WriteSignal<String>,
     single_english: ReadSignal<String>,
     set_single_english: WriteSignal<String>,
-    single_tags: ReadSignal<String>,
-    set_single_tags: WriteSignal<String>,
     single_verb_present_tense: ReadSignal<String>,
     set_single_verb_present_tense: WriteSignal<String>,
     single_verb_past_tense: ReadSignal<String>,
@@ -178,6 +275,7 @@ pub fn AiResearcher(
     let (query_word, set_query_word) = signal(String::new());
     let (is_testing, set_is_testing) = signal(false);
     let (is_querying, set_is_querying) = signal(false);
+    let (ordbok_only_mode, set_ordbok_only_mode) = signal(false);
 
     let test_connectivity = move |_| {
         let language = lang.get_untracked();
@@ -224,17 +322,6 @@ pub fn AiResearcher(
     let query_forms = move |_| {
         let language = lang.get_untracked();
         let token = gemini_token.get_untracked().trim().to_string();
-        if token.is_empty() {
-            set_status.set(
-                tr(
-                    language,
-                    "查询失败：请先输入 Gemini API Token。",
-                    "Query failed: please enter Gemini API token first.",
-                )
-                .to_string(),
-            );
-            return;
-        }
         let word = query_word.get_untracked().trim().to_string();
         if word.is_empty() {
             set_status.set(
@@ -248,140 +335,245 @@ pub fn AiResearcher(
             return;
         }
         let hint = form_hint.get_untracked();
+        let ordbok_only = ordbok_only_mode.get_untracked();
         set_is_querying.set(true);
 
         let set_is_querying = set_is_querying;
         let set_status = set_status;
         spawn_local(async move {
-            let prompt = build_research_prompt(&word, &hint);
-            let result = call_gemini_text(&token, &prompt).await;
-            match result {
-                Ok(raw_text) => match parse_gemini_word_results(&raw_text) {
-                    Ok(parsed_list) => {
-                        if parsed_list.is_empty() {
-                            set_status.set(
-                                tr(language, "查询失败：AI 返回了空数组。", "Query failed: AI returned empty array.")
-                                    .to_string(),
-                            );
-                        } else if parsed_list.len() == 1 {
-                            let parsed = parsed_list.first().cloned().unwrap_or_default();
-                            let pos =
-                                normalize_part_of_speech(parsed.part_of_speech.clone(), &hint);
-                            set_single_pos.set(pos);
-
-                            if let Some(v) = normalize_text_opt(parsed.base_form) {
-                                set_if_blank(single_norwegian, set_single_norwegian, v);
-                            }
-                            if let Some(v) = join_pipe(parsed.chinese) {
-                                set_if_blank(single_chinese, set_single_chinese, v);
-                            }
-                            if let Some(v) = join_pipe(parsed.english) {
-                                set_if_blank(single_english, set_single_english, v);
-                            }
-                            if let Some(v) = join_pipe(parsed.tags) {
-                                set_if_blank(single_tags, set_single_tags, v);
-                            }
-
-                            maybe_set_opt(
-                                single_verb_present_tense,
-                                set_single_verb_present_tense,
-                                parsed.verb_present_tense,
-                            );
-                            maybe_set_opt(
-                                single_verb_past_tense,
-                                set_single_verb_past_tense,
-                                parsed.verb_past_tense,
-                            );
-                            maybe_set_opt(
-                                single_verb_imperative,
-                                set_single_verb_imperative,
-                                parsed.verb_imperative,
-                            );
-                            maybe_set_opt(single_noun_plural, set_single_noun_plural, parsed.noun_plural);
-                            maybe_set_opt(
-                                single_noun_singular_definite,
-                                set_single_noun_singular_definite,
-                                parsed.noun_singular_definite,
-                            );
-                            maybe_set_opt(
-                                single_noun_plural_definite,
-                                set_single_noun_plural_definite,
-                                parsed.noun_plural_definite,
-                            );
-                            maybe_set_opt(
-                                single_adjective_neuter_form,
-                                set_single_adjective_neuter_form,
-                                parsed.adjective_neuter_form,
-                            );
-                            maybe_set_opt(
-                                single_adjective_plural_form,
-                                set_single_adjective_plural_form,
-                                parsed.adjective_plural_form,
-                            );
-                            maybe_set_opt(
-                                single_adjective_comparative,
-                                set_single_adjective_comparative,
-                                parsed.adjective_comparative,
-                            );
-                            maybe_set_opt(
-                                single_adjective_superlative_indefinite,
-                                set_single_adjective_superlative_indefinite,
-                                parsed.adjective_superlative_indefinite,
-                            );
-                            maybe_set_opt(
-                                single_adjective_superlative_definite,
-                                set_single_adjective_superlative_definite,
-                                parsed.adjective_superlative_definite,
-                            );
-                            maybe_set_opt(
-                                single_adverb_comparative,
-                                set_single_adverb_comparative,
-                                parsed.adverb_comparative,
-                            );
-                            maybe_set_opt(
-                                single_adverb_superlative,
-                                set_single_adverb_superlative,
-                                parsed.adverb_superlative,
-                            );
-
+            let (parsed_list, source_label) = match query_word_with_ordbok(&word, &hint).await {
+                Ok(results) if !results.is_empty() => {
+                    (results, tr(language, "Ordbok API", "Ordbok API").to_string())
+                }
+                Ok(_) => {
+                    if ordbok_only {
+                        set_status.set(
+                            tr(
+                                language,
+                                "Ordbok API 未命中，且已开启“仅 Ordbok”模式，不回退 Gemini。",
+                                "No Ordbok match and \"Ordbok-only\" mode is enabled; Gemini fallback skipped.",
+                            )
+                            .to_string(),
+                        );
+                        set_is_querying.set(false);
+                        return;
+                    }
+                    if token.is_empty() {
+                        set_status.set(
+                            tr(
+                                language,
+                                "Ordbok API 未命中，且未提供 Gemini Token，无法回退 AI 查询。",
+                                "No Ordbok match and Gemini token is missing; cannot fallback to AI.",
+                            )
+                            .to_string(),
+                        );
+                        set_is_querying.set(false);
+                        return;
+                    }
+                    match query_word_with_gemini(&token, &word, &hint).await {
+                        Ok(results) => (
+                            results,
+                            tr(
+                                language,
+                                "Gemini（Ordbok 未命中后回退）",
+                                "Gemini (fallback after no Ordbok match)",
+                            )
+                            .to_string(),
+                        ),
+                        Err(err) => {
                             set_status.set(format!(
-                                "{} \"{word}\" {}",
-                                tr(language, "AI 查询成功：已填充", "AI query succeeded: filled"),
-                                tr(language, "的单条结果。", "single-entry result.")
+                                "{} {err}",
+                                tr(
+                                    language,
+                                    "查询失败：Ordbok 未命中，Gemini 回退也失败。",
+                                    "Query failed: no Ordbok match and Gemini fallback also failed.",
+                                )
                             ));
-                        } else {
-                            match build_bulk_csv_from_results(&parsed_list, &hint) {
-                                Ok(csv_text) => {
-                                    set_bulk_input.set(csv_text);
-                                    set_bulk_errors.set(Vec::new());
-                                    set_bulk_success_message.set(String::new());
-                                    set_status.set(format!(
-                                        "{} {} {}",
-                                        tr(language, "AI 查询返回", "AI query returned"),
-                                        parsed_list.len()
-                                        ,
-                                        tr(language, "条结果，已写入“多条添加”输入框。", "results, written to bulk-add input.")
-                                    ));
-                                }
-                                Err(err) => {
-                                    set_status.set(format!(
-                                        "{} {err}",
-                                        tr(
-                                            language,
-                                            "查询失败：多条结果转 CSV 失败。",
-                                            "Query failed: multi-result CSV conversion failed.",
-                                        )
-                                    ));
-                                }
-                            }
+                            set_is_querying.set(false);
+                            return;
                         }
                     }
-                    Err(err) => set_status.set(format!(
-                        "{} {err}",
-                        tr(language, "查询失败：AI 返回无法解析。", "Query failed: AI response not parseable.")
-                    )),
-                },
-                Err(err) => set_status.set(format!("{} {err}", tr(language, "查询失败：", "Query failed:"))),
+                }
+                Err(ordbok_err) => {
+                    if ordbok_only {
+                        set_status.set(format!(
+                            "{} {ordbok_err}",
+                            tr(
+                                language,
+                                "查询失败：Ordbok API 请求失败，且已开启“仅 Ordbok”模式。",
+                                "Query failed: Ordbok API request failed and \"Ordbok-only\" mode is enabled.",
+                            )
+                        ));
+                        set_is_querying.set(false);
+                        return;
+                    }
+                    if token.is_empty() {
+                        set_status.set(format!(
+                            "{} {ordbok_err}",
+                            tr(
+                                language,
+                                "查询失败：Ordbok API 请求失败，且未提供 Gemini Token。",
+                                "Query failed: Ordbok API request failed and Gemini token is missing.",
+                            )
+                        ));
+                        set_is_querying.set(false);
+                        return;
+                    }
+                    match query_word_with_gemini(&token, &word, &hint).await {
+                        Ok(results) => (
+                            results,
+                            format!(
+                                "{} ({ordbok_err})",
+                                tr(
+                                    language,
+                                    "Gemini（Ordbok 失败后回退）",
+                                    "Gemini (fallback after Ordbok error)",
+                                )
+                            ),
+                        ),
+                        Err(ai_err) => {
+                            set_status.set(format!(
+                                "{} {ordbok_err}；{} {ai_err}",
+                                tr(
+                                    language,
+                                    "查询失败：Ordbok API 请求失败：",
+                                    "Query failed: Ordbok API request failed:",
+                                ),
+                                tr(
+                                    language,
+                                    "且 Gemini 回退失败：",
+                                    "and Gemini fallback failed:",
+                                )
+                            ));
+                            set_is_querying.set(false);
+                            return;
+                        }
+                    }
+                }
+            };
+
+            if parsed_list.is_empty() {
+                set_status.set(
+                    tr(
+                        language,
+                        "查询失败：没有可用结果。",
+                        "Query failed: no usable result returned.",
+                    )
+                    .to_string(),
+                );
+                set_is_querying.set(false);
+                return;
+            }
+
+            if parsed_list.len() == 1 {
+                let parsed = parsed_list.first().cloned().unwrap_or_default();
+                let pos = normalize_part_of_speech(parsed.part_of_speech.clone(), &hint);
+                set_single_pos.set(pos);
+
+                if let Some(v) = normalize_text_opt(parsed.base_form) {
+                    set_if_blank(single_norwegian, set_single_norwegian, v);
+                }
+                if let Some(v) = join_pipe(parsed.chinese) {
+                    set_if_blank(single_chinese, set_single_chinese, v);
+                }
+                if let Some(v) = join_pipe(parsed.english) {
+                    set_if_blank(single_english, set_single_english, v);
+                }
+
+                maybe_set_opt(
+                    single_verb_present_tense,
+                    set_single_verb_present_tense,
+                    parsed.verb_present_tense,
+                );
+                maybe_set_opt(
+                    single_verb_past_tense,
+                    set_single_verb_past_tense,
+                    parsed.verb_past_tense,
+                );
+                maybe_set_opt(
+                    single_verb_imperative,
+                    set_single_verb_imperative,
+                    parsed.verb_imperative,
+                );
+                maybe_set_opt(single_noun_plural, set_single_noun_plural, parsed.noun_plural);
+                maybe_set_opt(
+                    single_noun_singular_definite,
+                    set_single_noun_singular_definite,
+                    parsed.noun_singular_definite,
+                );
+                maybe_set_opt(
+                    single_noun_plural_definite,
+                    set_single_noun_plural_definite,
+                    parsed.noun_plural_definite,
+                );
+                maybe_set_opt(
+                    single_adjective_neuter_form,
+                    set_single_adjective_neuter_form,
+                    parsed.adjective_neuter_form,
+                );
+                maybe_set_opt(
+                    single_adjective_plural_form,
+                    set_single_adjective_plural_form,
+                    parsed.adjective_plural_form,
+                );
+                maybe_set_opt(
+                    single_adjective_comparative,
+                    set_single_adjective_comparative,
+                    parsed.adjective_comparative,
+                );
+                maybe_set_opt(
+                    single_adjective_superlative_indefinite,
+                    set_single_adjective_superlative_indefinite,
+                    parsed.adjective_superlative_indefinite,
+                );
+                maybe_set_opt(
+                    single_adjective_superlative_definite,
+                    set_single_adjective_superlative_definite,
+                    parsed.adjective_superlative_definite,
+                );
+                maybe_set_opt(
+                    single_adverb_comparative,
+                    set_single_adverb_comparative,
+                    parsed.adverb_comparative,
+                );
+                maybe_set_opt(
+                    single_adverb_superlative,
+                    set_single_adverb_superlative,
+                    parsed.adverb_superlative,
+                );
+
+                set_status.set(format!(
+                    "{source_label} \"{word}\" {}",
+                    tr(language, "查询成功：已填充单条结果。", "Query succeeded: single-entry result filled.")
+                ));
+            } else {
+                match build_bulk_csv_from_results(&parsed_list, &hint) {
+                    Ok(csv_text) => {
+                        set_bulk_input.set(csv_text);
+                        set_bulk_errors.set(Vec::new());
+                        set_bulk_success_message.set(String::new());
+                        set_status.set(format!(
+                            "{source_label} {} {} {}",
+                            tr(language, "返回", "returned"),
+                            parsed_list.len(),
+                            tr(
+                                language,
+                                "条结果，已写入“多条添加”输入框。",
+                                "results and wrote them into bulk-add input.",
+                            )
+                        ));
+                    }
+                    Err(err) => {
+                        set_status.set(format!(
+                            "{} {err}",
+                            tr(
+                                language,
+                                "查询失败：多条结果转 CSV 失败。",
+                                "Query failed: multi-result CSV conversion failed.",
+                            )
+                        ));
+                    }
+                }
             }
             set_is_querying.set(false);
         });
@@ -390,13 +582,25 @@ pub fn AiResearcher(
     view! {
         <section class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
             <h2 class="mb-3 text-lg font-semibold">
-                {move || tr(lang.get(), "AI 辅助填充（Gemini）", "AI Assisted Fill (Gemini)")}
+                {move || {
+                    tr(
+                        lang.get(),
+                        "词典优先查询（Ordbok API → Gemini）",
+                        "Dictionary-first Lookup (Ordbok API -> Gemini)",
+                    )
+                }}
             </h2>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
                 <input
                     type="password"
-                    placeholder=move || tr(lang.get(), "输入 Gemini API Token", "Enter Gemini API token")
+                    placeholder=move || {
+                        tr(
+                            lang.get(),
+                            "输入 Gemini API Token（仅 Ordbok 未命中/失败时回退）",
+                            "Gemini API token (used only when Ordbok misses/fails)",
+                        )
+                    }
                     prop:value=move || gemini_token.get()
                     on:input=move |ev| set_gemini_token.set(event_target_value(&ev))
                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
@@ -415,6 +619,25 @@ pub fn AiResearcher(
                         }
                     }}
                 </button>
+            </div>
+
+            <div class="mt-2">
+                <label class="inline-flex items-center gap-2 text-xs text-slate-300">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || ordbok_only_mode.get()
+                        on:change=move |ev| set_ordbok_only_mode.set(event_target_checked(&ev))
+                    />
+                    <span>
+                        {move || {
+                            tr(
+                                lang.get(),
+                                "仅使用 Ordbok API（不回退 Gemini）",
+                                "Ordbok only (disable Gemini fallback)",
+                            )
+                        }}
+                    </span>
+                </label>
             </div>
 
             <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto]">
@@ -549,7 +772,6 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
   \"base_form\": \"\",\n\
   \"chinese\": [],\n\
   \"english\": [],\n\
-  \"tags\": [],\n\
   \"verb_present_tense\": null,\n\
   \"verb_past_tense\": null,\n\
   \"verb_imperative\": null,\n\
@@ -565,6 +787,320 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
   \"adverb_superlative\": null\n\
 }}"
     )
+}
+
+async fn query_word_with_gemini(token: &str, word: &str, hint: &str) -> Result<Vec<GeminiWordResult>, String> {
+    let prompt = build_research_prompt(word, hint);
+    let raw_text = call_gemini_text(token, &prompt).await?;
+    parse_gemini_word_results(&raw_text)
+        .map_err(|err| format!("Gemini response parse failed: {err}"))
+}
+
+async fn query_word_with_ordbok(word: &str, hint: &str) -> Result<Vec<GeminiWordResult>, String> {
+    let payload_body = serde_json::json!({
+        "query": ORDBOK_LOOKUP_QUERY,
+        "variables": {
+            "word": word
+        }
+    })
+    .to_string();
+    let request = Request::post(ORDBOK_GRAPHQL_ENDPOINT)
+        .header("Content-Type", "application/json")
+        .body(payload_body)
+        .map_err(|err| format!("Ordbok request build failed: {err}"))?;
+    let response = request
+        .send()
+        .await
+        .map_err(|err| format!("Ordbok request failed: {err}"))?;
+    if !response.ok() {
+        let status = response.status();
+        let body = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "(failed to read response body)".to_string());
+        return Err(format!("Ordbok request failed: HTTP {status}: {body}"));
+    }
+
+    let parsed = response
+        .json::<OrdbokGraphQlResponse>()
+        .await
+        .map_err(|err| format!("Ordbok response parse failed: {err}"))?;
+    if !parsed.errors.is_empty() {
+        let message = parsed
+            .errors
+            .iter()
+            .map(|err| err.message.clone())
+            .collect::<Vec<_>>()
+            .join(" | ");
+        return Err(format!("Ordbok GraphQL error: {message}"));
+    }
+
+    let Some(data) = parsed.data else {
+        return Ok(Vec::new());
+    };
+    Ok(parse_ordbok_results(data, hint))
+}
+
+fn parse_ordbok_results(data: OrdbokGraphQlData, hint: &str) -> Vec<GeminiWordResult> {
+    let mut merged = Vec::<GeminiWordResult>::new();
+    for exact in data.suggestions.exact {
+        for article in exact.articles {
+            if let Some(item) = convert_ordbok_article(&exact.word, &article, hint) {
+                merge_or_insert_word_result(&mut merged, item);
+            }
+        }
+    }
+
+    let Some(expected_pos) = hint_to_part_of_speech(hint).map(|pos| pos.as_key().to_string()) else {
+        return merged;
+    };
+    let filtered = merged
+        .iter()
+        .filter(|item| normalize_part_of_speech(item.part_of_speech.clone(), hint) == expected_pos)
+        .cloned()
+        .collect::<Vec<_>>();
+    if filtered.is_empty() { merged } else { filtered }
+}
+
+fn convert_ordbok_article(
+    exact_word: &str,
+    article: &OrdbokArticle,
+    hint: &str,
+) -> Option<GeminiWordResult> {
+    let base_form = article
+        .lemmas
+        .first()
+        .map(|lemma| lemma.lemma.clone())
+        .or_else(|| normalize_text_opt(Some(exact_word.to_string())))
+        .and_then(|value| normalize_text_opt(Some(value)))?;
+
+    let part_of_speech = map_ordbok_word_class_to_key(article.word_class.as_deref(), hint)
+        .map(|value| value.to_string())
+        .or_else(|| hint_to_part_of_speech(hint).map(|pos| pos.as_key().to_string()));
+    let normalized_pos = normalize_part_of_speech(part_of_speech.clone(), hint);
+    let inflections = collect_article_inflections(article);
+
+    let mut result = GeminiWordResult {
+        part_of_speech,
+        base_form: Some(base_form),
+        chinese: Vec::new(),
+        english: extract_article_definition_texts(article),
+        verb_present_tense: None,
+        verb_past_tense: None,
+        verb_imperative: None,
+        noun_plural: None,
+        noun_singular_definite: None,
+        noun_plural_definite: None,
+        adjective_neuter_form: None,
+        adjective_plural_form: None,
+        adjective_comparative: None,
+        adjective_superlative_indefinite: None,
+        adjective_superlative_definite: None,
+        adverb_comparative: None,
+        adverb_superlative: None,
+    };
+
+    match normalized_pos.as_str() {
+        "verb" => {
+            result.verb_present_tense =
+                pick_inflection_form(&inflections, &["Presens"], &["Passiv", "SPassiv"]);
+            result.verb_past_tense =
+                pick_inflection_form(&inflections, &["Preteritum"], &["Passiv", "SPassiv"]);
+            result.verb_imperative =
+                pick_inflection_form(&inflections, &["Imperativ"], &["Passiv", "SPassiv"]);
+        }
+        "noun" => {
+            result.noun_plural = pick_inflection_form(&inflections, &["Fleirtal"], &["Bestemt"]);
+            result.noun_singular_definite =
+                pick_inflection_form(&inflections, &["Eintal", "Bestemt"], &[]);
+            result.noun_plural_definite =
+                pick_inflection_form(&inflections, &["Fleirtal", "Bestemt"], &[]);
+        }
+        "adjective" => {
+            result.adjective_neuter_form = pick_inflection_form(
+                &inflections,
+                &["Positiv", "Inkjekjoenn", "Eintal"],
+                &["Fleirtal", "Bestemt", "Komparativ", "Superlativ"],
+            );
+            result.adjective_plural_form = pick_inflection_form(
+                &inflections,
+                &["Positiv", "Fleirtal"],
+                &["Bestemt", "Komparativ", "Superlativ"],
+            );
+            result.adjective_comparative = pick_inflection_form(
+                &inflections,
+                &["Komparativ"],
+                &["Superlativ", "Bestemt"],
+            );
+            result.adjective_superlative_indefinite =
+                pick_inflection_form(&inflections, &["Superlativ"], &["Bestemt"]);
+            result.adjective_superlative_definite =
+                pick_inflection_form(&inflections, &["Superlativ", "Bestemt"], &[]);
+        }
+        "adverb" => {
+            result.adverb_comparative =
+                pick_inflection_form(&inflections, &["Komparativ"], &["Superlativ"]);
+            result.adverb_superlative = pick_inflection_form(&inflections, &["Superlativ"], &[]);
+        }
+        _ => {}
+    }
+
+    Some(result)
+}
+
+fn map_ordbok_word_class_to_key(word_class: Option<&str>, hint: &str) -> Option<&'static str> {
+    let hinted = hint_to_part_of_speech(hint);
+    match word_class.unwrap_or_default() {
+        "Verb" => Some("verb"),
+        "Substantiv" => Some("noun"),
+        "Adjektiv" => Some("adjective"),
+        "Adverb" => Some("adverb"),
+        "Pronomen" => Some("pronoun"),
+        "Talord" => {
+            if matches!(hinted, Some(PartOfSpeech::OrdinalNumber)) {
+                Some("ordinal_number")
+            } else {
+                Some("cardinal_number")
+            }
+        }
+        _ => hinted.map(|pos| pos.as_key()),
+    }
+}
+
+fn collect_article_inflections(article: &OrdbokArticle) -> Vec<OrdbokInflection> {
+    article
+        .lemmas
+        .iter()
+        .flat_map(|lemma| lemma.paradigms.iter())
+        .flat_map(|paradigm| paradigm.inflections.iter().cloned())
+        .collect()
+}
+
+fn pick_inflection_form(
+    inflections: &[OrdbokInflection],
+    required_tags: &[&str],
+    forbidden_tags: &[&str],
+) -> Option<String> {
+    inflections.iter().find_map(|inflection| {
+        if !required_tags
+            .iter()
+            .all(|tag| has_inflection_tag(&inflection.tags, tag))
+        {
+            return None;
+        }
+        if forbidden_tags
+            .iter()
+            .any(|tag| has_inflection_tag(&inflection.tags, tag))
+        {
+            return None;
+        }
+        normalize_text_opt(inflection.word_form.clone())
+    })
+}
+
+fn has_inflection_tag(tags: &[String], tag: &str) -> bool {
+    tags.iter().any(|value| value == tag)
+}
+
+fn extract_article_definition_texts(article: &OrdbokArticle) -> Vec<String> {
+    let mut values = Vec::<String>::new();
+    for definition in &article.flat_definitions {
+        for content in &definition.content {
+            if let Some(text) = normalize_text_opt(content.text_content.clone()) {
+                push_unique_text(&mut values, text);
+                if values.len() >= 6 {
+                    return values;
+                }
+            }
+        }
+    }
+    values
+}
+
+fn merge_or_insert_word_result(results: &mut Vec<GeminiWordResult>, incoming: GeminiWordResult) {
+    let incoming_pos = normalize_text_opt(incoming.part_of_speech.clone()).unwrap_or_default();
+    let incoming_base = normalize_text_opt(incoming.base_form.clone()).unwrap_or_default();
+    if incoming_base.is_empty() {
+        return;
+    }
+
+    if let Some(existing) = results.iter_mut().find(|candidate| {
+        normalize_text_opt(candidate.part_of_speech.clone()).unwrap_or_default() == incoming_pos
+            && normalize_text_opt(candidate.base_form.clone()).unwrap_or_default() == incoming_base
+    }) {
+        merge_word_result(existing, incoming);
+    } else {
+        results.push(incoming);
+    }
+}
+
+fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
+    for value in source.english {
+        push_unique_text(&mut target.english, value);
+    }
+    for value in source.chinese {
+        push_unique_text(&mut target.chinese, value);
+    }
+
+    if target.part_of_speech.is_none() {
+        target.part_of_speech = source.part_of_speech;
+    }
+    if target.base_form.is_none() {
+        target.base_form = source.base_form;
+    }
+
+    if target.verb_present_tense.is_none() {
+        target.verb_present_tense = source.verb_present_tense;
+    }
+    if target.verb_past_tense.is_none() {
+        target.verb_past_tense = source.verb_past_tense;
+    }
+    if target.verb_imperative.is_none() {
+        target.verb_imperative = source.verb_imperative;
+    }
+    if target.noun_plural.is_none() {
+        target.noun_plural = source.noun_plural;
+    }
+    if target.noun_singular_definite.is_none() {
+        target.noun_singular_definite = source.noun_singular_definite;
+    }
+    if target.noun_plural_definite.is_none() {
+        target.noun_plural_definite = source.noun_plural_definite;
+    }
+    if target.adjective_neuter_form.is_none() {
+        target.adjective_neuter_form = source.adjective_neuter_form;
+    }
+    if target.adjective_plural_form.is_none() {
+        target.adjective_plural_form = source.adjective_plural_form;
+    }
+    if target.adjective_comparative.is_none() {
+        target.adjective_comparative = source.adjective_comparative;
+    }
+    if target.adjective_superlative_indefinite.is_none() {
+        target.adjective_superlative_indefinite = source.adjective_superlative_indefinite;
+    }
+    if target.adjective_superlative_definite.is_none() {
+        target.adjective_superlative_definite = source.adjective_superlative_definite;
+    }
+    if target.adverb_comparative.is_none() {
+        target.adverb_comparative = source.adverb_comparative;
+    }
+    if target.adverb_superlative.is_none() {
+        target.adverb_superlative = source.adverb_superlative;
+    }
+}
+
+fn push_unique_text(target: &mut Vec<String>, value: String) {
+    let normalized = value.trim();
+    if normalized.is_empty() {
+        return;
+    }
+    if !target
+        .iter()
+        .any(|existing| existing.trim().eq_ignore_ascii_case(normalized))
+    {
+        target.push(normalized.to_string());
+    }
 }
 
 fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {

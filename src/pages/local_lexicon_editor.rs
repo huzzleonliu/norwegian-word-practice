@@ -360,8 +360,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     set_single_chinese=set_single_chinese
                     single_english=single_english
                     set_single_english=set_single_english
-                    single_tags=single_tags
-                    set_single_tags=set_single_tags
                     single_verb_present_tense=single_verb_present_tense
                     set_single_verb_present_tense=set_single_verb_present_tense
                     single_verb_past_tense=single_past_tense
