@@ -1,4 +1,3 @@
-pub mod ai_researcher;
 pub mod import_csv;
 pub mod lexicon_editor_add_multi;
 pub mod lexicon_editor_add_single;
@@ -9,3 +8,4 @@ pub mod practice_buttons;
 pub mod practice_entry;
 pub mod practice_settings;
 pub mod return_button;
+pub mod word_search;

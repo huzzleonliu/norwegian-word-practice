@@ -2,7 +2,6 @@ use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
-use crate::components::ai_researcher::AiResearcher;
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
@@ -11,6 +10,7 @@ use crate::components::lexicon_browser::{
 };
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
+use crate::components::word_search::AiResearcher;
 use crate::pages::AppPage;
 use crate::utils::dictionary::{
     SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
