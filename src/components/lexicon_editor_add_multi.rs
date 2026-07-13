@@ -20,6 +20,8 @@ pub fn LexiconEditorAddMulti(
     let (preview_entries, set_preview_entries) = signal(Vec::<WordBankEntry>::new());
     let (preview_baseline_entries, set_preview_baseline_entries) = signal(Vec::<WordBankEntry>::new());
     let (preview_row_undo, set_preview_row_undo) = signal(Vec::<Option<WordBankEntry>>::new());
+    let (preview_delete_marks, set_preview_delete_marks) = signal(Vec::<bool>::new());
+    let (preview_delete_drag_target, set_preview_delete_drag_target) = signal(None::<bool>);
     let (preview_col_widths, _set_preview_col_widths) = signal({
         let mut widths = vec![160_u16; DATA_COLUMN_COUNT + 1];
         if let Some(selected_col) = widths.get_mut(1) {
@@ -47,6 +49,7 @@ pub fn LexiconEditorAddMulti(
             set_preview_entries.set(Vec::new());
             set_preview_baseline_entries.set(Vec::new());
             set_preview_row_undo.set(Vec::new());
+            set_preview_delete_marks.set(Vec::new());
             return;
         }
         match parse_word_bank_csv(&content) {
@@ -55,6 +58,7 @@ pub fn LexiconEditorAddMulti(
                 set_show_preview_table.set(rows.len() > 1);
                 set_preview_baseline_entries.set(rows.clone());
                 set_preview_row_undo.set(vec![None; rows.len()]);
+                set_preview_delete_marks.set(vec![false; rows.len()]);
                 set_preview_entries.set(rows);
             }
             Err(_) => {
@@ -63,6 +67,7 @@ pub fn LexiconEditorAddMulti(
                 set_preview_entries.set(Vec::new());
                 set_preview_baseline_entries.set(Vec::new());
                 set_preview_row_undo.set(Vec::new());
+                set_preview_delete_marks.set(Vec::new());
             }
         }
     });
@@ -87,6 +92,19 @@ pub fn LexiconEditorAddMulti(
     let noop_selected_drag = Callback::new(|_: (usize, bool)| {});
     let noop_drag_over = Callback::new(|_: (usize, leptos::ev::MouseEvent)| {});
     let noop_click = Callback::new(|_: ()| {});
+    let on_begin_delete_drag = Callback::new(move |(idx, current_checked): (usize, bool)| {
+        let target_checked = !current_checked;
+        set_preview_delete_drag_target.set(Some(target_checked));
+        update_delete_mark(idx, target_checked, set_preview_delete_marks);
+    });
+    let on_drag_over_delete = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| {
+        if ev.buttons() & 1 != 1 {
+            return;
+        }
+        if let Some(target_checked) = preview_delete_drag_target.get_untracked() {
+            update_delete_mark(idx, target_checked, set_preview_delete_marks);
+        }
+    });
 
     view! {
         <section class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
@@ -127,10 +145,26 @@ pub fn LexiconEditorAddMulti(
                                 set_status=set_preview_status
                                 confirm_error=table_confirm_error
                                 confirm_success=table_confirm_success
+                                delete_marks=preview_delete_marks
+                                on_begin_delete_drag=on_begin_delete_drag
+                                on_drag_over_delete=on_drag_over_delete
                                 on_select_visible_click=noop_click
                                 on_unselect_visible_click=noop_click
                                 on_confirm_changes=Callback::new(move |_| {
-                                    on_submit.run(preview_entries.get_untracked());
+                                    let marks = preview_delete_marks.get_untracked();
+                                    let rows = preview_entries
+                                        .get_untracked()
+                                        .into_iter()
+                                        .enumerate()
+                                        .filter_map(|(idx, entry)| {
+                                            if marks.get(idx).copied().unwrap_or(false) {
+                                                None
+                                            } else {
+                                                Some(entry)
+                                            }
+                                        })
+                                        .collect::<Vec<_>>();
+                                    on_submit.run(rows);
                                 })
                                 action_kind=TableActionKind::AddEntries
                                 show_select_buttons=false
@@ -187,4 +221,13 @@ pub fn LexiconEditorAddMulti(
             }}
         </section>
     }
+}
+
+fn update_delete_mark(idx: usize, checked: bool, set_delete_marks: WriteSignal<Vec<bool>>) {
+    set_delete_marks.update(|marks| {
+        if marks.len() <= idx {
+            marks.resize(idx + 1, false);
+        }
+        marks[idx] = checked;
+    });
 }

@@ -32,6 +32,9 @@ pub fn LexiconTablePanel(
     set_status: WriteSignal<String>,
     confirm_error: ReadSignal<String>,
     confirm_success: ReadSignal<String>,
+    delete_marks: ReadSignal<Vec<bool>>,
+    on_begin_delete_drag: Callback<(usize, bool)>,
+    on_drag_over_delete: Callback<(usize, leptos::ev::MouseEvent)>,
     on_select_visible_click: Callback<()>,
     on_unselect_visible_click: Callback<()>,
     on_confirm_changes: Callback<()>,
@@ -41,6 +44,7 @@ pub fn LexiconTablePanel(
     const DATA_COLUMN_COUNT: usize = DATA_COLUMN_KEYS.len();
     let action_kind = action_kind.unwrap_or(TableActionKind::ConfirmChanges);
     let show_select_buttons = show_select_buttons.unwrap_or(true);
+    let _ = (baseline_entries, set_baseline_entries, row_undo);
 
     view! {
         <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
@@ -80,7 +84,7 @@ pub fn LexiconTablePanel(
                                 let op_header = if is_query_mode {
                                     Vec::new()
                                 } else {
-                                    vec!["operation"]
+                                    vec!["delete"]
                                 };
                                 let headers = DATA_COLUMN_KEYS
                                     .into_iter()
@@ -128,8 +132,8 @@ pub fn LexiconTablePanel(
                                             >
                                                 {format!(
                                                     "{}{}",
-                                                    if *title == "operation" {
-                                                        tr(lang.get(), "操作", "Actions").to_string()
+                                                    if *title == "delete" {
+                                                        tr(lang.get(), "删除", "Delete").to_string()
                                                     } else if *title == "tags"
                                                         || *title == "english"
                                                         || *title == "chinese"
@@ -520,67 +524,26 @@ pub fn LexiconTablePanel(
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(35).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_feminine_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_feminine_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(36).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_neuter_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_neuter_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(37).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_plural_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_plural_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1">
-                                            <div class="flex flex-nowrap gap-1">
-                                                <button type="button" on:click=move |_| {
-                                                    if let Some(original) = baseline_entries.get_untracked().get(idx).cloned() {
-                                                        set_entries.update(|list| {
-                                                            if let Some(item) = list.get_mut(idx) {
-                                                                *item = original;
-                                                            }
-                                                        });
-                                                        set_status.set(
-                                                            tr(lang.get_untracked(), "已恢复该行初始值。", "Row restored to initial values.")
-                                                                .to_string(),
-                                                        );
-                                                    }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
-                                                    {move || tr(lang.get(), "恢复原值", "Reset")}
-                                                </button>
-                                                <button type="button" on:click=move |_| {
-                                                    let undo_value = row_undo.get_untracked().get(idx).cloned().flatten();
-                                                    if let Some(previous) = undo_value {
-                                                        set_entries.update(|list| {
-                                                            if let Some(item) = list.get_mut(idx) {
-                                                                *item = previous;
-                                                            }
-                                                        });
-                                                        set_row_undo.update(|undo| {
-                                                            if idx < undo.len() {
-                                                                undo[idx] = None;
-                                                            }
-                                                        });
-                                                        set_status.set(
-                                                            tr(lang.get_untracked(), "已撤销该行最近一次修改。", "Reverted latest row change.")
-                                                                .to_string(),
-                                                        );
-                                                    }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
-                                                    {move || tr(lang.get(), "撤销", "Undo")}
-                                                </button>
-                                                <button type="button" on:click=move |_| {
-                                                    set_entries.update(|list| {
-                                                        if idx < list.len() {
-                                                            list.remove(idx);
-                                                        }
-                                                    });
-                                                    set_baseline_entries.update(|base| {
-                                                        if idx < base.len() {
-                                                            base.remove(idx);
-                                                        }
-                                                    });
-                                                    set_row_undo.update(|undo| {
-                                                        if idx < undo.len() {
-                                                            undo.remove(idx);
-                                                        }
-                                                    });
-                                                    set_status.set(
-                                                        tr(lang.get_untracked(), "已删除 1 条词条。", "Deleted 1 entry.").to_string(),
-                                                    );
-                                                } class="rounded border border-red-800 bg-red-900/80 px-2 py-1 text-xs text-red-100 hover:bg-red-800">
-                                                    {move || tr(lang.get(), "删除", "Delete")}
-                                                </button>
-                                            </div>
+                                        <td
+                                            class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-red-900/20"
+                                            on:mousedown=move |ev: leptos::ev::MouseEvent| {
+                                                if ev.button() == 0 {
+                                                    ev.prevent_default();
+                                                    let checked = delete_marks.get_untracked().get(idx).copied().unwrap_or(false);
+                                                    on_begin_delete_drag.run((idx, checked));
+                                                }
+                                            }
+                                            on:mouseover=move |ev: leptos::ev::MouseEvent| {
+                                                on_drag_over_delete.run((idx, ev));
+                                            }
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                prop:checked=move || {
+                                                    delete_marks.get().get(idx).copied().unwrap_or(false)
+                                                }
+                                                class="pointer-events-none"
+                                            />
                                         </td>
                                     </tr>
                                 }

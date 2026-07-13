@@ -39,6 +39,8 @@ pub fn LexiconBrowser(
         signal(vec![None::<WordBankEntry>; entries.get_untracked().len()]);
     let (resize_state, set_resize_state) = signal(None::<(usize, i32, u16)>);
     let (selection_drag_target, set_selection_drag_target) = signal(None::<bool>);
+    let (delete_marks, set_delete_marks) = signal(vec![false; entries.get_untracked().len()]);
+    let (delete_drag_target, set_delete_drag_target) = signal(None::<bool>);
     let (sort_state, set_sort_state) = signal(Vec::<(usize, bool)>::new());
     let (search_text, set_search_text) = signal(String::new());
     let (search_query, set_search_query) = signal(String::new());
@@ -55,6 +57,7 @@ pub fn LexiconBrowser(
         set_baseline_entries.set(current.clone());
         set_draft_entries.set(current.clone());
         set_row_undo.set(vec![None; current.len()]);
+        set_delete_marks.set(vec![false; current.len()]);
         set_confirm_error.set(String::new());
         set_confirm_success.set(String::new());
     });
@@ -102,6 +105,9 @@ pub fn LexiconBrowser(
         if selection_drag_target.get_untracked().is_some() {
             set_selection_drag_target.set(None);
         }
+        if delete_drag_target.get_untracked().is_some() {
+            set_delete_drag_target.set(None);
+        }
     };
     let begin_selected_drag = move |idx: usize, current_selected: bool| {
         let target_checked = !current_selected;
@@ -114,6 +120,19 @@ pub fn LexiconBrowser(
         }
         if let Some(target_checked) = selection_drag_target.get_untracked() {
             update_selected_cell(idx, target_checked, set_entries, set_row_undo);
+        }
+    };
+    let begin_delete_drag = move |idx: usize, current_checked: bool| {
+        let target_checked = !current_checked;
+        set_delete_drag_target.set(Some(target_checked));
+        update_delete_mark(idx, target_checked, set_delete_marks);
+    };
+    let drag_over_delete = move |idx: usize, ev: leptos::ev::MouseEvent| {
+        if ev.buttons() & 1 != 1 {
+            return;
+        }
+        if let Some(target_checked) = delete_drag_target.get_untracked() {
+            update_delete_mark(idx, target_checked, set_delete_marks);
         }
     };
     let sort_by_column = move |col_idx: usize, with_secondary: bool| {
@@ -152,6 +171,7 @@ pub fn LexiconBrowser(
 
         let current_baseline = baseline_entries.get_untracked();
         let current_undo = row_undo.get_untracked();
+        let current_delete_marks = delete_marks.get_untracked();
 
         let mut order: Vec<usize> = (0..current_entries.len()).collect();
         order.sort_by(|a, b| {
@@ -175,10 +195,15 @@ pub fn LexiconBrowser(
             .iter()
             .map(|idx| current_undo.get(*idx).cloned().unwrap_or(None))
             .collect::<Vec<_>>();
+        let sorted_delete_marks = order
+            .iter()
+            .map(|idx| current_delete_marks.get(*idx).copied().unwrap_or(false))
+            .collect::<Vec<_>>();
 
         set_draft_entries.set(sorted_entries);
         set_baseline_entries.set(sorted_baseline);
         set_row_undo.set(sorted_undo);
+        set_delete_marks.set(sorted_delete_marks);
         set_sort_state.set(sort_rules.clone());
         set_status.set(format!(
             "{} {}",
@@ -226,10 +251,29 @@ pub fn LexiconBrowser(
         set_confirm_success.set(String::new());
 
         let current_entries = draft_entries.get_untracked();
-        let mut entries_to_commit = current_entries.clone();
+        let current_delete_marks = delete_marks.get_untracked();
+        let (entries_after_delete, deleted_count) = if is_query_mode {
+            (current_entries.clone(), 0)
+        } else {
+            let kept = current_entries
+                .iter()
+                .cloned()
+                .enumerate()
+                .filter_map(|(idx, entry)| {
+                    if current_delete_marks.get(idx).copied().unwrap_or(false) {
+                        None
+                    } else {
+                        Some(entry)
+                    }
+                })
+                .collect::<Vec<_>>();
+            let kept_len = kept.len();
+            (kept, current_entries.len().saturating_sub(kept_len))
+        };
+        let mut entries_to_commit = entries_after_delete.clone();
 
         if !is_query_mode {
-            match validate_and_prepare_all_entries(&current_entries) {
+            match validate_and_prepare_all_entries(&entries_after_delete) {
                 Ok(validated_entries) => entries_to_commit = validated_entries,
                 Err(errors) => {
                     let message = errors.join("；");
@@ -251,6 +295,7 @@ pub fn LexiconBrowser(
         set_draft_entries.set(entries_to_commit.clone());
         set_baseline_entries.set(entries_to_commit.clone());
         set_row_undo.set(vec![None; entries_to_commit.len()]);
+        set_delete_marks.set(vec![false; entries_to_commit.len()]);
         set_confirm_success.set(tr(lang.get_untracked(), "修改成功", "Saved").to_string());
         if is_query_mode {
             set_status.set(
@@ -262,14 +307,27 @@ pub fn LexiconBrowser(
                 .to_string(),
             );
         } else {
-            set_status.set(
-                tr(
-                    lang.get_untracked(),
-                    "词库修改已确认并应用。",
-                    "Lexicon changes confirmed and applied.",
-                )
-                .to_string(),
-            );
+            if deleted_count > 0 {
+                set_status.set(format!(
+                    "{} {} {}",
+                    tr(
+                        lang.get_untracked(),
+                        "词库修改已确认并应用，已删除",
+                        "Lexicon changes confirmed, deleted",
+                    ),
+                    deleted_count,
+                    tr(lang.get_untracked(), "条。", "entries.")
+                ));
+            } else {
+                set_status.set(
+                    tr(
+                        lang.get_untracked(),
+                        "词库修改已确认并应用。",
+                        "Lexicon changes confirmed and applied.",
+                    )
+                    .to_string(),
+                );
+            }
         }
     };
     let set_visible_selected = move |checked: bool| {
@@ -339,6 +397,8 @@ pub fn LexiconBrowser(
     let on_start_resize = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| start_resize(idx, ev));
     let on_begin_selected_drag = Callback::new(move |(idx, current_selected)| begin_selected_drag(idx, current_selected));
     let on_drag_over_selected = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| drag_over_selected(idx, ev));
+    let on_begin_delete_drag = Callback::new(move |(idx, current_checked)| begin_delete_drag(idx, current_checked));
+    let on_drag_over_delete = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| drag_over_delete(idx, ev));
     let on_select_visible_click = Callback::new(move |_| select_visible_click());
     let on_unselect_visible_click = Callback::new(move |_| unselect_visible_click());
     let on_confirm_changes = Callback::new(move |_| confirm_changes());
@@ -379,6 +439,9 @@ pub fn LexiconBrowser(
                 set_status=set_status
                 confirm_error=confirm_error
                 confirm_success=confirm_success
+                delete_marks=delete_marks
+                on_begin_delete_drag=on_begin_delete_drag
+                on_drag_over_delete=on_drag_over_delete
                 on_select_visible_click=on_select_visible_click
                 on_unselect_visible_click=on_unselect_visible_click
                 on_confirm_changes=on_confirm_changes
@@ -407,5 +470,14 @@ fn update_selected_cell(
             });
             item.selected = checked;
         }
+    });
+}
+
+fn update_delete_mark(idx: usize, checked: bool, set_delete_marks: WriteSignal<Vec<bool>>) {
+    set_delete_marks.update(|marks| {
+        if marks.len() <= idx {
+            marks.resize(idx + 1, false);
+        }
+        marks[idx] = checked;
     });
 }
