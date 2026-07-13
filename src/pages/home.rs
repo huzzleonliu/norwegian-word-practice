@@ -42,37 +42,42 @@ pub fn HomePage() -> impl IntoView {
             .set(PracticeResult::default());
         set_current_page.set(AppPage::PracticeModeSelect);
     };
+    let current_lexicon_line = Signal::derive(move || {
+        let language = lang.get();
+        let count = word_bank_state.entries.get().len();
+        let source = word_bank_state.source_name.get();
+        if count == 0 {
+            tr(
+                language,
+                "尚未加载词库，请先进入练习模式页选择词库。",
+                "No lexicon loaded yet. Choose one in Practice Mode first.",
+            )
+            .to_string()
+        } else {
+            format!(
+                "{}：{source}（{} {count} {}）。",
+                tr(language, "当前词库", "Current Lexicon"),
+                tr(language, "共", "total"),
+                tr(language, "条词条", "entries")
+            )
+        }
+    });
+    let console_status_line = Signal::derive(move || {
+        let language = lang.get();
+        let s = status.get();
+        if s.trim().is_empty() {
+            tr(language, "等待操作...", "Waiting for action...").to_string()
+        } else {
+            s
+        }
+    });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-3 sm:p-6">
+        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-start justify-center p-3 sm:p-6">
             <section class="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-8 shadow-xl">
                 <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">"Norwegian Word Practice"</h1>
-                <MiniConsole
-                    message=Signal::derive(move || {
-                        let language = lang.get();
-                        let count = word_bank_state.entries.get().len();
-                        let source = word_bank_state.source_name.get();
-                        let source_line = if count == 0 {
-                            format!("{}：{source}。", tr(language, "当前词库", "Current Lexicon"))
-                        } else {
-                            format!(
-                                "{}：{source}（{} {count} {}）。",
-                                tr(language, "当前词库", "Current Lexicon"),
-                                tr(language, "共", "total"),
-                                tr(language, "条词条", "entries")
-                            )
-                        };
-                        let status_line = {
-                            let s = status.get();
-                            if s.trim().is_empty() {
-                                tr(language, "等待操作...", "Waiting for action...").to_string()
-                            } else {
-                                s
-                            }
-                        };
-                        format!("{source_line}\n{status_line}")
-                    })
-                />
+                <p class="mt-3 text-xs text-slate-400">{move || current_lexicon_line.get()}</p>
+                <MiniConsole message=console_status_line max_entries=80/>
                 <p class="mt-4 text-slate-300">
                     {move || {
                         tr(
