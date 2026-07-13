@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use leptos::prelude::*;
 
 use super::search_panel::LexiconSearchPanel;
@@ -9,7 +11,7 @@ use super::utils::{
 };
 use crate::app_state::WordBankState;
 use crate::structures::word_bank_entry::WordBankEntry;
-use crate::utils::dictionary::validate_and_prepare_all_entries;
+use crate::utils::dictionary::compute_word_entry_id;
 use crate::utils::i18n::tr;
 
 #[component]
@@ -48,6 +50,7 @@ pub fn LexiconBrowser(
     let (search_scope_expanded, set_search_scope_expanded) = signal(false);
     let (confirm_error, set_confirm_error) = signal(String::new());
     let (confirm_success, set_confirm_success) = signal(String::new());
+    let (hash_dirty_entry_ids, set_hash_dirty_entry_ids) = signal(Vec::<String>::new());
     let set_committed_entries = set_entries;
     let set_entries = set_draft_entries;
 
@@ -58,6 +61,7 @@ pub fn LexiconBrowser(
         set_draft_entries.set(current.clone());
         set_row_undo.set(vec![None; current.len()]);
         set_delete_marks.set(vec![false; current.len()]);
+        set_hash_dirty_entry_ids.set(Vec::new());
         set_confirm_error.set(String::new());
         set_confirm_success.set(String::new());
     });
@@ -246,6 +250,16 @@ pub fn LexiconBrowser(
             tr(lang.get_untracked(), "条。", "entries.")
         ));
     };
+    let mark_hash_dirty = move |entry_id: String| {
+        if entry_id.trim().is_empty() {
+            return;
+        }
+        set_hash_dirty_entry_ids.update(|ids| {
+            if !ids.iter().any(|id| id == &entry_id) {
+                ids.push(entry_id);
+            }
+        });
+    };
     let confirm_changes = move || {
         set_confirm_error.set(String::new());
         set_confirm_success.set(String::new());
@@ -270,23 +284,90 @@ pub fn LexiconBrowser(
             let kept_len = kept.len();
             (kept, current_entries.len().saturating_sub(kept_len))
         };
-        let mut entries_to_commit = entries_after_delete.clone();
+        let mut entries_to_commit = entries_after_delete;
+        let dirty_ids_snapshot = hash_dirty_entry_ids.get_untracked();
+        let dirty_id_set = dirty_ids_snapshot.into_iter().collect::<HashSet<_>>();
+        let mut recalculated_count = 0_usize;
+        let mut removed_duplicate_count = 0_usize;
 
-        if !is_query_mode {
-            match validate_and_prepare_all_entries(&entries_after_delete) {
-                Ok(validated_entries) => entries_to_commit = validated_entries,
-                Err(errors) => {
-                    let message = errors.join("；");
+        if !is_query_mode && !dirty_id_set.is_empty() {
+            let mut changed_rows = Vec::<(usize, String, String)>::new();
+            for (idx, entry) in entries_to_commit.iter().enumerate() {
+                if dirty_id_set.contains(&entry.id) {
+                    changed_rows.push((idx, entry.id.clone(), compute_word_entry_id(entry)));
+                }
+            }
+            recalculated_count = changed_rows.len();
+
+            if !changed_rows.is_empty() {
+                let mut first_seen_new_id = HashMap::<String, usize>::new();
+                let mut remove_indices = Vec::<usize>::new();
+                for (idx, _old_id, new_id) in &changed_rows {
+                    if first_seen_new_id.contains_key(new_id) {
+                        remove_indices.push(*idx);
+                    } else {
+                        first_seen_new_id.insert(new_id.clone(), *idx);
+                    }
+                }
+
+                remove_indices.sort_unstable();
+                remove_indices.dedup();
+                removed_duplicate_count = remove_indices.len();
+
+                for idx in remove_indices.iter().rev() {
+                    if *idx < entries_to_commit.len() {
+                        entries_to_commit.remove(*idx);
+                    }
+                }
+
+                let mut changed_after_dedup = Vec::<(usize, String)>::new();
+                for (idx, entry) in entries_to_commit.iter().enumerate() {
+                    if dirty_id_set.contains(&entry.id) {
+                        changed_after_dedup.push((idx, compute_word_entry_id(entry)));
+                    }
+                }
+
+                let changed_idx_set = changed_after_dedup
+                    .iter()
+                    .map(|(idx, _)| *idx)
+                    .collect::<HashSet<_>>();
+                let outside_ids = entries_to_commit
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, entry)| {
+                        if changed_idx_set.contains(&idx) {
+                            None
+                        } else {
+                            Some(entry.id.clone())
+                        }
+                    })
+                    .collect::<HashSet<_>>();
+
+                let mut conflicts = Vec::<String>::new();
+                for (idx, new_id) in &changed_after_dedup {
+                    if outside_ids.contains(new_id) {
+                        conflicts.push(format!("第 {} 行新 id 冲突：{new_id}", idx + 1));
+                    }
+                }
+                if !conflicts.is_empty() {
+                    let message = conflicts.join("；");
                     set_confirm_error.set(message.clone());
-                    set_status.set(
+                    set_status.set(format!(
+                        "{} {}",
                         tr(
                             lang.get_untracked(),
-                            "确认失败：存在不合法修改。",
-                            "Confirm failed: invalid modifications found.",
-                        )
-                        .to_string(),
-                    );
+                            "确认失败：重算后的 id 与现有词条冲突。",
+                            "Confirm failed: recomputed IDs conflict with existing entries.",
+                        ),
+                        message
+                    ));
                     return;
+                }
+
+                for (idx, new_id) in changed_after_dedup {
+                    if let Some(entry) = entries_to_commit.get_mut(idx) {
+                        entry.id = new_id;
+                    }
                 }
             }
         }
@@ -296,6 +377,7 @@ pub fn LexiconBrowser(
         set_baseline_entries.set(entries_to_commit.clone());
         set_row_undo.set(vec![None; entries_to_commit.len()]);
         set_delete_marks.set(vec![false; entries_to_commit.len()]);
+        set_hash_dirty_entry_ids.set(Vec::new());
         set_confirm_success.set(tr(lang.get_untracked(), "修改成功", "Saved").to_string());
         if is_query_mode {
             set_status.set(
@@ -307,18 +389,33 @@ pub fn LexiconBrowser(
                 .to_string(),
             );
         } else {
+            let mut log_items = Vec::<String>::new();
             if deleted_count > 0 {
-                set_status.set(format!(
+                log_items.push(format!(
                     "{} {} {}",
-                    tr(
-                        lang.get_untracked(),
-                        "词库修改已确认并应用，已删除",
-                        "Lexicon changes confirmed, deleted",
-                    ),
+                    tr(lang.get_untracked(), "已删除", "deleted"),
                     deleted_count,
-                    tr(lang.get_untracked(), "条。", "entries.")
+                    tr(lang.get_untracked(), "条", "entries")
                 ));
-            } else {
+            }
+            if recalculated_count > 0 {
+                log_items.push(format!(
+                    "{} {} {}",
+                    tr(lang.get_untracked(), "重算 id", "recomputed IDs for"),
+                    recalculated_count,
+                    tr(lang.get_untracked(), "条", "entries")
+                ));
+            }
+            if removed_duplicate_count > 0 {
+                log_items.push(format!(
+                    "{} {} {}",
+                    tr(lang.get_untracked(), "自动移除重复", "auto-removed duplicate"),
+                    removed_duplicate_count,
+                    tr(lang.get_untracked(), "条", "entries")
+                ));
+            }
+
+            if log_items.is_empty() {
                 set_status.set(
                     tr(
                         lang.get_untracked(),
@@ -327,6 +424,16 @@ pub fn LexiconBrowser(
                     )
                     .to_string(),
                 );
+            } else {
+                set_status.set(format!(
+                    "{}：{}。",
+                    tr(
+                        lang.get_untracked(),
+                        "词库修改已确认并应用",
+                        "Lexicon changes confirmed and applied",
+                    ),
+                    log_items.join("，"),
+                ));
             }
         }
     };
@@ -399,6 +506,7 @@ pub fn LexiconBrowser(
     let on_drag_over_selected = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| drag_over_selected(idx, ev));
     let on_begin_delete_drag = Callback::new(move |(idx, current_checked)| begin_delete_drag(idx, current_checked));
     let on_drag_over_delete = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| drag_over_delete(idx, ev));
+    let on_mark_hash_dirty = Callback::new(move |entry_id: String| mark_hash_dirty(entry_id));
     let on_select_visible_click = Callback::new(move |_| select_visible_click());
     let on_unselect_visible_click = Callback::new(move |_| unselect_visible_click());
     let on_confirm_changes = Callback::new(move |_| confirm_changes());
@@ -442,6 +550,7 @@ pub fn LexiconBrowser(
                 delete_marks=delete_marks
                 on_begin_delete_drag=on_begin_delete_drag
                 on_drag_over_delete=on_drag_over_delete
+                on_mark_hash_dirty=on_mark_hash_dirty
                 on_select_visible_click=on_select_visible_click
                 on_unselect_visible_click=on_unselect_visible_click
                 on_confirm_changes=on_confirm_changes

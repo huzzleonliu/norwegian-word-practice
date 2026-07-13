@@ -47,6 +47,7 @@ pub fn validate_and_prepare_single_entry(
 }
 
 /// 批量校验并规范化词库条目。每条仅计算一次哈希，重复检测为 O(n)。
+#[allow(dead_code)]
 pub fn validate_and_prepare_all_entries(
     entries: &[WordBankEntry],
 ) -> Result<Vec<WordBankEntry>, Vec<String>> {
