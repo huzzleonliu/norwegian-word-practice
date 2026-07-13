@@ -65,7 +65,14 @@ pub const DATA_COLUMN_KEYS: [&str; 38] = [
 
 pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordBankEntry>, String> {
     let has_header = detect_word_bank_header(content);
-    parse_word_bank_csv_inner(content, has_header)
+    match parse_word_bank_csv_inner(content, has_header) {
+        Ok(entries) => Ok(entries),
+        Err(primary_err) => {
+            // Be tolerant to CSV exported by external tools (e.g. BOM/modified headers):
+            // retry with the opposite header mode before failing.
+            parse_word_bank_csv_inner(content, !has_header).map_err(|_| primary_err)
+        }
+    }
 }
 
 pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, String> {
@@ -245,7 +252,10 @@ fn detect_word_bank_header(content: &str) -> bool {
     let Some(first_non_empty_line) = content.lines().find(|line| !line.trim().is_empty()) else {
         return false;
     };
-    let normalized = first_non_empty_line.trim().to_ascii_lowercase();
+    let normalized = first_non_empty_line
+        .trim()
+        .trim_start_matches('\u{feff}')
+        .to_ascii_lowercase();
     normalized.starts_with("id,selected,part_of_speech,")
 }
 

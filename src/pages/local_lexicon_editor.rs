@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use crate::app_state::WordBankState;
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode, parse_pipe_list, parse_word_bank_csv,
+    LexiconBrowser, LexiconBrowserMode, parse_pipe_list,
     serialize_word_bank_csv,
 };
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
@@ -13,6 +13,7 @@ use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::components::word_search::AiResearcher;
 use crate::pages::AppPage;
+use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::dictionary::{
     SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
     validate_and_prepare_single_entry,
@@ -242,119 +243,80 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_single_adverb_superlative.set(String::new());
     });
 
-    let add_bulk_entries = Callback::new(move |ev: SubmitEvent| {
+    let add_bulk_entries = Callback::new(move |rows: Vec<WordBankEntry>| {
         let language = lang.get_untracked();
-        ev.prevent_default();
         set_bulk_errors.set(Vec::new());
         set_bulk_success_message.set(String::new());
 
-        let content = bulk_input.get();
-        if content.trim().is_empty() {
+        if rows.is_empty() {
             set_status.set(
                 tr(
                     language,
-                    "多条添加失败：文本框不能为空。",
-                    "Bulk add failed: input is empty.",
+                    "多条添加失败：没有可添加条目。",
+                    "Bulk add failed: no entries to add.",
                 )
                 .to_string(),
             );
             set_bulk_errors.set(vec![
                 tr(
                     language,
-                    "输入不能为空。请粘贴带表头的 CSV 文本。",
-                    "Input cannot be empty. Please paste CSV text with header.",
+                    "请先用“查询并分流”生成多条结果。",
+                    "Please generate multi-results via Query and Route first.",
                 )
                 .to_string(),
             ]);
             return;
         }
 
-        match parse_word_bank_csv(&content) {
-            Ok(parsed) => {
-                if parsed.is_empty() {
-                    set_status.set(
-                        tr(
-                            language,
-                            "多条添加失败：未检测到可导入条目。",
-                            "Bulk add failed: no importable rows detected.",
-                        )
-                        .to_string(),
-                    );
-                    set_bulk_errors.set(vec![
-                        tr(
-                            language,
-                            "CSV 中没有可导入的数据行。",
-                            "No importable data rows in CSV.",
-                        )
-                        .to_string(),
-                    ]);
-                    return;
+        let mut simulated_entries = entries.get_untracked();
+        let mut validated_entries = Vec::with_capacity(rows.len());
+        let mut errors = Vec::new();
+
+        for (index, row) in rows.into_iter().enumerate() {
+            let row_no = index + 1;
+            let base_form_label = if row.base_form.trim().is_empty() {
+                "（原型为空）".to_string()
+            } else {
+                format!("（原型：{}）", row.base_form.trim())
+            };
+
+            let draft = draft_from_word_entry(&row);
+
+            match validate_and_prepare_single_entry(draft, &simulated_entries) {
+                Ok(valid_entry) => {
+                    simulated_entries.push(valid_entry.clone());
+                    validated_entries.push(valid_entry);
                 }
-
-                let mut simulated_entries = entries.get_untracked();
-                let mut validated_entries = Vec::with_capacity(parsed.len());
-                let mut errors = Vec::new();
-
-                for (index, row) in parsed.into_iter().enumerate() {
-                    let line_no = index + 2;
-                    let base_form_label = if row.base_form.trim().is_empty() {
-                        "（原型为空）".to_string()
-                    } else {
-                        format!("（原型：{}）", row.base_form.trim())
-                    };
-
-                    let draft = draft_from_word_entry(&row);
-
-                    match validate_and_prepare_single_entry(draft, &simulated_entries) {
-                        Ok(valid_entry) => {
-                            simulated_entries.push(valid_entry.clone());
-                            validated_entries.push(valid_entry);
-                        }
-                        Err(err) => {
-                            errors.push(format!("第 {line_no} 行 {base_form_label}：{err}"));
-                        }
-                    }
+                Err(err) => {
+                    errors.push(format!("第 {row_no} 条 {base_form_label}：{err}"));
                 }
-
-                if !errors.is_empty() {
-                    set_bulk_errors.set(errors);
-                    set_status.set(
-                        tr(
-                            language,
-                            "批量添加失败：存在不合法条目，请先修正红字错误。",
-                            "Bulk add failed: invalid entries found.",
-                        )
-                        .to_string(),
-                    );
-                    return;
-                }
-
-                let add_count = validated_entries.len();
-                set_entries.update(|list| list.extend(validated_entries));
-                set_data_version.update(|ver| *ver += 1);
-                set_status.set(format!(
-                    "{} {} {}",
-                    tr(language, "批量添加成功，新增", "Bulk add succeeded, added"),
-                    add_count,
-                    tr(language, "条。", "entries.")
-                ));
-                set_bulk_success_message.set(tr(language, "成功导入", "Imported").to_string());
-            }
-            Err(err) => {
-                set_status.set(format!(
-                    "{} {err}",
-                    tr(
-                        language,
-                        "多条添加失败：请输入带表头的 CSV 文本。",
-                        "Bulk add failed: please provide CSV text with header.",
-                    )
-                ));
-                set_bulk_errors.set(vec![format!(
-                    "{} {err}",
-                    tr(language, "CSV 解析失败：", "CSV parse failed:")
-                )]);
             }
         }
+
+        if !errors.is_empty() {
+            set_bulk_errors.set(errors);
+            set_status.set(
+                tr(
+                    language,
+                    "批量添加失败：存在不合法条目，请先修正红字错误。",
+                    "Bulk add failed: invalid entries found.",
+                )
+                .to_string(),
+            );
+            return;
+        }
+
+        let add_count = validated_entries.len();
+        set_entries.update(|list| list.extend(validated_entries));
+        set_data_version.update(|ver| *ver += 1);
+        set_bulk_input.set(String::new());
+        set_status.set(format!(
+            "{} {} {}",
+            tr(language, "批量添加成功，新增", "Bulk add succeeded, added"),
+            add_count,
+            tr(language, "条。", "entries.")
+        ));
+        set_bulk_success_message.set(tr(language, "成功导入", "Imported").to_string());
     });
     let export_csv_click = move |_| {
         let language = lang.get_untracked();
@@ -564,11 +526,8 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 <LexiconEditorAddMulti
                     on_submit=add_bulk_entries
                     bulk_input=bulk_input
-                    set_bulk_input=set_bulk_input
                     bulk_errors=bulk_errors
-                    set_bulk_errors=set_bulk_errors
                     bulk_success_message=bulk_success_message
-                    set_bulk_success_message=set_bulk_success_message
                 />
 
                 <section class="mt-4">

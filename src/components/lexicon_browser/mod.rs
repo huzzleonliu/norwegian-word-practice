@@ -1,5 +1,7 @@
 pub mod components;
+pub mod search_panel;
 pub mod structures;
+pub mod table_panel;
 pub mod utils;
 
 pub use components::LexiconBrowser;

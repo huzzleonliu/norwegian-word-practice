@@ -1,15 +1,16 @@
 use leptos::prelude::*;
 
+use super::search_panel::LexiconSearchPanel;
 use super::structures::LexiconBrowserMode;
+use super::table_panel::LexiconTablePanel;
 use super::utils::{
     DATA_COLUMN_KEYS, compare_entries_by_rules, default_search_column_visibility,
-    entry_matches_filter, format_sort_rules, header_name, input_to_option, option_to_input,
-    parse_pipe_list,
+    entry_matches_filter, format_sort_rules,
 };
 use crate::app_state::WordBankState;
-use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, WordBankEntry};
+use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::dictionary::validate_and_prepare_all_entries;
-use crate::utils::i18n::{field_label, tr};
+use crate::utils::i18n::tr;
 
 #[component]
 pub fn LexiconBrowser(
@@ -58,7 +59,7 @@ pub fn LexiconBrowser(
         set_confirm_success.set(String::new());
     });
 
-    let row_items = move || {
+    let row_items = Signal::derive(move || {
         let query = search_query.get();
         let columns = search_columns.get();
         draft_entries
@@ -67,7 +68,7 @@ pub fn LexiconBrowser(
             .enumerate()
             .filter(|(_, entry)| entry_matches_filter(entry, &query, &columns))
             .collect::<Vec<(usize, WordBankEntry)>>()
-    };
+    });
     let min_width_for = |idx: usize| -> u16 {
         match idx {
             1 => 70,
@@ -185,7 +186,7 @@ pub fn LexiconBrowser(
             format_sort_rules(&sort_rules, lang.get_untracked())
         ));
     };
-    let apply_search = move |_| {
+    let apply_search = move || {
         let query = search_text.get().trim().to_string();
         let columns = search_columns.get_untracked();
         set_search_query.set(query.clone());
@@ -220,7 +221,7 @@ pub fn LexiconBrowser(
             tr(lang.get_untracked(), "条。", "entries.")
         ));
     };
-    let confirm_changes = move |_| {
+    let confirm_changes = move || {
         set_confirm_error.set(String::new());
         set_confirm_success.set(String::new());
 
@@ -330,8 +331,17 @@ pub fn LexiconBrowser(
             }
         ));
     };
-    let select_visible_click = move |_| set_visible_selected(true);
-    let unselect_visible_click = move |_| set_visible_selected(false);
+    let select_visible_click = move || set_visible_selected(true);
+    let unselect_visible_click = move || set_visible_selected(false);
+
+    let on_apply_search = Callback::new(move |_| apply_search());
+    let on_sort_by_column = Callback::new(move |(col_idx, with_secondary)| sort_by_column(col_idx, with_secondary));
+    let on_start_resize = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| start_resize(idx, ev));
+    let on_begin_selected_drag = Callback::new(move |(idx, current_selected)| begin_selected_drag(idx, current_selected));
+    let on_drag_over_selected = Callback::new(move |(idx, ev): (usize, leptos::ev::MouseEvent)| drag_over_selected(idx, ev));
+    let on_select_visible_click = Callback::new(move |_| select_visible_click());
+    let on_unselect_visible_click = Callback::new(move |_| unselect_visible_click());
+    let on_confirm_changes = Callback::new(move |_| confirm_changes());
 
     view! {
         <section
@@ -340,706 +350,40 @@ pub fn LexiconBrowser(
             on:mouseup=stop_resize
             on:mouseleave=stop_resize
         >
-            <div class="mb-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    <input
-                        type="text"
-                        placeholder=move || tr(lang.get(), "输入要查找的字符", "Type to search")
-                        prop:value=move || search_text.get()
-                        on:input=move |ev| set_search_text.set(event_target_value(&ev))
-                        class="w-full min-w-0 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm sm:min-w-60 sm:flex-1"
-                    />
-                    <button
-                        type="button"
-                        on:click=apply_search
-                        class="w-full rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "查找", "Search")}
-                    </button>
-                    <button
-                        type="button"
-                        on:click=move |_| set_search_columns.set(vec![true; DATA_COLUMN_COUNT])
-                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "全选列", "Select all columns")}
-                    </button>
-                    <button
-                        type="button"
-                        on:click=move |_| set_search_columns.set(vec![false; DATA_COLUMN_COUNT])
-                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "全不选列", "Unselect all columns")}
-                    </button>
-                </div>
-                <div class="mt-3">
-                    <button
-                        type="button"
-                        on:click=move |_| {
-                            set_search_scope_expanded.update(|expanded| *expanded = !*expanded)
-                        }
-                        class="inline-flex w-full items-center justify-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 sm:w-auto sm:justify-start"
-                    >
-                        {move || {
-                            if search_scope_expanded.get() {
-                                tr(lang.get(), "隐藏搜索列范围", "Hide Search Columns")
-                            } else {
-                                tr(lang.get(), "展开搜索列范围", "Show Search Columns")
-                            }
-                        }}
-                    </button>
-                    {move || {
-                        if search_scope_expanded.get() {
-                            view! {
-                                <div class="mt-3 space-y-3">
-                                    {[
-                                        ("core", vec![0, 1, 2, 3, 4, 5, 6]),
-                                        ("verb", vec![7, 8, 9, 20, 21, 22, 23, 24]),
-                                        ("noun", vec![10, 11, 12, 25, 26, 27, 28]),
-                                        ("adjective", vec![29, 13, 14, 15, 16, 17]),
-                                        ("pronoun", vec![30, 31, 32, 33, 34]),
-                                        ("determinative", vec![35, 36, 37]),
-                                        ("adverb", vec![18, 19]),
-                                    ]
-                                        .into_iter()
-                                        .map(|(group_name, indices)| {
-                                            view! {
-                                                <section class="rounded border border-slate-800 bg-slate-950/40 p-2">
-                                                    <p class="mb-2 text-xs font-semibold text-slate-400">
-                                                        {move || match group_name {
-                                                            "core" => tr(lang.get(), "基础组", "Core"),
-                                                            "verb" => tr(lang.get(), "动词变体组", "Verb Forms"),
-                                                            "noun" => tr(lang.get(), "名词变体组", "Noun Forms"),
-                                                            "adjective" => tr(lang.get(), "形容词变体组", "Adjective Forms"),
-                                                            "pronoun" => tr(lang.get(), "代词变体组", "Pronoun Forms"),
-                                                            "determinative" => tr(lang.get(), "限定词变体组", "Determinative Forms"),
-                                                            "adverb" => tr(lang.get(), "副词变体组", "Adverb Forms"),
-                                                            _ => group_name,
-                                                        }}
-                                                    </p>
-                                                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-                                                        {indices
-                                                            .into_iter()
-                                                            .map(|idx| {
-                                                                view! {
-                                                                    <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-xs text-slate-300">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            prop:checked=move || {
-                                                                                search_columns.get().get(idx).copied().unwrap_or(false)
-                                                                            }
-                                                                            on:change=move |ev| {
-                                                                                let checked = event_target_checked(&ev);
-                                                                                set_search_columns.update(|cols| {
-                                                                                    if idx < cols.len() {
-                                                                                        cols[idx] = checked;
-                                                                                    }
-                                                                                });
-                                                                            }
-                                                                        />
-                                                                        <span>{move || field_label(lang.get(), header_name(idx))}</span>
-                                                                    </label>
-                                                                }
-                                                            })
-                                                            .collect_view()}
-                                                    </div>
-                                                </section>
-                                            }
-                                        })
-                                        .collect_view()}
-                                </div>
-                            }
-                                .into_any()
-                        } else {
-                            view! { <></> }.into_any()
-                        }
-                    }}
-                </div>
-            </div>
-            <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
-                <table class="w-max min-w-full border-collapse text-sm table-fixed whitespace-nowrap">
-                    <colgroup>
-                        {move || {
-                            let total_columns = if is_query_mode {
-                                DATA_COLUMN_COUNT
-                            } else {
-                                DATA_COLUMN_COUNT + 1
-                            };
-                            (0..total_columns)
-                                .map(|idx| {
-                                    view! {
-                                        <col
-                                            class:hidden=move || {
-                                                idx < DATA_COLUMN_COUNT
-                                                    && !search_columns
-                                                        .get()
-                                                        .get(idx)
-                                                        .copied()
-                                                        .unwrap_or(false)
-                                            }
-                                            style=format!(
-                                                "width:{}px",
-                                                col_widths.get().get(idx).copied().unwrap_or(140)
-                                            )
-                                        />
-                                    }
-                                })
-                                .collect_view()
-                        }}
-                    </colgroup>
-                    <thead>
-                        <tr class="sticky top-0 z-10 bg-slate-900/95 text-left text-slate-300">
-                            {move || {
-                                let op_header = if is_query_mode {
-                                    Vec::new()
-                                } else {
-                                    vec!["operation"]
-                                };
-                                let headers = DATA_COLUMN_KEYS
-                                    .into_iter()
-                                    .chain(op_header)
-                                    .collect::<Vec<_>>();
-
-                                let current_sort = sort_state.get();
-                                headers
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(idx, title)| {
-                                        let sortable = idx < DATA_COLUMN_COUNT;
-                                        let indicator = current_sort
-                                            .iter()
-                                            .enumerate()
-                                            .find_map(|(order_idx, (sort_idx, asc))| {
-                                                if *sort_idx == idx {
-                                                    Some(format!(
-                                                        " {}{}",
-                                                        order_idx + 1,
-                                                        if *asc { "↑" } else { "↓" }
-                                                    ))
-                                                } else {
-                                                    None
-                                                }
-                                            })
-                                            .unwrap_or_default();
-                                        view! {
-                                            <th
-                                                class="relative border border-slate-800 px-2 py-2"
-                                                class:cursor-pointer=sortable
-                                                class:hidden=move || {
-                                                    idx < DATA_COLUMN_COUNT
-                                                        && !search_columns
-                                                            .get()
-                                                            .get(idx)
-                                                            .copied()
-                                                            .unwrap_or(false)
-                                                }
-                                                on:click=move |ev: leptos::ev::MouseEvent| {
-                                                    if sortable {
-                                                        sort_by_column(idx, ev.shift_key());
-                                                    }
-                                                }
-                                            >
-                                                {format!(
-                                                    "{}{}",
-                                                    if *title == "operation" {
-                                                        tr(lang.get(), "操作", "Actions").to_string()
-                                                    } else if *title == "tags"
-                                                        || *title == "english"
-                                                        || *title == "chinese"
-                                                    {
-                                                        format!("{}(|)", field_label(lang.get(), title))
-                                                    } else {
-                                                        field_label(lang.get(), title).to_string()
-                                                    },
-                                                    indicator
-                                                )}
-                                                <div
-                                                    class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80"
-                                                    on:mousedown=move |ev| {
-                                                        ev.stop_propagation();
-                                                        start_resize(idx, ev);
-                                                    }
-                                                    on:click=move |ev| ev.stop_propagation()
-                                                ></div>
-                                            </th>
-                                        }
-                                    })
-                                    .collect_view()
-                            }}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <For
-                            each=row_items
-                            key=|(idx, entry)| format!("{}-{}-{}", idx, entry.id, entry.selected)
-                            children=move |(idx, entry)| {
-                                if is_query_mode {
-                                    view! {
-                                        <tr class="align-top">
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(0).copied().unwrap_or(false)
-                                            >
-                                                {entry.id.clone()}
-                                            </td>
-                                            <td
-                                                class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
-                                                class:hidden=move || !search_columns.get().get(1).copied().unwrap_or(false)
-                                                on:mousedown=move |ev: leptos::ev::MouseEvent| {
-                                                    if ev.button() == 0 {
-                                                        ev.prevent_default();
-                                                        begin_selected_drag(idx, entry.selected);
-                                                    }
-                                                }
-                                                on:mouseover=move |ev: leptos::ev::MouseEvent| {
-                                                    drag_over_selected(idx, ev);
-                                                }
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    prop:checked=entry.selected
-                                                    class="pointer-events-none"
-                                                />
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(2).copied().unwrap_or(false)
-                                            >
-                                                {move || entry.part_of_speech.display_name(lang.get()).to_string()}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(3).copied().unwrap_or(false)
-                                            >
-                                                {entry.tags.join(" | ")}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(4).copied().unwrap_or(false)
-                                            >
-                                                {entry.english.join(" | ")}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(5).copied().unwrap_or(false)
-                                            >
-                                                {entry.chinese.join(" | ")}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(6).copied().unwrap_or(false)
-                                            >
-                                                {entry.base_form.clone()}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(7).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_present_tense)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(8).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_past_tense)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(9).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_imperative)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(10).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_plural)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(11).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_singular_definite)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(12).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_plural_definite)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(13).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_neuter_form)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(14).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_plural_form)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(15).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_comparative)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(16).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_superlative_indefinite)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(17).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_superlative_definite)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(18).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adverb_comparative)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(19).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adverb_superlative)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(20).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_present_participle)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(21).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_past_participle)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(22).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_passive_infinitive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(23).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_passive_present)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(24).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.verb_passive_past)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(25).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_singular_definite_genitive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(26).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_plural_definite_genitive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(27).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_singular_indefinite_genitive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(28).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.noun_plural_indefinite_genitive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(29).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.adjective_feminine_form)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(30).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.pronoun_object)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(31).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.pronoun_reflexive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(32).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.pronoun_plural_subject)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(33).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.pronoun_plural_object)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(34).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.pronoun_plural_reflexive)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(35).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.determinative_feminine_form)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(36).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.determinative_neuter_form)}
-                                            </td>
-                                            <td
-                                                class="border border-slate-800 p-2"
-                                                class:hidden=move || !search_columns.get().get(37).copied().unwrap_or(false)
-                                            >
-                                                {option_to_input(&entry.determinative_plural_form)}
-                                            </td>
-                                        </tr>
-                                    }
-                                        .into_any()
-                                } else {
-                                    view! {
-                                        <tr class="align-top">
-                                        <td
-                                            class="border border-slate-800 p-1"
-                                            class:hidden=move || !search_columns.get().get(0).copied().unwrap_or(false)
-                                        >
-                                            <span class="block rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-300">
-                                                {entry.id.clone()}
-                                            </span>
-                                        </td>
-                                        <td
-                                            class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
-                                            class:hidden=move || !search_columns.get().get(1).copied().unwrap_or(false)
-                                            on:mousedown=move |ev: leptos::ev::MouseEvent| {
-                                                if ev.button() == 0 {
-                                                    ev.prevent_default();
-                                                    begin_selected_drag(idx, entry.selected);
-                                                }
-                                            }
-                                            on:mouseover=move |ev: leptos::ev::MouseEvent| {
-                                                drag_over_selected(idx, ev);
-                                            }
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                prop:checked=entry.selected
-                                                class="pointer-events-none"
-                                            />
-                                        </td>
-                                        <td
-                                            class="border border-slate-800 p-1"
-                                            class:hidden=move || !search_columns.get().get(2).copied().unwrap_or(false)
-                                        >
-                                            <select
-                                                prop:value=entry.part_of_speech.as_key().to_string()
-                                                on:change=move |ev| {
-                                                    let value = event_target_value(&ev);
-                                                    let parsed = match PartOfSpeech::from_key(&value) {
-                                                        Ok(parsed) => parsed,
-                                                        Err(err) => {
-                                                            set_status.set(format!(
-                                                                "{} {err}",
-                                                                tr(lang.get_untracked(), "词性更新失败：", "Failed to update part of speech:")
-                                                            ));
-                                                            return;
-                                                        }
-                                                    };
-                                                    set_entries.update(|list| {
-                                                        if let Some(item) = list.get_mut(idx) {
-                                                            set_row_undo.update(|undo| {
-                                                                if undo.len() <= idx {
-                                                                    undo.resize(idx + 1, None);
-                                                                }
-                                                                undo[idx] = Some(item.clone());
-                                                            });
-                                                            item.part_of_speech = parsed;
-                                                        }
-                                                    });
-                                                }
-                                                class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"
-                                            >
-                                                {PART_OF_SPEECH_OPTIONS
-                                                    .iter()
-                                                    .map(|option| {
-                                                        view! {
-                                                            <option value=*option>
-                                                                {move || {
-                                                                    PartOfSpeech::from_key(option)
-                                                                        .map(|pos| pos.display_name(lang.get()).to_string())
-                                                                        .unwrap_or_else(|_| (*option).to_string())
-                                                                }}
-                                                            </option>
-                                                        }
-                                                    })
-                                                    .collect_view()}
-                                            </select>
-                                        </td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(3).copied().unwrap_or(false)><input type="text" prop:value=entry.tags.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.tags = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(4).copied().unwrap_or(false)><input type="text" prop:value=entry.english.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.english = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(5).copied().unwrap_or(false)><input type="text" prop:value=entry.chinese.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.chinese = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(6).copied().unwrap_or(false)><input type="text" prop:value=entry.base_form.clone() on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.base_form = value; } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(7).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_present_tense) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_present_tense = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(8).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_past_tense) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_past_tense = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(9).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_imperative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_imperative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(10).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(11).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_singular_definite) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_singular_definite = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(12).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural_definite) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural_definite = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(13).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_neuter_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_neuter_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(14).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_plural_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_plural_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(15).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_comparative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_comparative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(16).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_superlative_indefinite) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_superlative_indefinite = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(17).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_superlative_definite) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_superlative_definite = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(18).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adverb_comparative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adverb_comparative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(19).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adverb_superlative) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adverb_superlative = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(20).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_present_participle) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_present_participle = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(21).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_past_participle) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_past_participle = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(22).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_infinitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_infinitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(23).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_present) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_present = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(24).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.verb_passive_past) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.verb_passive_past = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(25).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_singular_definite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_singular_definite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(26).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural_definite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural_definite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(27).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_singular_indefinite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_singular_indefinite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(28).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.noun_plural_indefinite_genitive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.noun_plural_indefinite_genitive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(29).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.adjective_feminine_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.adjective_feminine_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(30).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_object) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_object = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(31).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_reflexive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_reflexive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(32).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_subject) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_subject = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(33).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_object) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_object = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(34).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.pronoun_plural_reflexive) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.pronoun_plural_reflexive = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(35).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_feminine_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_feminine_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(36).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_neuter_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_neuter_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(37).copied().unwrap_or(false)><input type="text" prop:value=option_to_input(&entry.determinative_plural_form) on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.determinative_plural_form = input_to_option(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
-                                        <td class="border border-slate-800 p-1">
-                                            <div class="flex flex-nowrap gap-1">
-                                                <button type="button" on:click=move |_| {
-                                                    if let Some(original) = baseline_entries.get_untracked().get(idx).cloned() {
-                                                        set_entries.update(|list| {
-                                                            if let Some(item) = list.get_mut(idx) {
-                                                                *item = original;
-                                                            }
-                                                        });
-                                                        set_status.set(
-                                                            tr(lang.get_untracked(), "已恢复该行初始值。", "Row restored to initial values.")
-                                                                .to_string(),
-                                                        );
-                                                    }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
-                                                    {move || tr(lang.get(), "恢复原值", "Reset")}
-                                                </button>
-                                                <button type="button" on:click=move |_| {
-                                                    let undo_value = row_undo.get_untracked().get(idx).cloned().flatten();
-                                                    if let Some(previous) = undo_value {
-                                                        set_entries.update(|list| {
-                                                            if let Some(item) = list.get_mut(idx) {
-                                                                *item = previous;
-                                                            }
-                                                        });
-                                                        set_row_undo.update(|undo| {
-                                                            if idx < undo.len() {
-                                                                undo[idx] = None;
-                                                            }
-                                                        });
-                                                        set_status.set(
-                                                            tr(lang.get_untracked(), "已撤销该行最近一次修改。", "Reverted latest row change.")
-                                                                .to_string(),
-                                                        );
-                                                    }
-                                                } class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 hover:bg-slate-700">
-                                                    {move || tr(lang.get(), "撤销", "Undo")}
-                                                </button>
-                                                <button type="button" on:click=move |_| {
-                                                    set_entries.update(|list| {
-                                                        if idx < list.len() {
-                                                            list.remove(idx);
-                                                        }
-                                                    });
-                                                    set_baseline_entries.update(|base| {
-                                                        if idx < base.len() {
-                                                            base.remove(idx);
-                                                        }
-                                                    });
-                                                    set_row_undo.update(|undo| {
-                                                        if idx < undo.len() {
-                                                            undo.remove(idx);
-                                                        }
-                                                    });
-                                                    set_status.set(
-                                                        tr(lang.get_untracked(), "已删除 1 条词条。", "Deleted 1 entry.").to_string(),
-                                                    );
-                                                } class="rounded border border-red-800 bg-red-900/80 px-2 py-1 text-xs text-red-100 hover:bg-red-800">
-                                                    {move || tr(lang.get(), "删除", "Delete")}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                                    .into_any()
-                                }
-                            }
-                        />
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div class="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
-                    <button
-                        type="button"
-                        on:click=select_visible_click
-                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "全选", "Select All")}
-                    </button>
-                    <button
-                        type="button"
-                        on:click=unselect_visible_click
-                        class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "全不选", "Unselect All")}
-                    </button>
-                </div>
-                <div class="min-h-6 flex-1 text-sm">
-                    {move || {
-                        if !confirm_error.get().is_empty() {
-                            view! { <p class="text-red-400">{confirm_error.get()}</p> }.into_any()
-                        } else if !confirm_success.get().is_empty() {
-                            view! { <p class="text-emerald-400">{confirm_success.get()}</p> }.into_any()
-                        } else {
-                            view! { <p class="text-slate-500">""</p> }.into_any()
-                        }
-                    }}
-                </div>
-                <button
-                    type="button"
-                    on:click=confirm_changes
-                    class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
-                >
-                    {move || tr(lang.get(), "确认修改", "Confirm Changes")}
-                </button>
-            </div>
-        </section>
+                        <LexiconSearchPanel
+                lang=lang
+                search_text=search_text
+                set_search_text=set_search_text
+                search_columns=search_columns
+                set_search_columns=set_search_columns
+                search_scope_expanded=search_scope_expanded
+                set_search_scope_expanded=set_search_scope_expanded
+                on_apply_search=on_apply_search
+            />
+            <LexiconTablePanel
+                lang=lang
+                is_query_mode=is_query_mode
+                search_columns=search_columns
+                col_widths=col_widths
+                sort_state=sort_state
+                row_items=row_items
+                on_sort_by_column=on_sort_by_column
+                on_start_resize=on_start_resize
+                on_begin_selected_drag=on_begin_selected_drag
+                on_drag_over_selected=on_drag_over_selected
+                set_entries=set_entries
+                set_row_undo=set_row_undo
+                baseline_entries=baseline_entries
+                set_baseline_entries=set_baseline_entries
+                row_undo=row_undo
+                set_status=set_status
+                confirm_error=confirm_error
+                confirm_success=confirm_success
+                on_select_visible_click=on_select_visible_click
+                on_unselect_visible_click=on_unselect_visible_click
+                on_confirm_changes=on_confirm_changes
+            />
+</section>
     }
 }
 
