@@ -1,11 +1,16 @@
-//! 练习题渲染组件：根据题目 id 与字段配置生成输入区，并承载检查按钮。
+//! 练习题渲染模块：
+//! - 题目列表渲染与输入控件
+//! - 输入键生成与可答性判断
+//! - 按 active id 稳定构建题目顺序
 
 use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
-use crate::components::practice_settings::NONE_FIELD_KEY;
+use crate::app_state::UiState;
+use crate::structures::field_meta::{
+    NONE_FIELD_KEY, entry_field_value as entry_field_value_from_meta,
+};
 use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::i18n::{field_label, tr};
 
@@ -15,7 +20,7 @@ pub fn CheckPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
-    let lang = expect_context::<WordBankState>().ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     let check_click = move |_| on_check.run(());
     let label = label.unwrap_or_else(|| tr(lang.get_untracked(), "检查", "Check").to_string());
     let class = class.unwrap_or_else(|| {
@@ -44,7 +49,7 @@ pub fn PracticeEntry(
     revealed_answer_keys: Option<ReadSignal<HashSet<String>>>,
     set_revealed_answer_keys: Option<WriteSignal<HashSet<String>>>,
 ) -> impl IntoView {
-    let lang = expect_context::<WordBankState>().ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     view! {
         <div class="mt-4 space-y-4">
             <For
@@ -279,11 +284,11 @@ pub fn PracticeEntry(
     }
 }
 
+/// 根据 active id 顺序构建题目，确保 UI 展示顺序稳定。
 pub fn build_question_items(
     active_ids: &[String],
     entries: &[WordBankEntry],
 ) -> Vec<(usize, WordBankEntry)> {
-    // 根据 active id 顺序构建题目，确保 UI 展示顺序稳定。
     active_ids
         .iter()
         .enumerate()
@@ -309,65 +314,5 @@ pub fn is_answer_field_available(entry: &WordBankEntry, field: &str) -> bool {
 
 /// 按字段 key 读取词条值，统一返回字符串用于显示与判题。
 pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
-    match field {
-        "id" => entry.id.clone(),
-        "part_of_speech" => entry.part_of_speech.as_key().to_string(),
-        "tags" => entry.tags.join(" | "),
-        "english" => entry.english.join(" | "),
-        "chinese" => entry.chinese.join(" | "),
-        "base_form" => entry.base_form.clone(),
-        "verb_present_tense" => entry.verb_present_tense.clone().unwrap_or_default(),
-        "verb_past_tense" => entry.verb_past_tense.clone().unwrap_or_default(),
-        "verb_imperative" => entry.verb_imperative.clone().unwrap_or_default(),
-        "verb_present_participle" => entry.verb_present_participle.clone().unwrap_or_default(),
-        "verb_past_participle" => entry.verb_past_participle.clone().unwrap_or_default(),
-        "verb_passive_infinitive" => entry.verb_passive_infinitive.clone().unwrap_or_default(),
-        "verb_passive_present" => entry.verb_passive_present.clone().unwrap_or_default(),
-        "verb_passive_past" => entry.verb_passive_past.clone().unwrap_or_default(),
-        "noun_plural" => entry.noun_plural.clone().unwrap_or_default(),
-        "noun_singular_definite" => entry.noun_singular_definite.clone().unwrap_or_default(),
-        "noun_plural_definite" => entry.noun_plural_definite.clone().unwrap_or_default(),
-        "noun_singular_definite_genitive" => entry
-            .noun_singular_definite_genitive
-            .clone()
-            .unwrap_or_default(),
-        "noun_plural_definite_genitive" => entry
-            .noun_plural_definite_genitive
-            .clone()
-            .unwrap_or_default(),
-        "noun_singular_indefinite_genitive" => entry
-            .noun_singular_indefinite_genitive
-            .clone()
-            .unwrap_or_default(),
-        "noun_plural_indefinite_genitive" => entry
-            .noun_plural_indefinite_genitive
-            .clone()
-            .unwrap_or_default(),
-        "adjective_feminine_form" => entry.adjective_feminine_form.clone().unwrap_or_default(),
-        "adjective_neuter_form" => entry.adjective_neuter_form.clone().unwrap_or_default(),
-        "adjective_plural_form" => entry.adjective_plural_form.clone().unwrap_or_default(),
-        "adjective_comparative" => entry.adjective_comparative.clone().unwrap_or_default(),
-        "adjective_superlative_indefinite" => entry
-            .adjective_superlative_indefinite
-            .clone()
-            .unwrap_or_default(),
-        "adjective_superlative_definite" => entry
-            .adjective_superlative_definite
-            .clone()
-            .unwrap_or_default(),
-        "pronoun_object" => entry.pronoun_object.clone().unwrap_or_default(),
-        "pronoun_reflexive" => entry.pronoun_reflexive.clone().unwrap_or_default(),
-        "pronoun_plural_subject" => entry.pronoun_plural_subject.clone().unwrap_or_default(),
-        "pronoun_plural_object" => entry.pronoun_plural_object.clone().unwrap_or_default(),
-        "pronoun_plural_reflexive" => entry.pronoun_plural_reflexive.clone().unwrap_or_default(),
-        "determinative_feminine_form" => entry
-            .determinative_feminine_form
-            .clone()
-            .unwrap_or_default(),
-        "determinative_neuter_form" => entry.determinative_neuter_form.clone().unwrap_or_default(),
-        "determinative_plural_form" => entry.determinative_plural_form.clone().unwrap_or_default(),
-        "adverb_comparative" => entry.adverb_comparative.clone().unwrap_or_default(),
-        "adverb_superlative" => entry.adverb_superlative.clone().unwrap_or_default(),
-        _ => String::new(),
-    }
+    entry_field_value_from_meta(entry, field)
 }

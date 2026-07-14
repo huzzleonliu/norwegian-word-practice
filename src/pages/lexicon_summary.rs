@@ -2,10 +2,11 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
-use crate::structures::pracresult::{AnswerStats, PracticeResult, PracticedWordEntryResult};
+use crate::structures::field_meta::for_each_answer_stats;
+use crate::structures::pracresult::{PracticeResult, PracticedWordEntryResult};
 use crate::structures::word_bank_entry::{PartOfSpeech, UiLanguage, WordBankEntry};
 use crate::utils::i18n::{field_label, tr};
 use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
@@ -13,11 +14,12 @@ use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
 #[component]
 pub fn LexiconSummaryPage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
-    let set_temp_practice_result = word_bank_state.set_temp_practice_result;
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let lang = expect_context::<UiState>().ui_language;
+    let set_temp_practice_result = practice_state.set_temp_practice_result;
     let (flow_status, set_flow_status) = signal(String::new());
-    let summary_return_page = word_bank_state.summary_return_page;
+    let summary_return_page = practice_state.summary_return_page;
 
     let continue_practice_click = move |_| {
         let target_page = summary_return_page.get_untracked();
@@ -29,7 +31,7 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     };
     let export_result_click = move |_| {
         let language = lang.get_untracked();
-        let practice_result = word_bank_state.practice_result.get_untracked();
+        let practice_result = practice_state.practice_result.get_untracked();
         let content = match serialize_practice_result_for_export(&practice_result) {
             Ok(content) => content,
             Err(err) => {
@@ -67,7 +69,7 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
-                        let session_result = word_bank_state.last_completed_practice_result.get();
+                        let session_result = practice_state.last_completed_practice_result.get();
                         let (session_correct, session_wrong) = aggregate_score(&session_result);
                         let session_total = session_correct + session_wrong;
                         let summary_line = format!(
@@ -97,7 +99,7 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                         <p class="mt-2 text-sm text-slate-300">
                             {move || {
                                 let language = lang.get();
-                                let session_result = word_bank_state.last_completed_practice_result.get();
+                                let session_result = practice_state.last_completed_practice_result.get();
                                 let (correct, wrong) = aggregate_score(&session_result);
                                 let total = correct + wrong;
                                 format!(
@@ -120,8 +122,8 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                             </p>
                             {move || {
                                 let language = lang.get();
-                                let session_result = word_bank_state.last_completed_practice_result.get();
-                                let entries = word_bank_state.entries.get();
+                                let session_result = practice_state.last_completed_practice_result.get();
+                                let entries = lexicon_state.entries.get();
                                 let wrong_items =
                                     build_wrong_summary_items(&session_result, &entries, language);
                                 if wrong_items.is_empty() {
@@ -161,8 +163,8 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                             <p class="mt-2 text-sm text-slate-300">
                                 {move || {
                                     let language = lang.get();
-                                    let total_result = word_bank_state.practice_result.get();
-                                    let session_result = word_bank_state.last_completed_practice_result.get();
+                                    let total_result = practice_state.practice_result.get();
+                                    let session_result = practice_state.last_completed_practice_result.get();
                                     let (total_correct, total_wrong) = aggregate_score(&total_result);
                                     let (session_correct, session_wrong) = aggregate_score(&session_result);
                                     let history_correct = total_correct.saturating_sub(session_correct);
@@ -187,7 +189,7 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                             <p class="mt-2 text-sm text-slate-300">
                                 {move || {
                                     let language = lang.get();
-                                    let total_result = word_bank_state.practice_result.get();
+                                    let total_result = practice_state.practice_result.get();
                                     let (total_correct, total_wrong) = aggregate_score(&total_result);
                                     let total = total_correct + total_wrong;
                                     format!(
@@ -277,9 +279,9 @@ fn build_wrong_answers_summary(
     language: UiLanguage,
 ) -> String {
     let mut parts = Vec::<String>::new();
-    for (label, stats) in practiced_entry_stats_with_labels(practiced_entry) {
+    for_each_answer_stats(practiced_entry, |label, stats| {
         if stats.wrong_count == 0 {
-            continue;
+            return;
         }
 
         let wrong_text = if stats.wrong_answers.is_empty() {
@@ -288,7 +290,7 @@ fn build_wrong_answers_summary(
             stats.wrong_answers.join(" / ")
         };
         parts.push(format!("{}: {wrong_text}", field_label(language, label)));
-    }
+    });
 
     if parts.is_empty() {
         tr(language, "（无）", "(None)").to_string()
@@ -514,130 +516,23 @@ fn aggregate_score(result: &PracticeResult) -> (usize, usize) {
     let mut wrong = 0_usize;
 
     for practiced_entry in &result.practiced_word_entries {
-        for stats in practiced_entry_stats(practiced_entry) {
+        for_each_answer_stats(practiced_entry, |_, stats| {
             correct += stats.correct_count;
             wrong += stats.wrong_count;
-        }
+        });
     }
 
     (correct, wrong)
 }
 
 fn practiced_entry_has_wrong(practiced_entry: &PracticedWordEntryResult) -> bool {
-    practiced_entry_stats(practiced_entry)
-        .iter()
-        .any(|stats| stats.wrong_count > 0)
-}
-
-fn practiced_entry_stats(practiced_entry: &PracticedWordEntryResult) -> [&AnswerStats; 34] {
-    practiced_entry_stats_with_labels(practiced_entry).map(|(_, stats)| stats)
-}
-
-fn practiced_entry_stats_with_labels(
-    practiced_entry: &PracticedWordEntryResult,
-) -> [(&'static str, &AnswerStats); 34] {
-    [
-        ("english", &practiced_entry.english),
-        ("chinese", &practiced_entry.chinese),
-        ("base_form", &practiced_entry.base_form),
-        ("verb_present_tense", &practiced_entry.verb_present_tense),
-        ("verb_past_tense", &practiced_entry.verb_past_tense),
-        ("verb_imperative", &practiced_entry.verb_imperative),
-        (
-            "verb_present_participle",
-            &practiced_entry.verb_present_participle,
-        ),
-        (
-            "verb_past_participle",
-            &practiced_entry.verb_past_participle,
-        ),
-        (
-            "verb_passive_infinitive",
-            &practiced_entry.verb_passive_infinitive,
-        ),
-        (
-            "verb_passive_present",
-            &practiced_entry.verb_passive_present,
-        ),
-        ("verb_passive_past", &practiced_entry.verb_passive_past),
-        ("noun_plural", &practiced_entry.noun_plural),
-        (
-            "noun_singular_definite",
-            &practiced_entry.noun_singular_definite,
-        ),
-        (
-            "noun_plural_definite",
-            &practiced_entry.noun_plural_definite,
-        ),
-        (
-            "noun_singular_definite_genitive",
-            &practiced_entry.noun_singular_definite_genitive,
-        ),
-        (
-            "noun_plural_definite_genitive",
-            &practiced_entry.noun_plural_definite_genitive,
-        ),
-        (
-            "noun_singular_indefinite_genitive",
-            &practiced_entry.noun_singular_indefinite_genitive,
-        ),
-        (
-            "noun_plural_indefinite_genitive",
-            &practiced_entry.noun_plural_indefinite_genitive,
-        ),
-        (
-            "adjective_feminine_form",
-            &practiced_entry.adjective_feminine_form,
-        ),
-        (
-            "adjective_neuter_form",
-            &practiced_entry.adjective_neuter_form,
-        ),
-        (
-            "adjective_plural_form",
-            &practiced_entry.adjective_plural_form,
-        ),
-        (
-            "adjective_comparative",
-            &practiced_entry.adjective_comparative,
-        ),
-        (
-            "adjective_superlative_indefinite",
-            &practiced_entry.adjective_superlative_indefinite,
-        ),
-        (
-            "adjective_superlative_definite",
-            &practiced_entry.adjective_superlative_definite,
-        ),
-        ("pronoun_object", &practiced_entry.pronoun_object),
-        ("pronoun_reflexive", &practiced_entry.pronoun_reflexive),
-        (
-            "pronoun_plural_subject",
-            &practiced_entry.pronoun_plural_subject,
-        ),
-        (
-            "pronoun_plural_object",
-            &practiced_entry.pronoun_plural_object,
-        ),
-        (
-            "pronoun_plural_reflexive",
-            &practiced_entry.pronoun_plural_reflexive,
-        ),
-        (
-            "determinative_feminine_form",
-            &practiced_entry.determinative_feminine_form,
-        ),
-        (
-            "determinative_neuter_form",
-            &practiced_entry.determinative_neuter_form,
-        ),
-        (
-            "determinative_plural_form",
-            &practiced_entry.determinative_plural_form,
-        ),
-        ("adverb_comparative", &practiced_entry.adverb_comparative),
-        ("adverb_superlative", &practiced_entry.adverb_superlative),
-    ]
+    let mut has_wrong = false;
+    for_each_answer_stats(practiced_entry, |_, stats| {
+        if stats.wrong_count > 0 {
+            has_wrong = true;
+        }
+    });
+    has_wrong
 }
 
 fn format_accuracy(correct: usize, total: usize) -> String {

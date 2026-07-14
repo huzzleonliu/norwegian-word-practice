@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::UiState;
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
 
@@ -13,8 +13,7 @@ pub fn ReturnButton(
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     let mut classes = "mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:w-auto".to_string();
     if let Some(extra) = class {
         let extra = extra.trim();

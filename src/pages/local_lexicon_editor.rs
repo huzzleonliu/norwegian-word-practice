@@ -3,17 +3,16 @@
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, UiState};
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode, parse_pipe_list,
-    serialize_word_bank_csv,
+    LexiconBrowser, LexiconBrowserMode, parse_pipe_list, serialize_word_bank_csv,
 };
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
-use crate::components::word_search::AiResearcher;
+use crate::components::word_search::{AiResearcher, AiResearcherActions, SingleEntryFormState};
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::dictionary::{
@@ -24,16 +23,16 @@ use crate::utils::i18n::tr;
 
 #[component]
 pub fn LocalLexiconEditorPage() -> impl IntoView {
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
-    let entries = word_bank_state.entries;
-    let set_entries = word_bank_state.set_entries;
-    let data_version = word_bank_state.data_version;
-    let set_data_version = word_bank_state.set_data_version;
+    let lexicon_state = expect_context::<LexiconState>();
+    let lang = expect_context::<UiState>().ui_language;
+    let entries = lexicon_state.entries;
+    let set_entries = lexicon_state.set_entries;
+    let data_version = lexicon_state.data_version;
+    let set_data_version = lexicon_state.set_data_version;
     let (status, set_status) = signal({
         let language = lang.get_untracked();
         let count = entries.get_untracked().len();
-        let source = word_bank_state.source_name.get_untracked();
+        let source = lexicon_state.source_name.get_untracked();
         if count == 0 {
             tr(
                 language,
@@ -345,6 +344,83 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             )),
         }
     };
+    let ai_actions = AiResearcherActions {
+        set_status,
+        set_bulk_input,
+        set_bulk_errors,
+        set_bulk_success_message,
+    };
+    let single_form_state = SingleEntryFormState {
+        set_single_pos,
+        single_norwegian,
+        set_single_norwegian,
+        single_chinese,
+        set_single_chinese,
+        single_english,
+        set_single_english,
+        single_verb_present_tense,
+        set_single_verb_present_tense,
+        single_verb_past_tense: single_past_tense,
+        set_single_verb_past_tense: set_single_past_tense,
+        single_verb_imperative: single_imperative,
+        set_single_verb_imperative: set_single_imperative,
+        single_verb_present_participle,
+        set_single_verb_present_participle,
+        single_verb_past_participle,
+        set_single_verb_past_participle,
+        single_verb_passive_infinitive,
+        set_single_verb_passive_infinitive,
+        single_verb_passive_present,
+        set_single_verb_passive_present,
+        single_verb_passive_past,
+        set_single_verb_passive_past,
+        single_noun_plural: single_plural,
+        set_single_noun_plural: set_single_plural,
+        single_noun_singular_definite: single_singular_definite,
+        set_single_noun_singular_definite: set_single_singular_definite,
+        single_noun_plural_definite: single_plural_definite,
+        set_single_noun_plural_definite: set_single_plural_definite,
+        single_noun_singular_definite_genitive,
+        set_single_noun_singular_definite_genitive,
+        single_noun_plural_definite_genitive,
+        set_single_noun_plural_definite_genitive,
+        single_noun_singular_indefinite_genitive,
+        set_single_noun_singular_indefinite_genitive,
+        single_noun_plural_indefinite_genitive,
+        set_single_noun_plural_indefinite_genitive,
+        single_adjective_feminine_form,
+        set_single_adjective_feminine_form,
+        single_adjective_neuter_form: single_neuter_form,
+        set_single_adjective_neuter_form: set_single_neuter_form,
+        single_adjective_plural_form: single_plural_form,
+        set_single_adjective_plural_form: set_single_plural_form,
+        single_adjective_comparative,
+        set_single_adjective_comparative,
+        single_adjective_superlative_indefinite,
+        set_single_adjective_superlative_indefinite,
+        single_adjective_superlative_definite,
+        set_single_adjective_superlative_definite,
+        single_pronoun_object,
+        set_single_pronoun_object,
+        single_pronoun_reflexive,
+        set_single_pronoun_reflexive,
+        single_pronoun_plural_subject,
+        set_single_pronoun_plural_subject,
+        single_pronoun_plural_object,
+        set_single_pronoun_plural_object,
+        single_pronoun_plural_reflexive,
+        set_single_pronoun_plural_reflexive,
+        single_determinative_feminine_form,
+        set_single_determinative_feminine_form,
+        single_determinative_neuter_form,
+        set_single_determinative_neuter_form,
+        single_determinative_plural_form,
+        set_single_determinative_plural_form,
+        single_adverb_comparative,
+        set_single_adverb_comparative,
+        single_adverb_superlative,
+        set_single_adverb_superlative,
+    };
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
@@ -453,79 +529,8 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 />
 
                 <AiResearcher
-                    set_status=set_status
-                    set_bulk_input=set_bulk_input
-                    set_bulk_errors=set_bulk_errors
-                    set_bulk_success_message=set_bulk_success_message
-                    set_single_pos=set_single_pos
-                    single_norwegian=single_norwegian
-                    set_single_norwegian=set_single_norwegian
-                    single_chinese=single_chinese
-                    set_single_chinese=set_single_chinese
-                    single_english=single_english
-                    set_single_english=set_single_english
-                    single_verb_present_tense=single_verb_present_tense
-                    set_single_verb_present_tense=set_single_verb_present_tense
-                    single_verb_past_tense=single_past_tense
-                    set_single_verb_past_tense=set_single_past_tense
-                    single_verb_imperative=single_imperative
-                    set_single_verb_imperative=set_single_imperative
-                    single_verb_present_participle=single_verb_present_participle
-                    set_single_verb_present_participle=set_single_verb_present_participle
-                    single_verb_past_participle=single_verb_past_participle
-                    set_single_verb_past_participle=set_single_verb_past_participle
-                    single_verb_passive_infinitive=single_verb_passive_infinitive
-                    set_single_verb_passive_infinitive=set_single_verb_passive_infinitive
-                    single_verb_passive_present=single_verb_passive_present
-                    set_single_verb_passive_present=set_single_verb_passive_present
-                    single_verb_passive_past=single_verb_passive_past
-                    set_single_verb_passive_past=set_single_verb_passive_past
-                    single_noun_plural=single_plural
-                    set_single_noun_plural=set_single_plural
-                    single_noun_singular_definite=single_singular_definite
-                    set_single_noun_singular_definite=set_single_singular_definite
-                    single_noun_plural_definite=single_plural_definite
-                    set_single_noun_plural_definite=set_single_plural_definite
-                    single_noun_singular_definite_genitive=single_noun_singular_definite_genitive
-                    set_single_noun_singular_definite_genitive=set_single_noun_singular_definite_genitive
-                    single_noun_plural_definite_genitive=single_noun_plural_definite_genitive
-                    set_single_noun_plural_definite_genitive=set_single_noun_plural_definite_genitive
-                    single_noun_singular_indefinite_genitive=single_noun_singular_indefinite_genitive
-                    set_single_noun_singular_indefinite_genitive=set_single_noun_singular_indefinite_genitive
-                    single_noun_plural_indefinite_genitive=single_noun_plural_indefinite_genitive
-                    set_single_noun_plural_indefinite_genitive=set_single_noun_plural_indefinite_genitive
-                    single_adjective_feminine_form=single_adjective_feminine_form
-                    set_single_adjective_feminine_form=set_single_adjective_feminine_form
-                    single_adjective_neuter_form=single_neuter_form
-                    set_single_adjective_neuter_form=set_single_neuter_form
-                    single_adjective_plural_form=single_plural_form
-                    set_single_adjective_plural_form=set_single_plural_form
-                    single_adjective_comparative=single_adjective_comparative
-                    set_single_adjective_comparative=set_single_adjective_comparative
-                    single_adjective_superlative_indefinite=single_adjective_superlative_indefinite
-                    set_single_adjective_superlative_indefinite=set_single_adjective_superlative_indefinite
-                    single_adjective_superlative_definite=single_adjective_superlative_definite
-                    set_single_adjective_superlative_definite=set_single_adjective_superlative_definite
-                    single_pronoun_object=single_pronoun_object
-                    set_single_pronoun_object=set_single_pronoun_object
-                    single_pronoun_reflexive=single_pronoun_reflexive
-                    set_single_pronoun_reflexive=set_single_pronoun_reflexive
-                    single_pronoun_plural_subject=single_pronoun_plural_subject
-                    set_single_pronoun_plural_subject=set_single_pronoun_plural_subject
-                    single_pronoun_plural_object=single_pronoun_plural_object
-                    set_single_pronoun_plural_object=set_single_pronoun_plural_object
-                    single_pronoun_plural_reflexive=single_pronoun_plural_reflexive
-                    set_single_pronoun_plural_reflexive=set_single_pronoun_plural_reflexive
-                    single_determinative_feminine_form=single_determinative_feminine_form
-                    set_single_determinative_feminine_form=set_single_determinative_feminine_form
-                    single_determinative_neuter_form=single_determinative_neuter_form
-                    set_single_determinative_neuter_form=set_single_determinative_neuter_form
-                    single_determinative_plural_form=single_determinative_plural_form
-                    set_single_determinative_plural_form=set_single_determinative_plural_form
-                    single_adverb_comparative=single_adverb_comparative
-                    set_single_adverb_comparative=set_single_adverb_comparative
-                    single_adverb_superlative=single_adverb_superlative
-                    set_single_adverb_superlative=set_single_adverb_superlative
+                    actions=ai_actions
+                    single_form_state=single_form_state
                 />
 
                 <LexiconEditorAddMulti
@@ -578,7 +583,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                         set_status=set_status
                         set_data_version=set_data_version
                         ui_language=lang
-                        set_source_name=word_bank_state.set_source_name
+                        set_source_name=lexicon_state.set_source_name
                     />
                     <button
                         type="button"

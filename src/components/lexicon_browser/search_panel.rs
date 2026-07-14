@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use super::utils::{header_name, DATA_COLUMN_KEYS};
+use super::utils::{DATA_COLUMN_KEYS, header_name};
 use crate::structures::word_bank_entry::UiLanguage;
 use crate::utils::i18n::{field_label, tr};
 

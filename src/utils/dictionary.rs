@@ -7,20 +7,6 @@ use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, W
 
 pub type SingleEntryDraft = WordBankEntry;
 
-/// 词性校验中不要求填写、使用频率较低的变体字段；UI 默认不勾选。
-pub const OPTIONAL_VARIANT_FIELD_KEYS: [&str; 5] = [
-    "verb_passive_past",
-    "noun_singular_indefinite_genitive",
-    "noun_plural_indefinite_genitive",
-    "adverb_comparative",
-    "adverb_superlative",
-];
-
-/// 判断给定字段是否属于“低频可选变体字段”。
-pub fn is_optional_variant_field(key: &str) -> bool {
-    OPTIONAL_VARIANT_FIELD_KEYS.contains(&key)
-}
-
 /// 解析并校验词性字符串，失败时返回带可选项列表的错误信息。
 pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
     PartOfSpeech::from_key(raw).map_err(|_| {

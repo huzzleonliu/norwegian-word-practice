@@ -6,8 +6,6 @@ pub mod lexicon_editor_add_multi;
 pub mod lexicon_editor_add_single;
 #[path = "mini-console.rs"]
 pub mod mini_console;
-pub mod practice_buttons;
-pub mod practice_entry;
-pub mod practice_settings;
+pub mod practice_engine;
 pub mod return_button;
 pub mod word_search;

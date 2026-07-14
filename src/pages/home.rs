@@ -5,7 +5,7 @@ use leptos::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use leptos::task::spawn_local;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
@@ -17,8 +17,10 @@ use crate::utils::pracresult_crypto::parse_practice_result_from_import;
 #[component]
 pub fn HomePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let ui_state = expect_context::<UiState>();
+    let lang = ui_state.ui_language;
     let (status, set_status) = signal(String::new());
 
     let import_pracresult_change = move |ev: Event| {
@@ -26,28 +28,28 @@ pub fn HomePage() -> impl IntoView {
             ev,
             set_status,
             set_current_page,
-            word_bank_state.set_practice_result,
-            word_bank_state.set_selected_word_entry_ids,
+            practice_state.set_practice_result,
+            practice_state.set_selected_word_entry_ids,
             lang,
         );
     };
 
     let direct_start_practice_click = move |_| {
-        let mut practice_result = word_bank_state.practice_result.get_untracked();
+        let mut practice_result = practice_state.practice_result.get_untracked();
         if practice_result.selected_word_entry_ids.is_empty() {
             practice_result.selected_word_entry_ids =
-                word_bank_state.selected_word_entry_ids.get_untracked();
+                practice_state.selected_word_entry_ids.get_untracked();
         }
-        word_bank_state.set_practice_result.set(practice_result);
-        word_bank_state
+        practice_state.set_practice_result.set(practice_result);
+        practice_state
             .set_temp_practice_result
             .set(PracticeResult::default());
         set_current_page.set(AppPage::PracticeModeSelect);
     };
     let current_lexicon_line = Signal::derive(move || {
         let language = lang.get();
-        let count = word_bank_state.entries.get().len();
-        let source = word_bank_state.source_name.get();
+        let count = lexicon_state.entries.get().len();
+        let source = lexicon_state.source_name.get();
         if count == 0 {
             tr(
                 language,

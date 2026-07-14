@@ -4,17 +4,15 @@ use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
-use crate::components::practice_buttons::{
-    AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
-    create_temp_practice_result, normalize_for_compare, record_field_check_result,
+use crate::components::practice_engine::{
+    AbortPracticeButton, CheckAnswersError, FinishPracticeButton, PracticeEntry, PracticeSettings,
+    RestartPracticeButton, RestartTempBehavior, apply_check_results,
+    clear_practice_round_local_state, create_temp_practice_result, default_answer_fields,
+    evaluate_check_answers, merge_solved_question_ids, refill_active_question_ids,
+    retain_unsolved_answer_inputs, retain_unsolved_revealed_keys,
 };
-use crate::components::practice_entry::{
-    PracticeEntry, answer_input_key, build_question_items, entry_field_value,
-    is_answer_field_available,
-};
-use crate::components::practice_settings::{PracticeSettings, default_answer_fields};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
@@ -22,13 +20,14 @@ use crate::utils::i18n::tr;
 #[component]
 pub fn LexiconPracticePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let lang = expect_context::<UiState>().ui_language;
 
-    let selected_ids_on_enter = word_bank_state.selected_word_entry_ids.get_untracked();
-    let base_practice_result = word_bank_state.practice_result.get_untracked();
+    let selected_ids_on_enter = practice_state.selected_word_entry_ids.get_untracked();
+    let base_practice_result = practice_state.practice_result.get_untracked();
     // 进入练习页时重建本轮临时结果；累计结果保存在 `practice_result`。
-    word_bank_state
+    practice_state
         .set_temp_practice_result
         .set(create_temp_practice_result(
             &base_practice_result,
@@ -47,7 +46,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let (solved_question_ids, set_solved_question_ids) = signal(Vec::<String>::new());
 
     Effect::new(move |_| {
-        let selected_ids = word_bank_state.selected_word_entry_ids.get();
+        let selected_ids = practice_state.selected_word_entry_ids.get();
         let solved_ids = solved_question_ids.get();
         let page_size = questions_per_page.get().max(1);
         let current_active = active_question_ids.get_untracked();
@@ -62,130 +61,86 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let check_click = Callback::new(move |_| {
         let language = lang.get_untracked();
         let selected_answer_fields = answer_fields.get_untracked();
-        if selected_answer_fields.is_empty() {
-            set_status.set(
-                tr(
-                    language,
-                    "请先勾选至少 1 个“回答”项。",
-                    "Please select at least one answer field.",
-                )
-                .to_string(),
-            );
-            return;
-        }
-
         let active_ids = active_question_ids.get_untracked();
-        let entries = word_bank_state.entries.get_untracked();
-        let current_questions = build_question_items(&active_ids, &entries);
-        if current_questions.is_empty() {
-            set_status.set(
-                tr(
-                    language,
-                    "当前没有可检查的题目。",
-                    "No questions available for checking.",
-                )
-                .to_string(),
-            );
-            return;
-        }
-
+        let entries = lexicon_state.entries.get_untracked();
         let answers = answer_inputs.get_untracked();
-        let mut field_results = Vec::<(String, String, bool, String)>::new();
-        let mut newly_solved_ids = Vec::<String>::new();
-        let mut total_fields = 0_usize;
-        let mut correct_fields = 0_usize;
-
-        for (_, entry) in &current_questions {
-            let mut all_correct_for_entry = true;
-            let mut checked_any_field = false;
-            for field in &selected_answer_fields {
-                if !is_answer_field_available(entry, field) {
-                    continue;
-                }
-                checked_any_field = true;
-
-                let expected = entry_field_value(entry, field);
-                let key = answer_input_key(&entry.id, field);
-                let actual = answers.get(&key).cloned().unwrap_or_default();
-                let is_correct = normalize_for_compare(&actual) == normalize_for_compare(&expected);
-
-                total_fields += 1;
-                if is_correct {
-                    correct_fields += 1;
-                } else {
-                    all_correct_for_entry = false;
-                }
-
-                field_results.push((entry.id.clone(), field.clone(), is_correct, actual));
+        let check_result = match evaluate_check_answers(
+            &selected_answer_fields,
+            &active_ids,
+            &entries,
+            &answers,
+        ) {
+            Ok(result) => result,
+            Err(CheckAnswersError::NoAnswerFields) => {
+                set_status.set(
+                    tr(
+                        language,
+                        "请先勾选至少 1 个“回答”项。",
+                        "Please select at least one answer field.",
+                    )
+                    .to_string(),
+                );
+                return;
             }
-
-            if checked_any_field && all_correct_for_entry {
-                newly_solved_ids.push(entry.id.clone());
+            Err(CheckAnswersError::NoQuestions) => {
+                set_status.set(
+                    tr(
+                        language,
+                        "当前没有可检查的题目。",
+                        "No questions available for checking.",
+                    )
+                    .to_string(),
+                );
+                return;
             }
-        }
+            Err(CheckAnswersError::NoAnswerableFields) => {
+                set_status.set(
+                    tr(
+                        language,
+                        "当前题目在已选回答项下没有可作答字段。",
+                        "No answerable fields under current answer settings.",
+                    )
+                    .to_string(),
+                );
+                return;
+            }
+        };
 
-        if total_fields == 0 {
-            set_status.set(
-                tr(
-                    language,
-                    "当前题目在已选回答项下没有可作答字段。",
-                    "No answerable fields under current answer settings.",
-                )
-                .to_string(),
-            );
-            return;
-        }
-
-        word_bank_state
+        practice_state
             .set_temp_practice_result
             .update(|temp_result| {
-                for (entry_id, field, is_correct, actual) in &field_results {
-                    record_field_check_result(temp_result, entry_id, field, *is_correct, actual);
-                }
+                apply_check_results(temp_result, &check_result.field_results);
             });
 
-        if !newly_solved_ids.is_empty() {
-            let solved_set = newly_solved_ids
-                .iter()
-                .cloned()
-                .collect::<HashSet<String>>();
-
+        if !check_result.newly_solved_ids.is_empty() {
             set_solved_question_ids.update(|solved_ids| {
-                for entry_id in &newly_solved_ids {
-                    if !solved_ids.iter().any(|existing| existing == entry_id) {
-                        solved_ids.push(entry_id.clone());
-                    }
-                }
+                merge_solved_question_ids(solved_ids, &check_result.newly_solved_ids);
             });
 
             set_answer_inputs.update(|inputs| {
-                inputs.retain(|key, _| {
-                    !solved_set
-                        .iter()
-                        .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
-                });
+                retain_unsolved_answer_inputs(inputs, &check_result.newly_solved_ids);
             });
             set_revealed_answer_keys.update(|keys| {
-                keys.retain(|key| {
-                    !solved_set
-                        .iter()
-                        .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
-                });
+                retain_unsolved_revealed_keys(keys, &check_result.newly_solved_ids);
             });
         }
 
-        if newly_solved_ids.is_empty() {
+        if check_result.newly_solved_ids.is_empty() {
             set_status.set(format!(
-                "{} {correct_fields}/{total_fields}，{}",
+                "{} {}/{}，{}",
                 tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                check_result.correct_fields,
+                check_result.total_fields,
                 tr(language, "暂无整题通过。", "no full entry solved yet.")
             ));
         } else {
             set_status.set(format!(
-                "{} {correct_fields}/{total_fields}，{} {} {}",
+                "{} {}/{}，{} {} {}",
                 tr(language, "检查完成：字段正确", "Checked: correct fields"),
+                check_result.correct_fields,
+                check_result.total_fields,
                 tr(language, "本轮完成", "solved this round"),
-                newly_solved_ids.len(),
+                check_result.newly_solved_ids.len(),
                 tr(
                     language,
                     "条，已自动补充新题。",
@@ -196,10 +151,12 @@ pub fn LexiconPracticePage() -> impl IntoView {
     });
 
     let restart_ui_click = Callback::new(move |_| {
-        set_solved_question_ids.set(Vec::new());
-        set_answer_inputs.set(HashMap::new());
-        set_active_question_ids.set(Vec::new());
-        set_revealed_answer_keys.set(HashSet::new());
+        clear_practice_round_local_state(
+            set_solved_question_ids,
+            set_answer_inputs,
+            set_active_question_ids,
+            Some(set_revealed_answer_keys),
+        );
     });
 
     let hide_all_revealed_answers = Callback::new(move |_| {
@@ -219,8 +176,12 @@ pub fn LexiconPracticePage() -> impl IntoView {
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
-                        let selected_count = word_bank_state.selected_word_entry_ids.get().len();
-                        let temp_entries = word_bank_state.temp_practice_result.get().practiced_word_entries.len();
+                        let selected_count = practice_state.selected_word_entry_ids.get().len();
+                        let temp_entries = practice_state
+                            .temp_practice_result
+                            .get()
+                            .practiced_word_entries
+                            .len();
                         let overview = format!(
                             "{}（selected=true）：{selected_count} {}，{} {temp_entries} {}。",
                             tr(language, "当前可练习词条", "Available entries"),
@@ -267,7 +228,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                     <PracticeEntry
                         on_check=check_click
                         active_question_ids=active_question_ids
-                        entries=word_bank_state.entries
+                        entries=lexicon_state.entries
                         prompt_field_a=prompt_field_a
                         prompt_field_b=prompt_field_b
                         answer_fields=answer_fields
@@ -285,14 +246,14 @@ pub fn LexiconPracticePage() -> impl IntoView {
                     </h2>
                     <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_current_page=set_current_page
                             set_status=set_status
                             finish_target_page=AppPage::LexiconSummary
                             summary_return_page=AppPage::LexiconPractice
                         />
                         <RestartPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_status=set_status
                             on_restart_ui=restart_ui_click
                             restart_message=tr(
@@ -304,7 +265,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                             restart_temp_behavior=RestartTempBehavior::Keep
                         />
                         <AbortPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_current_page=set_current_page
                             abort_target_page=AppPage::LexiconMode
                         />
@@ -313,34 +274,4 @@ pub fn LexiconPracticePage() -> impl IntoView {
             </section>
         </main>
     }
-}
-
-fn refill_active_question_ids(
-    selected_ids: &[String],
-    current_active_ids: &[String],
-    solved_ids: &[String],
-    page_size: usize,
-) -> Vec<String> {
-    // 保留未解题，按 selected 顺序补满当前页，避免重复出题。
-    let solved_set = solved_ids.iter().cloned().collect::<HashSet<String>>();
-    let mut next_active = current_active_ids
-        .iter()
-        .filter(|id| !solved_set.contains(*id))
-        .cloned()
-        .collect::<Vec<_>>();
-    let mut used = next_active.iter().cloned().collect::<HashSet<String>>();
-
-    for id in selected_ids {
-        if next_active.len() >= page_size {
-            break;
-        }
-        if solved_set.contains(id) || used.contains(id) {
-            continue;
-        }
-        next_active.push(id.clone());
-        used.insert(id.clone());
-    }
-
-    next_active.truncate(page_size.min(selected_ids.len()));
-    next_active
 }

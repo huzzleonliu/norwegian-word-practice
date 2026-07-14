@@ -1,102 +1,20 @@
-//! 练习设置组件：配置每页题量、提示字段、作答字段与答案显隐策略。
+//! 练习设置模块：
+//! - 配置每页题量
+//! - 配置提示字段与回答字段
+//! - 控制答案显隐策略
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
-use crate::utils::dictionary::is_optional_variant_field;
+use crate::app_state::UiState;
+use crate::structures::field_meta::{
+    ANSWER_FIELD_GROUPS, PROMPT_FIELD_OPTIONS,
+    default_answer_fields as default_answer_fields_from_meta,
+};
 use crate::utils::i18n::{field_label, tr};
 
-pub const NONE_FIELD_KEY: &str = "none";
-
-const PROMPT_FIELD_OPTIONS: [&str; 37] = [
-    NONE_FIELD_KEY,
-    "part_of_speech",
-    "tags",
-    "english",
-    "chinese",
-    "base_form",
-    "verb_present_tense",
-    "verb_past_tense",
-    "verb_imperative",
-    "verb_present_participle",
-    "verb_past_participle",
-    "verb_passive_infinitive",
-    "verb_passive_present",
-    "verb_passive_past",
-    "noun_plural",
-    "noun_singular_definite",
-    "noun_plural_definite",
-    "noun_singular_definite_genitive",
-    "noun_plural_definite_genitive",
-    "noun_singular_indefinite_genitive",
-    "noun_plural_indefinite_genitive",
-    "adjective_feminine_form",
-    "adjective_neuter_form",
-    "adjective_plural_form",
-    "adjective_comparative",
-    "adjective_superlative_indefinite",
-    "adjective_superlative_definite",
-    "pronoun_object",
-    "pronoun_reflexive",
-    "pronoun_plural_subject",
-    "pronoun_plural_object",
-    "pronoun_plural_reflexive",
-    "determinative_feminine_form",
-    "determinative_neuter_form",
-    "determinative_plural_form",
-    "adverb_comparative",
-    "adverb_superlative",
-];
-
-const ANSWER_FIELD_OPTIONS: [&str; 34] = [
-    "english",
-    "chinese",
-    "base_form",
-    "verb_present_tense",
-    "verb_past_tense",
-    "verb_imperative",
-    "verb_present_participle",
-    "verb_past_participle",
-    "verb_passive_infinitive",
-    "verb_passive_present",
-    "verb_passive_past",
-    "noun_plural",
-    "noun_singular_definite",
-    "noun_plural_definite",
-    "noun_singular_definite_genitive",
-    "noun_plural_definite_genitive",
-    "noun_singular_indefinite_genitive",
-    "noun_plural_indefinite_genitive",
-    "adjective_feminine_form",
-    "adjective_neuter_form",
-    "adjective_plural_form",
-    "adjective_comparative",
-    "adjective_superlative_indefinite",
-    "adjective_superlative_definite",
-    "pronoun_object",
-    "pronoun_reflexive",
-    "pronoun_plural_subject",
-    "pronoun_plural_object",
-    "pronoun_plural_reflexive",
-    "determinative_feminine_form",
-    "determinative_neuter_form",
-    "determinative_plural_form",
-    "adverb_comparative",
-    "adverb_superlative",
-];
-
+/// 默认回答字段集合（由字段元数据中的 default_answer_selected 决定）。
 pub fn default_answer_fields() -> Vec<String> {
-    // 默认不勾选中英文与低频可选变体，减少首次练习输入负担。
-    ANSWER_FIELD_OPTIONS
-        .iter()
-        .filter_map(|key| {
-            if *key == "english" || *key == "chinese" || is_optional_variant_field(key) {
-                None
-            } else {
-                Some((*key).to_string())
-            }
-        })
-        .collect()
+    default_answer_fields_from_meta()
 }
 
 #[component]
@@ -113,7 +31,7 @@ pub fn PracticeSettings(
     set_allow_answer_reveal: WriteSignal<bool>,
     hide_all_revealed_answers: Callback<()>,
 ) -> impl IntoView {
-    let lang = expect_context::<WordBankState>().ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     view! {
         <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
             <label class="flex flex-col gap-1 text-sm">
@@ -176,15 +94,7 @@ pub fn PracticeSettings(
                 {move || tr(lang.get(), "回答（勾选要回答的项）", "Answers (select fields to answer)")}
             </p>
             <div class="space-y-3">
-                {[
-                    ("core", vec![0_usize, 1, 2]),
-                    ("verb", vec![3, 4, 5, 6, 7, 8, 9, 10]),
-                    ("noun", vec![11, 12, 13, 14, 15, 16, 17]),
-                    ("adjective", vec![18, 19, 20, 21, 22, 23]),
-                    ("pronoun", vec![24, 25, 26, 27, 28]),
-                    ("determinative", vec![29, 30, 31]),
-                    ("adverb", vec![32, 33]),
-                ]
+                {ANSWER_FIELD_GROUPS
                     .into_iter()
                     .map(|(group_name, indices)| {
                         let group_name_key = group_name;
@@ -207,8 +117,7 @@ pub fn PracticeSettings(
                                 <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
                                     {indices
                                         .into_iter()
-                                        .map(|idx| {
-                                            let key = ANSWER_FIELD_OPTIONS[idx];
+                                        .map(|key| {
                                             let key_for_checked = key.to_string();
                                             let key_for_change = key.to_string();
                                             view! {

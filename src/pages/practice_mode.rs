@@ -4,7 +4,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, UiState};
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
@@ -17,8 +17,8 @@ include!(concat!(env!("OUT_DIR"), "/lexicon_word_bank_catalog.rs"));
 #[component]
 pub fn PracticeModePage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
+    let lexicon_state = expect_context::<LexiconState>();
+    let lang = expect_context::<UiState>().ui_language;
     let default_word_bank = LEXICON_WORD_BANK_FILES
         .iter()
         .copied()
@@ -44,7 +44,7 @@ pub fn PracticeModePage() -> impl IntoView {
             );
             return;
         }
-        let word_bank_state = word_bank_state;
+        let lexicon_state = lexicon_state;
         set_status.set(format!(
             "{}：{selected_file} ...",
             tr(language, "正在加载内置词库", "Loading built-in lexicon")
@@ -71,9 +71,9 @@ pub fn PracticeModePage() -> impl IntoView {
             match result {
                 Ok(word_list) => {
                     let count = word_list.len();
-                    word_bank_state.set_entries.set(word_list);
-                    word_bank_state.set_data_version.update(|ver| *ver += 1);
-                    word_bank_state.set_source_name.set(format!(
+                    lexicon_state.set_entries.set(word_list);
+                    lexicon_state.set_data_version.update(|ver| *ver += 1);
+                    lexicon_state.set_source_name.set(format!(
                         "{}：{selected_file}",
                         tr(language, "内置词库", "Built-in Lexicon")
                     ));
@@ -98,8 +98,8 @@ pub fn PracticeModePage() -> impl IntoView {
     };
     let current_lexicon_line = Signal::derive(move || {
         let language = lang.get();
-        let count = word_bank_state.entries.get().len();
-        let source = word_bank_state.source_name.get();
+        let count = lexicon_state.entries.get().len();
+        let source = lexicon_state.source_name.get();
         if count == 0 {
             tr(
                 language,
@@ -185,11 +185,11 @@ pub fn PracticeModePage() -> impl IntoView {
                                     tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
                                 })
                                 class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto".to_string()
-                                set_entries=word_bank_state.set_entries
+                                set_entries=lexicon_state.set_entries
                                 set_status=set_status
-                                set_data_version=word_bank_state.set_data_version
+                                set_data_version=lexicon_state.set_data_version
                                 ui_language=lang
-                                set_source_name=word_bank_state.set_source_name
+                                set_source_name=lexicon_state.set_source_name
                             />
                         </div>
                         <div class="mt-4">

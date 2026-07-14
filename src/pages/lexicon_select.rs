@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode};
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
@@ -14,22 +14,20 @@ use crate::utils::shuffle::shuffle_strings;
 #[component]
 pub fn LexiconSelectPage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let entries = word_bank_state.entries;
-    let set_entries = word_bank_state.set_entries;
-    let set_selected_word_entry_ids = word_bank_state.set_selected_word_entry_ids;
-    let data_version = word_bank_state.data_version;
-    let lang = word_bank_state.ui_language;
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let entries = lexicon_state.entries;
+    let set_entries = lexicon_state.set_entries;
+    let set_selected_word_entry_ids = practice_state.set_selected_word_entry_ids;
+    let data_version = lexicon_state.data_version;
+    let lang = expect_context::<UiState>().ui_language;
     let (status, set_status) = signal(String::new());
 
     Effect::new(move |_| {
         let _ = data_version.get();
         let count = entries.get_untracked().len();
-        let source = word_bank_state.source_name.get_untracked();
-        let prepared_count = word_bank_state
-            .selected_word_entry_ids
-            .get_untracked()
-            .len();
+        let source = lexicon_state.source_name.get_untracked();
+        let prepared_count = practice_state.selected_word_entry_ids.get_untracked().len();
         let language = lang.get_untracked();
         if count == 0 {
             set_status.set(
@@ -96,7 +94,7 @@ pub fn LexiconSelectPage() -> impl IntoView {
                     message=Signal::derive(move || {
                         let language = lang.get();
                         let count = entries.get().len();
-                        let source = word_bank_state.source_name.get();
+                        let source = lexicon_state.source_name.get();
                         let source_line = if count == 0 {
                             format!(
                                 "{}（{}：{source}）。",

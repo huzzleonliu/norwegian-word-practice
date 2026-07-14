@@ -2,10 +2,11 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::UiState;
+use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::lexicon_browser::table_panel::{LexiconTablePanel, TableActionKind};
 use crate::components::lexicon_browser::utils::{
-    DATA_COLUMN_KEYS, default_search_column_visibility, parse_word_bank_csv,
+    DATA_COLUMN_KEYS, default_search_column_visibility,
 };
 use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::i18n::tr;
@@ -17,10 +18,11 @@ pub fn LexiconEditorAddMulti(
     bulk_errors: ReadSignal<Vec<String>>,
     bulk_success_message: ReadSignal<String>,
 ) -> impl IntoView {
-    let lang = expect_context::<WordBankState>().ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     const DATA_COLUMN_COUNT: usize = DATA_COLUMN_KEYS.len();
     let (preview_entries, set_preview_entries) = signal(Vec::<WordBankEntry>::new());
-    let (preview_baseline_entries, set_preview_baseline_entries) = signal(Vec::<WordBankEntry>::new());
+    let (preview_baseline_entries, set_preview_baseline_entries) =
+        signal(Vec::<WordBankEntry>::new());
     let (preview_row_undo, set_preview_row_undo) = signal(Vec::<Option<WordBankEntry>>::new());
     let (preview_delete_marks, set_preview_delete_marks) = signal(Vec::<bool>::new());
     let (preview_delete_drag_target, set_preview_delete_drag_target) = signal(None::<bool>);

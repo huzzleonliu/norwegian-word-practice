@@ -4,7 +4,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
@@ -15,8 +15,9 @@ use crate::utils::i18n::tr;
 #[component]
 pub fn SeriseSelectPage() -> impl IntoView {
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let lang = expect_context::<UiState>().ui_language;
     let (status, set_status) = signal(
         tr(
             lang.get_untracked(),
@@ -32,7 +33,8 @@ pub fn SeriseSelectPage() -> impl IntoView {
             "数词",
             "Number",
             AppPage::SeriseNumberPractice,
-            word_bank_state,
+            lexicon_state,
+            practice_state,
             set_status,
             set_current_page,
             lang,
@@ -44,7 +46,8 @@ pub fn SeriseSelectPage() -> impl IntoView {
             "月份",
             "Month",
             AppPage::SeriseMonthPractice,
-            word_bank_state,
+            lexicon_state,
+            practice_state,
             set_status,
             set_current_page,
             lang,
@@ -56,7 +59,8 @@ pub fn SeriseSelectPage() -> impl IntoView {
             "代词",
             "Pronoun",
             AppPage::SerisePronounPractice,
-            word_bank_state,
+            lexicon_state,
+            practice_state,
             set_status,
             set_current_page,
             lang,
@@ -68,7 +72,8 @@ pub fn SeriseSelectPage() -> impl IntoView {
             "疑问词",
             "Interrogative",
             AppPage::SeriseInterrogativePractice,
-            word_bank_state,
+            lexicon_state,
+            practice_state,
             set_status,
             set_current_page,
             lang,
@@ -129,7 +134,8 @@ fn load_series_word_bank(
     series_name_zh: &'static str,
     series_name_en: &'static str,
     target_page: AppPage,
-    word_bank_state: WordBankState,
+    lexicon_state: LexiconState,
+    practice_state: PracticeState,
     set_status: WriteSignal<String>,
     set_current_page: WriteSignal<AppPage>,
     lang: ReadSignal<UiLanguage>,
@@ -183,12 +189,10 @@ fn load_series_word_bank(
                     ));
                     return;
                 }
-                word_bank_state.set_entries.set(word_list);
-                word_bank_state
-                    .set_selected_word_entry_ids
-                    .set(selected_ids);
-                word_bank_state.set_data_version.update(|ver| *ver += 1);
-                word_bank_state.set_source_name.set(format!(
+                lexicon_state.set_entries.set(word_list);
+                practice_state.set_selected_word_entry_ids.set(selected_ids);
+                lexicon_state.set_data_version.update(|ver| *ver += 1);
+                lexicon_state.set_source_name.set(format!(
                     "{}：{series_name}（{selected_file}; tags={}）",
                     tr(language, "系列词库", "Series Lexicon"),
                     selected_tags.join("|")

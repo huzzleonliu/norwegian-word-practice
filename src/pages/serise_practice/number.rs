@@ -4,13 +4,12 @@ use std::collections::HashMap;
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{LexiconState, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
-use crate::components::practice_buttons::{
-    AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
-    normalize_for_compare, record_field_check_result,
+use crate::components::practice_engine::{
+    AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
+    RestartTempBehavior, answer_input_key, normalize_for_compare, record_field_check_result,
 };
-use crate::components::practice_entry::{CheckPracticeButton, answer_input_key};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
@@ -73,9 +72,10 @@ const NUMBER_GROUPS: [NumberGroupConfig; 3] = [
 
 #[component]
 pub fn NumberSerisePracticePage() -> impl IntoView {
-    let word_bank_state = expect_context::<WordBankState>();
-    let lang = word_bank_state.ui_language;
-    initialize_temp_practice_result(word_bank_state);
+    let lexicon_state = expect_context::<LexiconState>();
+    let practice_state = expect_context::<PracticeState>();
+    let lang = expect_context::<UiState>().ui_language;
+    initialize_temp_practice_result(lexicon_state, practice_state);
 
     let set_current_page = expect_context::<WriteSignal<AppPage>>();
     let (status, set_status) = signal(String::new());
@@ -97,8 +97,8 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
-                        let selected_count = word_bank_state.selected_word_entry_ids.get().len();
-                        let temp_entries = word_bank_state
+                        let selected_count = practice_state.selected_word_entry_ids.get().len();
+                        let temp_entries = practice_state
                             .temp_practice_result
                             .get()
                             .practiced_word_entries
@@ -155,7 +155,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
 
                         let check_group_click = Callback::new(move |_| {
                             let language = lang.get_untracked();
-                            let entries = selected_series_entries(word_bank_state);
+                            let entries = selected_series_entries(lexicon_state, practice_state);
                             let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                             if rows.is_empty() {
                                 let no_data_message = tr(
@@ -211,7 +211,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                                 ));
                             }
 
-                            word_bank_state
+                            practice_state
                                 .set_temp_practice_result
                                 .update(|temp_result| {
                                     for (entry_id, is_correct, actual) in &field_results {
@@ -272,7 +272,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
 
                                 <div class="mt-4 space-y-3">
                                     {move || {
-                                        let entries = selected_series_entries(word_bank_state);
+                                        let entries = selected_series_entries(lexicon_state, practice_state);
                                         let (rows, missing_numbers) = build_number_question_rows(&entries, numbers);
                                         if rows.is_empty() {
                                             return view! { <p class="text-sm text-amber-300">
@@ -399,14 +399,14 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                     <h2 class="text-lg font-semibold">{move || tr(lang.get(), "流程控制", "Flow Control")}</h2>
                     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <FinishPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_current_page=set_current_page
                             set_status=set_status
                             finish_target_page=AppPage::LexiconSummary
                             summary_return_page=AppPage::SeriseNumberPractice
                         />
                         <RestartPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_status=set_status
                             on_restart_ui=restart_ui_click
                             restart_message=tr(
@@ -418,7 +418,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                             restart_temp_behavior=RestartTempBehavior::Keep
                         />
                         <AbortPracticeButton
-                            word_bank_state=word_bank_state
+                            practice_state=practice_state
                             set_current_page=set_current_page
                             abort_target_page=AppPage::SeriseSelect
                         />
@@ -540,10 +540,13 @@ fn number_to_cardinal_chinese(number: u32) -> Option<&'static str> {
     }
 }
 
-fn selected_series_entries(word_bank_state: WordBankState) -> Vec<WordBankEntry> {
+fn selected_series_entries(
+    lexicon_state: LexiconState,
+    practice_state: PracticeState,
+) -> Vec<WordBankEntry> {
     // 优先使用 `selected_word_entry_ids` 作为系列题库范围；为空则回退全量。
-    let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
-    let entries = word_bank_state.entries.get_untracked();
+    let selected_ids = practice_state.selected_word_entry_ids.get_untracked();
+    let entries = lexicon_state.entries.get_untracked();
     if selected_ids.is_empty() {
         return entries;
     }

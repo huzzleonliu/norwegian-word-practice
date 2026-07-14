@@ -3,7 +3,7 @@
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::UiState;
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech};
 use crate::utils::i18n::{field_label, tr};
 
@@ -85,7 +85,7 @@ pub fn LexiconEditorAddSingle(
     single_adverb_superlative: ReadSignal<String>,
     set_single_adverb_superlative: WriteSignal<String>,
 ) -> impl IntoView {
-    let lang = expect_context::<WordBankState>().ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     view! {
         <form
             on:submit=move |ev| on_submit.run(ev)
@@ -443,11 +443,7 @@ fn pos_variant_sections(
     }
 }
 
-fn variant_section(
-    _lang: UiLanguage,
-    title: &'static str,
-    fields: impl IntoView,
-) -> AnyView {
+fn variant_section(_lang: UiLanguage, title: &'static str, fields: impl IntoView) -> AnyView {
     view! {
         <section class="mt-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <p class="mb-2 text-xs font-semibold text-slate-400">{title}</p>

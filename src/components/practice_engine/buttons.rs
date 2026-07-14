@@ -1,9 +1,13 @@
-//! 练习流程按钮与结果聚合逻辑：完成/重开/放弃、统计合并与错法维护。
+//! 练习流程按钮与结果聚合：
+//! - UI 按钮组件（完成/重开/放弃）
+//! - 练习结果合并与错法维护
+//! - 判题文本规范化（用于输入比较）
 
 use leptos::prelude::*;
 
-use crate::app_state::WordBankState;
+use crate::app_state::{PracticeState, UiState};
 use crate::pages::AppPage;
+use crate::structures::field_meta::{answer_stats_mut, for_each_answer_stats_pair_mut};
 use crate::structures::pracresult::{
     AnswerStats, MAX_WRONG_ANSWERS_PER_FORM, PracticeResult, PracticedWordEntryResult,
 };
@@ -18,7 +22,7 @@ pub enum RestartTempBehavior {
 
 #[component]
 pub fn FinishPracticeButton(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
     set_current_page: WriteSignal<AppPage>,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
@@ -26,13 +30,14 @@ pub fn FinishPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
-    let lang = word_bank_state.ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     let finish_click = move |_| {
-        word_bank_state
+        practice_state
             .set_summary_return_page
             .set(summary_return_page);
         handle_finish_click(
-            word_bank_state,
+            practice_state,
+            lang.get_untracked(),
             set_current_page,
             set_status,
             finish_target_page,
@@ -54,7 +59,7 @@ pub fn FinishPracticeButton(
 
 #[component]
 pub fn RestartPracticeButton(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
     set_status: WriteSignal<String>,
     on_restart_ui: Callback<()>,
     restart_message: String,
@@ -62,10 +67,10 @@ pub fn RestartPracticeButton(
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
-    let lang = word_bank_state.ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     let restart_click = move |_| {
         handle_restart_click(
-            word_bank_state,
+            practice_state,
             set_status,
             on_restart_ui,
             &restart_message,
@@ -88,15 +93,15 @@ pub fn RestartPracticeButton(
 
 #[component]
 pub fn AbortPracticeButton(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
     set_current_page: WriteSignal<AppPage>,
     abort_target_page: AppPage,
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
 ) -> impl IntoView {
-    let lang = word_bank_state.ui_language;
+    let lang = expect_context::<UiState>().ui_language;
     let abort_click = move |_| {
-        handle_abort_click(word_bank_state, set_current_page, abort_target_page);
+        handle_abort_click(practice_state, set_current_page, abort_target_page);
     };
     let label = label.unwrap_or_else(|| {
         tr(lang.get_untracked(), "放弃练习并返回", "Abort and Return").to_string()
@@ -113,6 +118,7 @@ pub fn AbortPracticeButton(
     }
 }
 
+/// 基于历史结果生成“本轮临时结果壳”，只继承用户与密钥上下文。
 pub fn create_temp_practice_result(
     base: &PracticeResult,
     selected_ids: &[String],
@@ -130,13 +136,13 @@ pub fn create_temp_practice_result(
 /// - 缓存最近完成快照；
 /// - 打乱并重置下一轮待练习队列。
 pub fn handle_finish_click(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
+    lang: crate::structures::word_bank_entry::UiLanguage,
     set_current_page: WriteSignal<AppPage>,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
 ) {
-    let lang = word_bank_state.ui_language.get_untracked();
-    let mut selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
+    let mut selected_ids = practice_state.selected_word_entry_ids.get_untracked();
     if selected_ids.is_empty() {
         set_status.set(
             tr(
@@ -149,22 +155,22 @@ pub fn handle_finish_click(
         return;
     }
 
-    let temp_snapshot = word_bank_state.temp_practice_result.get_untracked();
+    let temp_snapshot = practice_state.temp_practice_result.get_untracked();
     // 完成时把本轮临时结果合并进历史结果，并保留一份“最近完成快照”给总结页展示。
-    word_bank_state.set_practice_result.update(|global_result| {
+    practice_state.set_practice_result.update(|global_result| {
         merge_practice_result(global_result, &temp_snapshot);
     });
-    word_bank_state
+    practice_state
         .set_last_completed_practice_result
         .set(temp_snapshot.clone());
 
     shuffle_strings(&mut selected_ids);
-    word_bank_state
+    practice_state
         .set_selected_word_entry_ids
         .set(selected_ids.clone());
 
-    let latest_global = word_bank_state.practice_result.get_untracked();
-    word_bank_state
+    let latest_global = practice_state.practice_result.get_untracked();
+    practice_state
         .set_temp_practice_result
         .set(create_temp_practice_result(&latest_global, &selected_ids));
     set_current_page.set(finish_target_page);
@@ -172,16 +178,16 @@ pub fn handle_finish_click(
 
 /// 重开动作：可选是否重建临时统计，同时重置页面局部输入状态。
 pub fn handle_restart_click(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
     set_status: WriteSignal<String>,
     on_restart_ui: Callback<()>,
     restart_message: &str,
     restart_temp_behavior: RestartTempBehavior,
 ) {
     if restart_temp_behavior == RestartTempBehavior::Reinitialize {
-        let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
-        let base_result = word_bank_state.practice_result.get_untracked();
-        word_bank_state
+        let selected_ids = practice_state.selected_word_entry_ids.get_untracked();
+        let base_result = practice_state.practice_result.get_untracked();
+        practice_state
             .set_temp_practice_result
             .set(create_temp_practice_result(&base_result, &selected_ids));
     }
@@ -192,11 +198,11 @@ pub fn handle_restart_click(
 
 /// 放弃动作：清空临时统计并返回指定页面。
 pub fn handle_abort_click(
-    word_bank_state: WordBankState,
+    practice_state: PracticeState,
     set_current_page: WriteSignal<AppPage>,
     abort_target_page: AppPage,
 ) {
-    word_bank_state
+    practice_state
         .set_temp_practice_result
         .set(PracticeResult::default());
     set_current_page.set(abort_target_page);
@@ -242,6 +248,7 @@ pub fn record_field_check_result(
     push_or_promote_wrong_answer(&mut stats.wrong_answers, wrong_input);
 }
 
+/// 合并“本轮临时结果”到“全局累计结果”。
 pub fn merge_practice_result(global_result: &mut PracticeResult, temp_result: &PracticeResult) {
     if global_result.username.trim().is_empty() && !temp_result.username.trim().is_empty() {
         global_result.username = temp_result.username.clone();
@@ -282,129 +289,12 @@ fn merge_practiced_entry(
     existing_entry: &mut PracticedWordEntryResult,
     temp_entry: &PracticedWordEntryResult,
 ) {
-    merge_answer_stats(&mut existing_entry.english, &temp_entry.english);
-    merge_answer_stats(&mut existing_entry.chinese, &temp_entry.chinese);
-    merge_answer_stats(&mut existing_entry.base_form, &temp_entry.base_form);
-    merge_answer_stats(
-        &mut existing_entry.verb_present_tense,
-        &temp_entry.verb_present_tense,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_past_tense,
-        &temp_entry.verb_past_tense,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_imperative,
-        &temp_entry.verb_imperative,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_present_participle,
-        &temp_entry.verb_present_participle,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_past_participle,
-        &temp_entry.verb_past_participle,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_passive_infinitive,
-        &temp_entry.verb_passive_infinitive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_passive_present,
-        &temp_entry.verb_passive_present,
-    );
-    merge_answer_stats(
-        &mut existing_entry.verb_passive_past,
-        &temp_entry.verb_passive_past,
-    );
-    merge_answer_stats(&mut existing_entry.noun_plural, &temp_entry.noun_plural);
-    merge_answer_stats(
-        &mut existing_entry.noun_singular_definite,
-        &temp_entry.noun_singular_definite,
-    );
-    merge_answer_stats(
-        &mut existing_entry.noun_plural_definite,
-        &temp_entry.noun_plural_definite,
-    );
-    merge_answer_stats(
-        &mut existing_entry.noun_singular_definite_genitive,
-        &temp_entry.noun_singular_definite_genitive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.noun_plural_definite_genitive,
-        &temp_entry.noun_plural_definite_genitive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.noun_singular_indefinite_genitive,
-        &temp_entry.noun_singular_indefinite_genitive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.noun_plural_indefinite_genitive,
-        &temp_entry.noun_plural_indefinite_genitive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_feminine_form,
-        &temp_entry.adjective_feminine_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_neuter_form,
-        &temp_entry.adjective_neuter_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_plural_form,
-        &temp_entry.adjective_plural_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_comparative,
-        &temp_entry.adjective_comparative,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_superlative_indefinite,
-        &temp_entry.adjective_superlative_indefinite,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adjective_superlative_definite,
-        &temp_entry.adjective_superlative_definite,
-    );
-    merge_answer_stats(
-        &mut existing_entry.pronoun_object,
-        &temp_entry.pronoun_object,
-    );
-    merge_answer_stats(
-        &mut existing_entry.pronoun_reflexive,
-        &temp_entry.pronoun_reflexive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.pronoun_plural_subject,
-        &temp_entry.pronoun_plural_subject,
-    );
-    merge_answer_stats(
-        &mut existing_entry.pronoun_plural_object,
-        &temp_entry.pronoun_plural_object,
-    );
-    merge_answer_stats(
-        &mut existing_entry.pronoun_plural_reflexive,
-        &temp_entry.pronoun_plural_reflexive,
-    );
-    merge_answer_stats(
-        &mut existing_entry.determinative_feminine_form,
-        &temp_entry.determinative_feminine_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.determinative_neuter_form,
-        &temp_entry.determinative_neuter_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.determinative_plural_form,
-        &temp_entry.determinative_plural_form,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adverb_comparative,
-        &temp_entry.adverb_comparative,
-    );
-    merge_answer_stats(
-        &mut existing_entry.adverb_superlative,
-        &temp_entry.adverb_superlative,
+    for_each_answer_stats_pair_mut(
+        existing_entry,
+        temp_entry,
+        |_, existing_stats, temp_stats| {
+            merge_answer_stats(existing_stats, temp_stats);
+        },
     );
 }
 
@@ -455,57 +345,4 @@ fn get_or_insert_practiced_entry<'a>(
     temp_result.practiced_word_entries.push(entry);
     let last_index = temp_result.practiced_word_entries.len() - 1;
     &mut temp_result.practiced_word_entries[last_index]
-}
-
-fn answer_stats_mut<'a>(
-    practiced_entry: &'a mut PracticedWordEntryResult,
-    field: &str,
-) -> Option<&'a mut AnswerStats> {
-    match field {
-        "english" => Some(&mut practiced_entry.english),
-        "chinese" => Some(&mut practiced_entry.chinese),
-        "base_form" => Some(&mut practiced_entry.base_form),
-        "verb_present_tense" => Some(&mut practiced_entry.verb_present_tense),
-        "verb_past_tense" => Some(&mut practiced_entry.verb_past_tense),
-        "verb_imperative" => Some(&mut practiced_entry.verb_imperative),
-        "verb_present_participle" => Some(&mut practiced_entry.verb_present_participle),
-        "verb_past_participle" => Some(&mut practiced_entry.verb_past_participle),
-        "verb_passive_infinitive" => Some(&mut practiced_entry.verb_passive_infinitive),
-        "verb_passive_present" => Some(&mut practiced_entry.verb_passive_present),
-        "verb_passive_past" => Some(&mut practiced_entry.verb_passive_past),
-        "noun_plural" => Some(&mut practiced_entry.noun_plural),
-        "noun_singular_definite" => Some(&mut practiced_entry.noun_singular_definite),
-        "noun_plural_definite" => Some(&mut practiced_entry.noun_plural_definite),
-        "noun_singular_definite_genitive" => {
-            Some(&mut practiced_entry.noun_singular_definite_genitive)
-        }
-        "noun_plural_definite_genitive" => Some(&mut practiced_entry.noun_plural_definite_genitive),
-        "noun_singular_indefinite_genitive" => {
-            Some(&mut practiced_entry.noun_singular_indefinite_genitive)
-        }
-        "noun_plural_indefinite_genitive" => {
-            Some(&mut practiced_entry.noun_plural_indefinite_genitive)
-        }
-        "adjective_feminine_form" => Some(&mut practiced_entry.adjective_feminine_form),
-        "adjective_neuter_form" => Some(&mut practiced_entry.adjective_neuter_form),
-        "adjective_plural_form" => Some(&mut practiced_entry.adjective_plural_form),
-        "adjective_comparative" => Some(&mut practiced_entry.adjective_comparative),
-        "adjective_superlative_indefinite" => {
-            Some(&mut practiced_entry.adjective_superlative_indefinite)
-        }
-        "adjective_superlative_definite" => {
-            Some(&mut practiced_entry.adjective_superlative_definite)
-        }
-        "pronoun_object" => Some(&mut practiced_entry.pronoun_object),
-        "pronoun_reflexive" => Some(&mut practiced_entry.pronoun_reflexive),
-        "pronoun_plural_subject" => Some(&mut practiced_entry.pronoun_plural_subject),
-        "pronoun_plural_object" => Some(&mut practiced_entry.pronoun_plural_object),
-        "pronoun_plural_reflexive" => Some(&mut practiced_entry.pronoun_plural_reflexive),
-        "determinative_feminine_form" => Some(&mut practiced_entry.determinative_feminine_form),
-        "determinative_neuter_form" => Some(&mut practiced_entry.determinative_neuter_form),
-        "determinative_plural_form" => Some(&mut practiced_entry.determinative_plural_form),
-        "adverb_comparative" => Some(&mut practiced_entry.adverb_comparative),
-        "adverb_superlative" => Some(&mut practiced_entry.adverb_superlative),
-        _ => None,
-    }
 }

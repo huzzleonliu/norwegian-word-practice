@@ -35,14 +35,15 @@ fn App() -> impl IntoView {
 
     // 统一在根组件注入页面路由与全局状态，子页面通过 `expect_context` 获取。
     provide_context(set_current_page);
-    provide_context(app_state::WordBankState {
+    provide_context(app_state::LexiconState {
         entries: word_bank_entries,
         set_entries: set_word_bank_entries,
         data_version: word_bank_data_version,
         set_data_version: set_word_bank_data_version,
         source_name: word_bank_source_name,
         set_source_name: set_word_bank_source_name,
-        ui_language,
+    });
+    provide_context(app_state::PracticeState {
         selected_word_entry_ids,
         set_selected_word_entry_ids,
         practice_result,
@@ -54,7 +55,7 @@ fn App() -> impl IntoView {
         summary_return_page,
         set_summary_return_page,
     });
-
+    provide_context(app_state::UiState { ui_language });
     view! {
         <div>
             <button
