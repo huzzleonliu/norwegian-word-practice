@@ -64,13 +64,80 @@ pub fn LexiconTablePanel(
     #[prop(optional)] show_select_buttons: Option<bool>,
 ) -> impl IntoView {
     const DATA_COLUMN_COUNT: usize = DATA_COLUMN_KEYS.len();
+    const PAGINATION_THRESHOLD: usize = 100;
+    const PAGINATION_PAGE_SIZE: usize = 50;
     let action_kind = action_kind.unwrap_or(TableActionKind::ConfirmChanges);
     let show_select_buttons = show_select_buttons.unwrap_or(true);
     let on_mark_hash_dirty = on_mark_hash_dirty.unwrap_or(Callback::new(|_| {}));
     let column_configs = build_column_configs();
     let header_column_configs = column_configs.clone();
     let row_column_configs = column_configs.clone();
+    let (current_page, set_current_page) = signal(1_usize);
+    let (page_target, set_page_target) = signal("1".to_string());
     let _ = (baseline_entries, set_baseline_entries, row_undo);
+
+    let total_row_count = Signal::derive(move || row_items.with(|items| items.len()));
+    let page_count = Signal::derive(move || {
+        let total = total_row_count.get();
+        if total > PAGINATION_THRESHOLD {
+            total.div_ceil(PAGINATION_PAGE_SIZE)
+        } else {
+            1
+        }
+    });
+    let should_paginate = Signal::derive(move || total_row_count.get() > PAGINATION_THRESHOLD);
+    let paged_row_items = Signal::derive(move || {
+        let all_items = row_items.get();
+        if all_items.len() <= PAGINATION_THRESHOLD {
+            return all_items;
+        }
+        let page = current_page.get().max(1);
+        let start = (page - 1) * PAGINATION_PAGE_SIZE;
+        all_items
+            .into_iter()
+            .skip(start)
+            .take(PAGINATION_PAGE_SIZE)
+            .collect::<Vec<_>>()
+    });
+
+    Effect::new(move |_| {
+        let pages = page_count.get().max(1);
+        let mut page = current_page.get_untracked().max(1);
+        if page > pages {
+            page = pages;
+        }
+        if page != current_page.get_untracked() {
+            set_current_page.set(page);
+        }
+
+        let target = page_target.get_untracked();
+        let parsed_target = target.parse::<usize>().ok().unwrap_or(page);
+        if parsed_target == 0 || parsed_target > pages {
+            set_page_target.set(page.to_string());
+        }
+    });
+
+    let go_prev_page = Callback::new(move |_| {
+        let next = current_page.get_untracked().saturating_sub(1).max(1);
+        set_current_page.set(next);
+        set_page_target.set(next.to_string());
+    });
+    let go_next_page = Callback::new(move |_| {
+        let pages = page_count.get_untracked().max(1);
+        let next = (current_page.get_untracked() + 1).min(pages);
+        set_current_page.set(next);
+        set_page_target.set(next.to_string());
+    });
+    let go_target_page = Callback::new(move |_| {
+        let pages = page_count.get_untracked().max(1);
+        let target = page_target
+            .get_untracked()
+            .parse::<usize>()
+            .ok()
+            .unwrap_or(1)
+            .clamp(1, pages);
+        set_current_page.set(target);
+    });
 
     view! {
         <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
@@ -173,7 +240,7 @@ pub fn LexiconTablePanel(
                 </thead>
                 <tbody>
                     <For
-                        each=move || row_items.get()
+                        each=move || paged_row_items.get()
                         key=|(idx, entry)| format!("{}-{}-{}", idx, entry.id, entry.selected)
                         children=move |(idx, entry)| {
                             let data_cells = row_column_configs
@@ -251,31 +318,105 @@ pub fn LexiconTablePanel(
                 </tbody>
             </table>
         </div>
-        <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-            {if show_select_buttons {
-                view! {
-                    <div class="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
-                        <button
-                            type="button"
-                            on:click=move |_| on_select_visible_click.run(())
-                            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                        >
-                            {move || tr(lang.get(), "全选", "Select All")}
-                        </button>
-                        <button
-                            type="button"
-                            on:click=move |_| on_unselect_visible_click.run(())
-                            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                        >
-                            {move || tr(lang.get(), "全不选", "Unselect All")}
-                        </button>
-                    </div>
-                }
-                    .into_any()
-            } else {
-                view! { <div class="hidden sm:block"></div> }.into_any()
-            }}
-            <div class="min-h-6 flex-1 text-sm">
+        <div class="mt-3 space-y-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {if show_select_buttons {
+                    view! {
+                        <div class="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
+                            <button
+                                type="button"
+                                on:click=move |_| on_select_visible_click.run(())
+                                class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                            >
+                                {move || tr(lang.get(), "全选", "Select All")}
+                            </button>
+                            <button
+                                type="button"
+                                on:click=move |_| on_unselect_visible_click.run(())
+                                class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                            >
+                                {move || tr(lang.get(), "全不选", "Unselect All")}
+                            </button>
+                        </div>
+                    }
+                        .into_any()
+                } else {
+                    view! { <div class="hidden sm:block"></div> }.into_any()
+                }}
+
+                {move || {
+                    if should_paginate.get() {
+                        view! {
+                            <div class="flex flex-wrap items-center justify-center gap-2 rounded border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs">
+                                <button
+                                    type="button"
+                                    on:click=move |_| go_prev_page.run(())
+                                    disabled=move || current_page.get() == 1
+                                    class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {move || tr(lang.get(), "上一页", "Prev")}
+                                </button>
+                                <button
+                                    type="button"
+                                    on:click=move |_| go_next_page.run(())
+                                    disabled=move || current_page.get() == page_count.get()
+                                    class="rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-100 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {move || tr(lang.get(), "下一页", "Next")}
+                                </button>
+                                <span class="text-slate-300">
+                                    {move || format!(
+                                        "{}/{} {}",
+                                        current_page.get(),
+                                        page_count.get(),
+                                        tr(lang.get(), "页", "Page")
+                                    )}
+                                </span>
+                                <select
+                                    prop:value=move || page_target.get()
+                                    on:change=move |ev| set_page_target.set(event_target_value(&ev))
+                                    class="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+                                >
+                                    {move || {
+                                        (1..=page_count.get().max(1))
+                                            .map(|page| {
+                                                let page_value = page.to_string();
+                                                let page_label = page.to_string();
+                                                view! {
+                                                    <option value=page_value>{page_label}</option>
+                                                }
+                                            })
+                                            .collect_view()
+                                    }}
+                                </select>
+                                <button
+                                    type="button"
+                                    on:click=move |_| go_target_page.run(())
+                                    class="rounded border border-cyan-700 bg-cyan-700 px-2 py-1 text-white hover:bg-cyan-600"
+                                >
+                                    {move || tr(lang.get(), "转到", "Go")}
+                                </button>
+                            </div>
+                        }
+                            .into_any()
+                    } else {
+                        view! { <div class="hidden sm:block"></div> }.into_any()
+                    }
+                }}
+
+                <button
+                    type="button"
+                    on:click=move |_| on_confirm_changes.run(())
+                    class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                >
+                    {move || match action_kind {
+                        TableActionKind::ConfirmChanges => tr(lang.get(), "确认修改", "Confirm Changes"),
+                        TableActionKind::AddEntries => tr(lang.get(), "添加多条", "Add Entries"),
+                    }}
+                </button>
+            </div>
+
+            <div class="min-h-6 text-sm">
                 {move || {
                     if !confirm_error.get().is_empty() {
                         view! { <p class="text-red-400">{confirm_error.get()}</p> }.into_any()
@@ -286,16 +427,6 @@ pub fn LexiconTablePanel(
                     }
                 }}
             </div>
-            <button
-                type="button"
-                on:click=move |_| on_confirm_changes.run(())
-                class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
-            >
-                {move || match action_kind {
-                    TableActionKind::ConfirmChanges => tr(lang.get(), "确认修改", "Confirm Changes"),
-                    TableActionKind::AddEntries => tr(lang.get(), "添加多条", "Add Entries"),
-                }}
-            </button>
         </div>
     }
 }
