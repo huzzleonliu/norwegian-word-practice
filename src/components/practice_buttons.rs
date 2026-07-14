@@ -1,3 +1,5 @@
+//! 练习流程按钮与结果聚合逻辑：完成/重开/放弃、统计合并与错法维护。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -123,6 +125,10 @@ pub fn create_temp_practice_result(
     }
 }
 
+/// 完成练习动作：
+/// - 把临时结果合并到历史结果；
+/// - 缓存最近完成快照；
+/// - 打乱并重置下一轮待练习队列。
 pub fn handle_finish_click(
     word_bank_state: WordBankState,
     set_current_page: WriteSignal<AppPage>,
@@ -144,6 +150,7 @@ pub fn handle_finish_click(
     }
 
     let temp_snapshot = word_bank_state.temp_practice_result.get_untracked();
+    // 完成时把本轮临时结果合并进历史结果，并保留一份“最近完成快照”给总结页展示。
     word_bank_state.set_practice_result.update(|global_result| {
         merge_practice_result(global_result, &temp_snapshot);
     });
@@ -163,6 +170,7 @@ pub fn handle_finish_click(
     set_current_page.set(finish_target_page);
 }
 
+/// 重开动作：可选是否重建临时统计，同时重置页面局部输入状态。
 pub fn handle_restart_click(
     word_bank_state: WordBankState,
     set_status: WriteSignal<String>,
@@ -182,6 +190,7 @@ pub fn handle_restart_click(
     set_status.set(restart_message.to_string());
 }
 
+/// 放弃动作：清空临时统计并返回指定页面。
 pub fn handle_abort_click(
     word_bank_state: WordBankState,
     set_current_page: WriteSignal<AppPage>,
@@ -193,6 +202,7 @@ pub fn handle_abort_click(
     set_current_page.set(abort_target_page);
 }
 
+/// 判题规范化规则：小写 + 去空白 + `|` 分段规整 + 挪威字母别名映射。
 pub fn normalize_for_compare(value: &str) -> String {
     value
         .split('|')
@@ -206,6 +216,7 @@ pub fn normalize_for_compare(value: &str) -> String {
         .replace('å', "aa")
 }
 
+/// 记录单字段判题结果并维护错法队列。
 pub fn record_field_check_result(
     temp_result: &mut PracticeResult,
     entry_id: &str,
@@ -257,6 +268,7 @@ pub fn merge_practice_result(global_result: &mut PracticeResult, temp_result: &P
             .iter_mut()
             .find(|entry| entry.id == temp_entry.id)
         {
+            // 同一词条按字段累加 correct/wrong 计数，并维护错法最近队列。
             merge_practiced_entry(existing_entry, temp_entry);
         } else {
             global_result

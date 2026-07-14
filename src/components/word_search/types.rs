@@ -1,3 +1,5 @@
+//! AI 查询数据结构：提示选项、Gemini 返回模型及到 `WordBankEntry` 的转换。
+
 use serde::Deserialize;
 
 use crate::structures::word_bank_entry::WordBankEntry;
@@ -118,6 +120,7 @@ pub(crate) struct GeminiWordResult {
 impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
     type Error = String;
 
+    /// 将 AI 结果按 hint 归一化后映射到项目词条结构。
     fn try_from((value, hint): (&GeminiWordResult, &str)) -> Result<Self, Self::Error> {
         Ok(Self {
             id: String::new(),

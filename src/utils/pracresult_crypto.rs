@@ -1,3 +1,5 @@
+//! 练习结果加解密工具：`.pracresult` 导入导出格式与兼容解析逻辑。
+
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -19,6 +21,10 @@ struct EncryptedPracticeResultFile {
     pub nonce: String,
 }
 
+/// 导出 `.pracresult`：
+/// - 生成随机公钥与 nonce；
+/// - 仅加密 `practiced_word_entries`；
+/// - 其余字段保留明文 JSON。
 pub fn serialize_practice_result_for_export(result: &PracticeResult) -> Result<String, String> {
     let public_key = random_bytes(PUBLIC_KEY_BYTES_LEN);
     let nonce = random_bytes(NONCE_BYTES_LEN);
@@ -39,6 +45,9 @@ pub fn serialize_practice_result_for_export(result: &PracticeResult) -> Result<S
 }
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+/// 导入 `.pracresult`：
+/// - 优先按加密结构解析；
+/// - 若失败则回退兼容明文 `PracticeResult`。
 pub fn parse_practice_result_from_import(content: &str) -> Result<PracticeResult, String> {
     if let Ok(payload) = serde_json::from_str::<EncryptedPracticeResultFile>(content) {
         return decrypt_payload(payload);
@@ -96,6 +105,7 @@ fn decrypt_practiced_entries(
 }
 
 fn apply_stream_cipher(input: &[u8], public_key: &[u8], nonce: &[u8]) -> Vec<u8> {
+    // 流式异或：基于 (固定私钥 + 公钥 + nonce + counter) 逐块生成 keystream。
     let mut out = Vec::with_capacity(input.len());
     let mut offset = 0_usize;
     let mut counter = 0_u64;

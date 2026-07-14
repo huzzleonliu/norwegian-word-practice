@@ -1,3 +1,5 @@
+//! Ordbok 与 Google Translate 适配层：负责请求、解析和词形映射。
+
 use gloo_net::http::Request;
 use serde::Deserialize;
 
@@ -119,6 +121,7 @@ pub(crate) async fn query_word_with_ordbok(
     word: &str,
     hint: &str,
 ) -> Result<Vec<GeminiWordResult>, String> {
+    // 请求 Ordbok GraphQL，并转换为项目统一的 `GeminiWordResult` 结构。
     let payload_body = serde_json::json!({
         "query": ORDBOK_LOOKUP_QUERY,
         "variables": {
@@ -163,6 +166,7 @@ pub(crate) async fn query_word_with_ordbok(
     Ok(parse_ordbok_results(data, hint))
 }
 
+/// 使用 Google Translate 回填中英文释义（不改词形字段）。
 pub(crate) async fn enrich_results_with_google_translate(
     results: &mut [GeminiWordResult],
     api_key: &str,
@@ -179,6 +183,7 @@ pub(crate) async fn enrich_results_with_google_translate(
     Ok(())
 }
 
+/// 用简短词做连通性探测，返回示例翻译文本。
 pub(crate) async fn test_google_translate_connectivity(api_key: &str) -> Result<String, String> {
     translate_text_with_google(api_key, "hei", "en").await
 }
@@ -244,6 +249,7 @@ fn decode_html_entities(value: &str) -> String {
 }
 
 fn parse_ordbok_results(data: OrdbokGraphQlData, hint: &str) -> Vec<GeminiWordResult> {
+    // 先聚合同词条，再按 hint 词性做过滤（如果过滤后为空则回退原集合）。
     let mut merged = Vec::<GeminiWordResult>::new();
     for exact in data.suggestions.exact {
         for article in exact.articles {

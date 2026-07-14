@@ -1,3 +1,5 @@
+//! 多条新增组件：解析批量输入并复用词库表格完成批量编辑后提交。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -41,6 +43,7 @@ pub fn LexiconEditorAddMulti(
     let (table_confirm_error, set_table_confirm_error) = signal(String::new());
     let (table_confirm_success, set_table_confirm_success) = signal(String::new());
 
+    // 输入源变化时重新解析预览数据；表格编辑本身不会回写 bulk_input。
     Effect::new(move |_| {
         let content = bulk_input.get();
         if content.trim().is_empty() {
@@ -92,6 +95,7 @@ pub fn LexiconEditorAddMulti(
     let noop_selected_drag = Callback::new(|_: (usize, bool)| {});
     let noop_drag_over = Callback::new(|_: (usize, leptos::ev::MouseEvent)| {});
     let noop_click = Callback::new(|_: ()| {});
+    // 预览表格删除列采用与主浏览器一致的拖拽批量勾选逻辑。
     let on_begin_delete_drag = Callback::new(move |(idx, current_checked): (usize, bool)| {
         let target_checked = !current_checked;
         set_preview_delete_drag_target.set(Some(target_checked));

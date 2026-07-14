@@ -1,3 +1,5 @@
+//! 词库选词页：通过查询模式浏览器勾选词条，并启动练习队列。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -61,6 +63,8 @@ pub fn LexiconSelectPage() -> impl IntoView {
 
     let start_practice_click = move |_| {
         let language = lang.get_untracked();
+        // 注意：这里读取的是全局 `entries`（已提交状态），不是浏览器内部草稿。
+        // 因此在 Query 表格里改勾选后，需先点击“确认修改”再开始练习。
         let mut selected_ids = collect_selected_entry_ids(&entries.get_untracked());
         if selected_ids.is_empty() {
             set_status.set(
@@ -142,6 +146,7 @@ pub fn LexiconSelectPage() -> impl IntoView {
 }
 
 fn collect_selected_entry_ids(entries: &[WordBankEntry]) -> Vec<String> {
+    // 仅收集已提交词库中 `selected=true` 的条目 id。
     entries
         .iter()
         .filter(|entry| entry.selected)

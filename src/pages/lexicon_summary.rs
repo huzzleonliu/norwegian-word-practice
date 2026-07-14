@@ -1,3 +1,5 @@
+//! 练习总结页：展示本次结果、历史聚合、错题信息，并支持导出 `.pracresult`。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -240,6 +242,7 @@ fn build_wrong_summary_items(
     entries: &[WordBankEntry],
     language: UiLanguage,
 ) -> Vec<WrongSummaryItem> {
+    // 仅提取“本轮存在错误”的词条，拼装为可展示的错题摘要。
     session_result
         .practiced_word_entries
         .iter()
@@ -309,6 +312,7 @@ fn join_or_placeholder(values: &[String], language: UiLanguage) -> String {
 }
 
 fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLanguage) -> String {
+    // 按词性拼装“正确答案”文本，避免展示无关空字段。
     let mut parts = Vec::<String>::new();
     push_answer_part(
         &mut parts,
@@ -505,6 +509,7 @@ fn push_answer_part(parts: &mut Vec<String>, label: &str, value: Option<&str>) {
 }
 
 fn aggregate_score(result: &PracticeResult) -> (usize, usize) {
+    // 聚合所有字段统计：返回 (correct, wrong)。
     let mut correct = 0_usize;
     let mut wrong = 0_usize;
 

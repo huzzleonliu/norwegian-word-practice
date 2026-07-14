@@ -1,3 +1,5 @@
+//! 系列练习选择页：按标签加载系列词库并跳转到对应系列练习页面。
+
 use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -132,6 +134,7 @@ fn load_series_word_bank(
     set_current_page: WriteSignal<AppPage>,
     lang: ReadSignal<UiLanguage>,
 ) {
+    // 系列模式统一加载 `series-word-bank.csv`，再按 tag 过滤选题范围。
     let selected_file = "series-word-bank.csv";
     let language = lang.get_untracked();
     let series_name = tr(language, series_name_zh, series_name_en);

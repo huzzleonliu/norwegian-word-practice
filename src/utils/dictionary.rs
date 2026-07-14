@@ -1,3 +1,5 @@
+//! 词库字典工具：词性校验、字段规范化、批量去重与哈希 id 生成。
+
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
@@ -14,10 +16,12 @@ pub const OPTIONAL_VARIANT_FIELD_KEYS: [&str; 5] = [
     "adverb_superlative",
 ];
 
+/// 判断给定字段是否属于“低频可选变体字段”。
 pub fn is_optional_variant_field(key: &str) -> bool {
     OPTIONAL_VARIANT_FIELD_KEYS.contains(&key)
 }
 
+/// 解析并校验词性字符串，失败时返回带可选项列表的错误信息。
 pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
     PartOfSpeech::from_key(raw).map_err(|_| {
         format!(
@@ -27,6 +31,10 @@ pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
     })
 }
 
+/// 单条词条校验入口：
+/// 1) 规范化输入；
+/// 2) 按词性检查必填变体；
+/// 3) 生成并校验唯一 id。
 pub fn validate_and_prepare_single_entry(
     draft: SingleEntryDraft,
     existing_entries: &[WordBankEntry],
@@ -86,6 +94,7 @@ pub fn draft_from_word_entry(entry: &WordBankEntry) -> SingleEntryDraft {
     entry.clone()
 }
 
+/// 按词性定义校验必填字段（其余字段允许为空）。
 fn validate_forms_by_part_of_speech(
     pos: &PartOfSpeech,
     draft: &SingleEntryDraft,
@@ -223,6 +232,8 @@ fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, S
 }
 
 pub fn compute_word_entry_id(entry: &WordBankEntry) -> String {
+    // `v2` 版本哈希：仅包含词性与词形字段（不包含 tags/english/chinese/selected），
+    // 用于“词条唯一形态”判重，避免翻译文本变化导致 id 漂移。
     let payload = format!(
         "v2|pos={}|base={}|verb_present={}|verb_past={}|verb_imperative={}|verb_present_participle={}|verb_past_participle={}|verb_passive_infinitive={}|verb_passive_present={}|verb_passive_past={}|noun_plural={}|noun_singular_definite={}|noun_plural_definite={}|noun_singular_definite_genitive={}|noun_plural_definite_genitive={}|noun_singular_indefinite_genitive={}|noun_plural_indefinite_genitive={}|adjective_feminine_form={}|adjective_neuter_form={}|adjective_plural_form={}|adjective_comparative={}|adjective_superlative_indefinite={}|adjective_superlative_definite={}|pronoun_object={}|pronoun_reflexive={}|pronoun_plural_subject={}|pronoun_plural_object={}|pronoun_plural_reflexive={}|determinative_feminine_form={}|determinative_neuter_form={}|determinative_plural_form={}|adverb_comparative={}|adverb_superlative={}",
         normalize_for_hash(entry.part_of_speech.as_key()),
@@ -270,6 +281,7 @@ pub fn compute_word_entry_id(entry: &WordBankEntry) -> String {
     format!("wb_{hash_hex}")
 }
 
+/// 基础文本规范化（trim + 合并空白 + 小写），用于保证哈希稳定。
 fn normalize_for_hash(raw: &str) -> String {
     raw.trim()
         .split_whitespace()
@@ -278,6 +290,7 @@ fn normalize_for_hash(raw: &str) -> String {
         .to_lowercase()
 }
 
+/// Option 字段规范化后参与哈希，空值映射为空串。
 fn normalize_option_for_hash(value: &Option<String>) -> String {
     value
         .as_ref()

@@ -1,3 +1,5 @@
+//! 页面模块与页面枚举定义：通过 `AppPage` 实现无 URL 的页面切换。
+
 pub mod home;
 pub mod lexicon_practice;
 pub mod lexicon_select;

@@ -1,3 +1,5 @@
+//! 单条词库新增表单：根据词性动态展示字段并提交到页面层回调。
+
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 

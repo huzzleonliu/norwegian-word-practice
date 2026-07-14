@@ -1,3 +1,5 @@
+//! 练习按钮测试：验证答案规范化规则（分隔符与挪威字母映射）。
+
 use crate::components::practice_buttons::normalize_for_compare;
 
 #[test]

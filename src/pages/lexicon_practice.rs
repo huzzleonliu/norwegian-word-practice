@@ -1,3 +1,5 @@
+//! 词库练习页：承载题目生成、作答校验、临时统计与流程控制按钮。
+
 use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
@@ -25,6 +27,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
 
     let selected_ids_on_enter = word_bank_state.selected_word_entry_ids.get_untracked();
     let base_practice_result = word_bank_state.practice_result.get_untracked();
+    // 进入练习页时重建本轮临时结果；累计结果保存在 `practice_result`。
     word_bank_state
         .set_temp_practice_result
         .set(create_temp_practice_result(
@@ -55,6 +58,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
         }
     });
 
+    // 核心判题入口：逐字段比较 -> 写入临时统计 -> 全对题目移出当前页。
     let check_click = Callback::new(move |_| {
         let language = lang.get_untracked();
         let selected_answer_fields = answer_fields.get_untracked();
@@ -317,6 +321,7 @@ fn refill_active_question_ids(
     solved_ids: &[String],
     page_size: usize,
 ) -> Vec<String> {
+    // 保留未解题，按 selected 顺序补满当前页，避免重复出题。
     let solved_set = solved_ids.iter().cloned().collect::<HashSet<String>>();
     let mut next_active = current_active_ids
         .iter()

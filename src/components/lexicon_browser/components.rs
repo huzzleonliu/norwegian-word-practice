@@ -1,3 +1,5 @@
+//! 词库浏览器编排层：维护草稿状态、搜索排序、批量选择与确认提交流程。
+
 use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
@@ -51,9 +53,11 @@ pub fn LexiconBrowser(
     let (confirm_error, set_confirm_error) = signal(String::new());
     let (confirm_success, set_confirm_success) = signal(String::new());
     let (hash_dirty_entry_ids, set_hash_dirty_entry_ids) = signal(Vec::<String>::new());
+    // `set_entries` 被重定向为草稿写接口；真正提交时使用 `set_committed_entries`。
     let set_committed_entries = set_entries;
     let set_entries = set_draft_entries;
 
+    // 当全局词库版本变化时，重置浏览器内部草稿与辅助状态。
     Effect::new(move |_| {
         let _ = data_version.get();
         let current = entries.get();
@@ -264,6 +268,7 @@ pub fn LexiconBrowser(
         set_confirm_error.set(String::new());
         set_confirm_success.set(String::new());
 
+        // Step 1) 先处理删除标记（编辑模式）。
         let current_entries = draft_entries.get_untracked();
         let current_delete_marks = delete_marks.get_untracked();
         let (entries_after_delete, deleted_count) = if is_query_mode {
@@ -290,6 +295,7 @@ pub fn LexiconBrowser(
         let mut recalculated_count = 0_usize;
         let mut removed_duplicate_count = 0_usize;
 
+        // Step 2) 仅对被标记为 hash-dirty 的行重算 id，再做冲突/去重。
         if !is_query_mode && !dirty_id_set.is_empty() {
             let mut changed_rows = Vec::<(usize, String, String)>::new();
             for (idx, entry) in entries_to_commit.iter().enumerate() {
@@ -364,6 +370,7 @@ pub fn LexiconBrowser(
                     return;
                 }
 
+                // Step 3) 冲突检查通过后再落盘新 id，避免中间态污染。
                 for (idx, new_id) in changed_after_dedup {
                     if let Some(entry) = entries_to_commit.get_mut(idx) {
                         entry.id = new_id;
@@ -372,6 +379,7 @@ pub fn LexiconBrowser(
             }
         }
 
+        // Step 4) 一次性提交并同步本地草稿快照。
         set_committed_entries.set(entries_to_commit.clone());
         set_draft_entries.set(entries_to_commit.clone());
         set_baseline_entries.set(entries_to_commit.clone());
@@ -565,6 +573,7 @@ fn update_selected_cell(
     set_entries: WriteSignal<Vec<WordBankEntry>>,
     set_row_undo: WriteSignal<Vec<Option<WordBankEntry>>>,
 ) {
+    // 记录行级撤销快照后再写入 selected，保证“逐行撤销”可用。
     set_entries.update(|list| {
         if let Some(item) = list.get_mut(idx) {
             if item.selected == checked {
@@ -583,6 +592,7 @@ fn update_selected_cell(
 }
 
 fn update_delete_mark(idx: usize, checked: bool, set_delete_marks: WriteSignal<Vec<bool>>) {
+    // 删除标记是独立状态，不直接改动词条本体；最终在确认阶段统一生效。
     set_delete_marks.update(|marks| {
         if marks.len() <= idx {
             marks.resize(idx + 1, false);

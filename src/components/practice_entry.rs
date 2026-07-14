@@ -1,3 +1,5 @@
+//! 练习题渲染组件：根据题目 id 与字段配置生成输入区，并承载检查按钮。
+
 use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
@@ -281,6 +283,7 @@ pub fn build_question_items(
     active_ids: &[String],
     entries: &[WordBankEntry],
 ) -> Vec<(usize, WordBankEntry)> {
+    // 根据 active id 顺序构建题目，确保 UI 展示顺序稳定。
     active_ids
         .iter()
         .enumerate()
@@ -294,14 +297,17 @@ pub fn build_question_items(
         .collect()
 }
 
+/// 生成输入框键：`{entry_id}::{field}`。
 pub fn answer_input_key(entry_id: &str, field: &str) -> String {
     format!("{entry_id}::{field}")
 }
 
+/// 判断字段在当前词条上是否可作答（目标值非空）。
 pub fn is_answer_field_available(entry: &WordBankEntry, field: &str) -> bool {
     !entry_field_value(entry, field).trim().is_empty()
 }
 
+/// 按字段 key 读取词条值，统一返回字符串用于显示与判题。
 pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
     match field {
         "id" => entry.id.clone(),

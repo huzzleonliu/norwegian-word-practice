@@ -1,3 +1,5 @@
+//! 词库浏览器工具集：列定义、CSV 解析导出、筛选匹配与排序比较。
+
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -22,6 +24,8 @@ pub fn default_search_column_visibility() -> Vec<bool> {
     cols
 }
 
+// 注意：列索引是全表多处逻辑的共享契约（表头、排序、筛选、CSV 映射、编辑列）。
+// 新增/调整字段时需同步 DATA_COLUMN_KEYS、column_value_text、表格渲染与相关统计映射。
 pub const DATA_COLUMN_KEYS: [&str; 38] = [
     "id",
     "selected",
@@ -63,6 +67,7 @@ pub const DATA_COLUMN_KEYS: [&str; 38] = [
     "determinative_plural_form",
 ];
 
+/// 解析词库 CSV（自动识别是否包含表头，并在失败时切换模式重试）。
 pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordBankEntry>, String> {
     let has_header = detect_word_bank_header(content);
     match parse_word_bank_csv_inner(content, has_header) {
@@ -75,6 +80,7 @@ pub fn parse_word_bank_csv(content: &str) -> Result<Vec<WordBankEntry>, String> 
     }
 }
 
+/// 将词库条目序列化为 CSV 文本（包含表头）。
 pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, String> {
     let mut writer = csv::Writer::from_writer(Vec::<u8>::new());
     writer
@@ -173,6 +179,7 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
     String::from_utf8(bytes).map_err(|err| format!("CSV UTF-8 转换失败: {err}"))
 }
 
+/// 解析以 `|` 分隔的多值文本（用于 tags/english/chinese）。
 pub fn parse_pipe_list(raw: &str) -> Vec<String> {
     raw.split('|')
         .map(str::trim)
@@ -259,6 +266,9 @@ fn detect_word_bank_header(content: &str) -> bool {
     normalized.starts_with("id,selected,part_of_speech,")
 }
 
+/// CSV 解析主流程（内部）：
+/// - 读取行并转为 `WordBankEntry`
+/// - 按规范化 id 检查重复
 fn parse_word_bank_csv_inner(
     content: &str,
     has_headers: bool,
@@ -274,6 +284,7 @@ fn parse_word_bank_csv_inner(
     for (row_index, row) in reader.deserialize::<CsvWordEntry>().enumerate() {
         let row = row.map_err(|err| format!("CSV 解析失败: {err}"))?;
         let entry = WordBankEntry::try_from(row)?;
+        // 使用规范化后的 id 做去重，保证“词性 + 词形组合”全局唯一。
         let current_line = if has_headers {
             row_index + 2
         } else {

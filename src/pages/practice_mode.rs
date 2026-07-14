@@ -1,3 +1,5 @@
+//! 练习模式选择页：加载词库、导入 CSV，并分流到词库练习/系列练习/本地编辑器。
+
 use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -27,6 +29,7 @@ pub fn PracticeModePage() -> impl IntoView {
     let (selected_word_bank, set_selected_word_bank) = signal(default_word_bank);
     let (status, set_status) = signal(String::new());
 
+    // 加载内置词库并覆盖当前全局 entries。
     let choose_word_bank_click = move |_| {
         let language = lang.get_untracked();
         let selected_file = selected_word_bank.get_untracked();

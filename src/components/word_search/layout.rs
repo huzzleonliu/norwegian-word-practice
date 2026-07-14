@@ -1,3 +1,5 @@
+//! AI 查询主 UI：组合 Ordbok / Gemini / Google Translate 调用并分流填充结果。
+
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -101,6 +103,7 @@ pub fn AiResearcher(
     let (is_querying, set_is_querying) = signal(false);
     let (ordbok_only_mode, set_ordbok_only_mode) = signal(false);
 
+    // 检测 Gemini Token 可用性。
     let test_connectivity = move |_| {
         let language = lang.get_untracked();
         let token = gemini_token.get_untracked().trim().to_string();
@@ -144,6 +147,7 @@ pub fn AiResearcher(
         });
     };
 
+    // 检测 Google Translate Token 可用性。
     let test_google_translate_connectivity = move |_| {
         let language = lang.get_untracked();
         let token = google_translate_token.get_untracked().trim().to_string();
@@ -205,6 +209,7 @@ pub fn AiResearcher(
         });
     };
 
+    // 查询主流程：优先 Ordbok，按配置回填翻译并在必要时回退 Gemini。
     let query_forms = move |_| {
         let language = lang.get_untracked();
         let gemini_token = gemini_token.get_untracked().trim().to_string();

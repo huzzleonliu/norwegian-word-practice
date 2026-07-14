@@ -1,3 +1,5 @@
+//! 词库浏览器搜索面板：包含关键字输入、列可见性选择和搜索触发按钮。
+
 use leptos::prelude::*;
 
 use super::utils::{header_name, DATA_COLUMN_KEYS};

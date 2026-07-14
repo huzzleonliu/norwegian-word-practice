@@ -1,3 +1,5 @@
+//! 通用返回按钮：将当前页面切换到指定 `AppPage`。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;

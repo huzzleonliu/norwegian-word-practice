@@ -1,3 +1,5 @@
+//! 首页：支持导入练习结果文件，或直接进入练习模式页。
+
 use leptos::ev::Event;
 use leptos::prelude::*;
 #[cfg(target_arch = "wasm32")]
@@ -127,6 +129,7 @@ fn import_pracresult_from_file(
 ) {
     #[cfg(target_arch = "wasm32")]
     {
+        // 读取并解析 `.pracresult`，成功后恢复历史结果并进入模式页。
         use wasm_bindgen::JsCast;
 
         let lang = ui_language.get_untracked();

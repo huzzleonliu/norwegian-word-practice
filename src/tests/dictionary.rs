@@ -1,3 +1,5 @@
+//! 字典工具测试：覆盖哈希稳定性、差异性与重复词条校验行为。
+
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 use crate::utils::dictionary::{compute_word_entry_id, validate_and_prepare_single_entry};
 

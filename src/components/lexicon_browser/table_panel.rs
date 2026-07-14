@@ -1,3 +1,5 @@
+//! 词库浏览器表格面板：渲染行列、编辑控件、拖拽选择与底部动作区。
+
 use leptos::prelude::*;
 
 use super::utils::{
@@ -6,6 +8,7 @@ use super::utils::{
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, UiLanguage, WordBankEntry};
 use crate::utils::i18n::{field_label, tr};
 
+/// 表格底部主操作按钮类型：编辑模式确认修改，批量新增模式提交新增。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TableActionKind {
     ConfirmChanges,
@@ -166,6 +169,7 @@ pub fn LexiconTablePanel(
                             each=move || row_items.get()
                             key=|(idx, entry)| format!("{}-{}-{}", idx, entry.id, entry.selected)
                             children=move |(idx, entry)| {
+                                // Query 模式纯展示；Edit 模式才渲染可编辑控件。
                                 if is_query_mode {
                                     view! {
                                         <tr class="align-top">
@@ -492,6 +496,10 @@ pub fn LexiconTablePanel(
                                                     .collect_view()}
                                             </select>
                                         </td>
+                                        // 下面各列输入框与 `WordBankEntry` 字段一一对应，改动时需同步：
+                                        // - DATA_COLUMN_KEYS
+                                        // - entry_field_value / answer_stats_mut
+                                        // - CSV 结构体映射（CsvWordEntry）
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(3).copied().unwrap_or(false)><input type="text" prop:value=entry.tags.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.tags = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(4).copied().unwrap_or(false)><input type="text" prop:value=entry.english.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.english = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>
                                         <td class="border border-slate-800 p-1" class:hidden=move || !search_columns.get().get(5).copied().unwrap_or(false)><input type="text" prop:value=entry.chinese.join(" | ") on:input=move |ev| { let value = event_target_value(&ev); set_entries.update(|list| { if let Some(item) = list.get_mut(idx) { set_row_undo.update(|undo| { if undo.len() <= idx { undo.resize(idx + 1, None); } undo[idx] = Some(item.clone()); }); item.chinese = parse_pipe_list(&value); } }); } class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1"/></td>

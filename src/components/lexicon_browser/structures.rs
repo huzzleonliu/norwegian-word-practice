@@ -1,3 +1,5 @@
+//! 词库浏览器结构定义：浏览模式枚举与 CSV 行结构及其双向转换。
+
 use serde::Deserialize;
 
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
@@ -80,6 +82,10 @@ pub(crate) struct CsvWordEntry {
 impl TryFrom<CsvWordEntry> for WordBankEntry {
     type Error = String;
 
+    /// CSV 行 -> 词条结构：
+    /// - 解析词性
+    /// - 规范化可选字段
+    /// - 根据词形重算稳定 id
     fn try_from(value: CsvWordEntry) -> Result<Self, Self::Error> {
         let mut entry = Self {
             id: String::new(),
@@ -139,6 +145,7 @@ impl TryFrom<CsvWordEntry> for WordBankEntry {
 }
 
 impl From<&WordBankEntry> for CsvWordEntry {
+    /// 词条结构 -> CSV 行（导出时始终重新计算 id）。
     fn from(value: &WordBankEntry) -> Self {
         Self {
             id: compute_word_entry_id(value),

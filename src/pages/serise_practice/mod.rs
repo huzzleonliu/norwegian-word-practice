@@ -1,3 +1,5 @@
+//! 系列练习公共模块：提供各系列页面共享的临时结果初始化逻辑。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -8,6 +10,7 @@ pub mod month;
 pub mod number;
 pub mod pronoun;
 
+/// 系列练习进入时初始化临时结果，并确保 selected ids 与当前词库一致。
 pub fn initialize_temp_practice_result(word_bank_state: WordBankState) {
     let base_result = word_bank_state.practice_result.get_untracked();
     let all_ids = word_bank_state

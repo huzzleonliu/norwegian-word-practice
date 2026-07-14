@@ -1,5 +1,8 @@
+//! 迷你控制台组件：展示状态日志，支持折叠与拖拽改变高度。
+
 use leptos::ev;
 use leptos::prelude::*;
+
 use std::sync::{Arc, Mutex};
 
 const MIN_PANEL_HEIGHT_PX: i32 = 72;

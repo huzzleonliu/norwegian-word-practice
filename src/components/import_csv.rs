@@ -1,3 +1,5 @@
+//! 通用 CSV 导入按钮：读取本地文件并覆盖全局词库状态。
+
 use leptos::ev::Event;
 use leptos::prelude::*;
 #[cfg(target_arch = "wasm32")]
@@ -57,6 +59,7 @@ fn import_csv_from_file(
         .unwrap_or(UiLanguage::Zh);
     #[cfg(target_arch = "wasm32")]
     {
+        // 浏览器端读取本地文件，解析后覆盖词库并触发版本变更。
         use wasm_bindgen::JsCast;
 
         let Some(target) = ev.target() else {
@@ -133,6 +136,7 @@ fn import_csv_from_file(
             match parse_word_bank_csv(&content) {
                 Ok(word_list) => {
                     let count = word_list.len();
+                    // 导入语义为“覆盖当前词库”，并 bump `data_version` 触发依赖组件重置草稿。
                     set_entries.set(word_list);
                     set_data_version.update(|ver| *ver += 1);
                     if let Some(set_source_name) = set_source_name {

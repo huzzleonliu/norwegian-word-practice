@@ -1,3 +1,5 @@
+//! 数词系列练习页：按预设数字分组，分别校验基数词与序数词输入。
+
 use std::collections::HashMap;
 
 use leptos::prelude::*;
@@ -431,6 +433,7 @@ fn build_number_question_rows(
     entries: &[WordBankEntry],
     numbers: &[u32],
 ) -> (Vec<NumberQuestionRow>, Vec<u32>) {
+    // 为每个数字同时定位“基数词 + 序数词”词条，缺失项记录到 missing 列表。
     let mut rows = Vec::new();
     let mut missing_numbers = Vec::new();
 
@@ -538,6 +541,7 @@ fn number_to_cardinal_chinese(number: u32) -> Option<&'static str> {
 }
 
 fn selected_series_entries(word_bank_state: WordBankState) -> Vec<WordBankEntry> {
+    // 优先使用 `selected_word_entry_ids` 作为系列题库范围；为空则回退全量。
     let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
     let entries = word_bank_state.entries.get_untracked();
     if selected_ids.is_empty() {

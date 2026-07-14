@@ -1,3 +1,6 @@
+//! 字符串列表打乱工具：用于随机化练习队列。
+
+/// 原地打乱字符串切片（Fisher-Yates 变体）。
 pub fn shuffle_strings(values: &mut [String]) {
     if values.len() <= 1 {
         return;
@@ -9,6 +12,7 @@ pub fn shuffle_strings(values: &mut [String]) {
     }
 }
 
+/// 生成 `[0, upper_exclusive)` 范围内随机索引。
 fn random_index(upper_exclusive: usize) -> usize {
     if upper_exclusive <= 1 {
         return 0;

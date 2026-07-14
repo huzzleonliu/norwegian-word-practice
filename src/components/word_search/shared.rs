@@ -1,3 +1,5 @@
+//! AI 查询共享工具：文本规范化、词性归一、结果合并与批量 CSV 组装。
+
 use crate::components::lexicon_browser::serialize_word_bank_csv;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 
@@ -58,6 +60,7 @@ pub(crate) fn build_bulk_csv_from_results(
     results: &[GeminiWordResult],
     hint: &str,
 ) -> Result<String, String> {
+    // 将多条 AI 结果转为 CSV 文本，供“多条新增”直接复用。
     let entries = results
         .iter()
         .map(|item| WordBankEntry::try_from((item, hint)))
@@ -69,6 +72,7 @@ pub(crate) fn merge_or_insert_word_result(
     results: &mut Vec<GeminiWordResult>,
     incoming: GeminiWordResult,
 ) {
+    // 以（词性 + base_form）为键合并多来源结果，避免重复行。
     let incoming_pos = normalize_text_opt(incoming.part_of_speech.clone()).unwrap_or_default();
     let incoming_base = normalize_text_opt(incoming.base_form.clone()).unwrap_or_default();
     if incoming_base.is_empty() {

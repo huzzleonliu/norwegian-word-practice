@@ -1,3 +1,5 @@
+//! 代词系列练习页：基于“人称 × 形式”配置渲染题组并逐字段校验答案。
+
 use std::collections::HashMap;
 
 use leptos::prelude::*;
@@ -773,6 +775,7 @@ fn build_pronoun_rows(
     entries: &[WordBankEntry],
     row_configs: &[PronounRowConfig],
 ) -> (Vec<ResolvedPronounRow>, Vec<String>) {
+    // 将“题面配置”解析为真实词条映射，缺项会返回用于 UI 提示。
     let mut rows = Vec::new();
     let mut missing_fields = Vec::new();
 
@@ -813,6 +816,7 @@ fn find_pronoun_entry_by_chinese<'a>(
 }
 
 fn selected_series_entries(word_bank_state: WordBankState) -> Vec<WordBankEntry> {
+    // 优先使用 `selected_word_entry_ids` 作为系列题库范围；为空则回退全量。
     let selected_ids = word_bank_state.selected_word_entry_ids.get_untracked();
     let entries = word_bank_state.entries.get_untracked();
     if selected_ids.is_empty() {

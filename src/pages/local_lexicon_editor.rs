@@ -1,3 +1,5 @@
+//! 本地词库编辑页：单条新增、批量新增、AI 查询分流、表格编辑与 CSV 导入导出。
+
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
@@ -103,6 +105,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (bulk_input, set_bulk_input) = signal(String::new());
     let (bulk_errors, set_bulk_errors) = signal(Vec::<String>::new());
     let (bulk_success_message, set_bulk_success_message) = signal(String::new());
+    // 单条新增：构造草稿 -> 校验规范化 -> 写入全局词库并 bump 版本。
     let add_single_entry = Callback::new(move |ev: SubmitEvent| {
         let language = lang.get_untracked();
         ev.prevent_default();
@@ -243,6 +246,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_single_adverb_superlative.set(String::new());
     });
 
+    // 批量新增：按顺序逐条校验（模拟追加）以确保批次内/批次外都不冲突。
     let add_bulk_entries = Callback::new(move |rows: Vec<WordBankEntry>| {
         let language = lang.get_untracked();
         set_bulk_errors.set(Vec::new());
@@ -320,6 +324,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     });
     let export_csv_click = move |_| {
         let language = lang.get_untracked();
+        // 导出读取全局已提交词库；表格中的草稿修改需先在浏览器中“确认修改”。
         let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
             Ok(content) => content,
             Err(err) => {
@@ -592,6 +597,7 @@ fn parse_csv_list(raw: &str) -> Vec<String> {
     parse_pipe_list(raw)
 }
 
+/// 表单输入转 Optional：空串表示未填写。
 fn parse_optional_input(raw: &str) -> Option<String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -601,6 +607,7 @@ fn parse_optional_input(raw: &str) -> Option<String> {
     }
 }
 
+/// 浏览器端下载导出文件（WASM 环境通过 Blob + ObjectURL 触发保存）。
 fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
     #[cfg(target_arch = "wasm32")]
     {

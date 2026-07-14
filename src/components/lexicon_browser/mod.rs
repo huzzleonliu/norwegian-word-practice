@@ -1,3 +1,5 @@
+//! 词库浏览器模块入口：导出主组件、模式枚举与 CSV 工具函数。
+
 pub mod components;
 pub mod search_panel;
 pub mod structures;

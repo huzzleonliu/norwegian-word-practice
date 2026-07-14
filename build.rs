@@ -1,3 +1,6 @@
+//! 编译期脚本：扫描 `data/lexicon-word-bank` 下的 CSV 文件，
+//! 生成 `LEXICON_WORD_BANK_FILES` 常量供运行时下拉框使用。
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -12,6 +15,7 @@ fn main() {
     let mut files = collect_word_bank_files(&lexicon_dir);
     files.sort();
 
+    // 生成 `LEXICON_WORD_BANK_FILES` 常量供 PracticeMode 下拉框使用。
     let output = render_catalog_source(&files);
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR should be available"));
     let output_path = out_dir.join("lexicon_word_bank_catalog.rs");

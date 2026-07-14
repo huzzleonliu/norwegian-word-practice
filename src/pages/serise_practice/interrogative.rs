@@ -1,3 +1,5 @@
+//! 疑问词系列练习页：与月份页类似，采用固定字段练习与自动补题逻辑。
+
 use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
@@ -282,6 +284,7 @@ fn refill_active_question_ids(
     solved_ids: &[String],
     page_size: usize,
 ) -> Vec<String> {
+    // 与词库练习一致：剔除已完成题后按 selected 顺序补满当前页。
     let solved_set = solved_ids.iter().cloned().collect::<HashSet<String>>();
     let mut next_active = current_active_ids
         .iter()

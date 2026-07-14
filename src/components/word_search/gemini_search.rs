@@ -1,3 +1,5 @@
+//! Gemini 适配层：构造提示词、模型回退请求、以及 JSON 结果提取与解析。
+
 use gloo_net::http::Request;
 use serde::Deserialize;
 use serde_json::Value;
@@ -38,6 +40,7 @@ pub(crate) async fn test_gemini_connectivity(api_key: &str) -> Result<(), String
     }
 }
 
+/// 通过 Gemini 查询词条，返回统一结构（单条或多条）。
 pub(crate) async fn query_word_with_gemini(
     token: &str,
     word: &str,
@@ -97,6 +100,7 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 }
 
 fn parse_gemini_word_results(raw_text: &str) -> Result<Vec<GeminiWordResult>, String> {
+    // 支持对象或数组两种 JSON 根结构，便于兼容模型输出差异。
     let json_text = extract_json_payload(raw_text).ok_or_else(|| {
         "No JSON payload extracted. Please check Gemini response format.".to_string()
     })?;
@@ -139,6 +143,7 @@ fn extract_json_payload(raw: &str) -> Option<String> {
 }
 
 async fn call_gemini_text(api_key: &str, prompt: &str) -> Result<String, String> {
+    // 按候选模型顺序尝试，请求失败时按策略回退。
     let payload_body = serde_json::json!({
         "contents": [
             {

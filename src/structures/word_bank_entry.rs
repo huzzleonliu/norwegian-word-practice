@@ -1,3 +1,5 @@
+//! 词库领域模型：定义词性枚举、语言枚举与核心词条结构 `WordBankEntry`。
+
 use serde::{Deserialize, Serialize};
 
 pub const PART_OF_SPEECH_OPTIONS: [&str; 10] = [
@@ -20,6 +22,7 @@ pub enum UiLanguage {
 }
 
 impl UiLanguage {
+    /// 在中文/英文界面语言之间切换。
     pub fn toggle(self) -> Self {
         match self {
             UiLanguage::Zh => UiLanguage::En,
@@ -43,6 +46,7 @@ pub enum PartOfSpeech {
 }
 
 impl PartOfSpeech {
+    /// 枚举到稳定 key（用于存储、筛选、哈希与 CSV）。
     pub fn as_key(&self) -> &'static str {
         match self {
             PartOfSpeech::Verb => "verb",

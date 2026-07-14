@@ -1,3 +1,5 @@
+//! 练习设置组件：配置每页题量、提示字段、作答字段与答案显隐策略。
+
 use leptos::prelude::*;
 
 use crate::app_state::WordBankState;
@@ -84,6 +86,7 @@ const ANSWER_FIELD_OPTIONS: [&str; 34] = [
 ];
 
 pub fn default_answer_fields() -> Vec<String> {
+    // 默认不勾选中英文与低频可选变体，减少首次练习输入负担。
     ANSWER_FIELD_OPTIONS
         .iter()
         .filter_map(|key| {

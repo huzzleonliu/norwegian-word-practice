@@ -1,3 +1,5 @@
+//! 应用入口：初始化全局信号、注入 Context，并按 `AppPage` 分发页面组件。
+
 use leptos::prelude::*;
 
 mod app_state;
@@ -31,6 +33,7 @@ fn App() -> impl IntoView {
         signal(structures::pracresult::PracticeResult::default());
     let (summary_return_page, set_summary_return_page) = signal(pages::AppPage::LexiconPractice);
 
+    // 统一在根组件注入页面路由与全局状态，子页面通过 `expect_context` 获取。
     provide_context(set_current_page);
     provide_context(app_state::WordBankState {
         entries: word_bank_entries,
@@ -68,6 +71,7 @@ fn App() -> impl IntoView {
                     )
                 }}
             </button>
+            // 本项目不使用 URL 路由，页面切换通过 `AppPage` 枚举进行。
             {move || match current_page.get() {
                 pages::AppPage::Home => view! { <pages::home::HomePage/> }.into_any(),
                 pages::AppPage::PracticeModeSelect => {

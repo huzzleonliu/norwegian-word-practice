@@ -1,3 +1,5 @@
+//! AI/词典查询模块入口：对外暴露 `AiResearcher` 组件与共享转换工具。
+
 pub mod dictionary_search;
 pub mod gemini_search;
 pub mod layout;
