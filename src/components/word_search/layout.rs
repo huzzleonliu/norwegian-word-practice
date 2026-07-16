@@ -12,7 +12,8 @@ use super::dictionary_search::{
 };
 use super::gemini_search::{query_word_with_gemini, test_gemini_connectivity};
 use super::{
-    GeminiWordResult, WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, join_pipe,
+    GeminiWordResult, WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, form_hint_label,
+    join_pipe,
     normalize_part_of_speech, normalize_text_opt,
 };
 
@@ -829,16 +830,10 @@ pub fn AiResearcher(
                 >
                     {WORD_FORM_HINT_OPTIONS
                         .iter()
-                        .map(|(value, label)| {
+                        .map(|value| {
                             view! {
                                 <option value=*value>
-                                    {move || {
-                                        if *value == "unknown" {
-                                            tr(lang.get(), "未知", "Unknown")
-                                        } else {
-                                            *label
-                                        }
-                                    }}
+                                    {move || form_hint_label(lang.get(), value)}
                                 </option>
                             }
                         })

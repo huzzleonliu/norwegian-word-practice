@@ -2,72 +2,80 @@
 
 use serde::Deserialize;
 
-use crate::structures::word_bank_entry::WordBankEntry;
+use crate::structures::field_meta::field_label;
+use crate::structures::word_bank_entry::{PartOfSpeech, UiLanguage, WordBankEntry};
+use crate::utils::i18n::tr;
 
 use super::shared::{normalize_part_of_speech_enum, normalize_text_list, normalize_text_opt};
 
-pub(crate) const WORD_FORM_HINT_OPTIONS: [(&str, &str); 42] = [
-    ("unknown", "未知"),
-    ("noun-baseform", "noun-baseform"),
-    ("noun_plural", "noun_plural"),
-    ("noun_singular_definite", "noun_singular_definite"),
-    ("noun_plural_definite", "noun_plural_definite"),
-    (
-        "noun_singular_definite_genitive",
-        "noun_singular_definite_genitive",
-    ),
-    (
-        "noun_plural_definite_genitive",
-        "noun_plural_definite_genitive",
-    ),
-    (
-        "noun_singular_indefinite_genitive",
-        "noun_singular_indefinite_genitive",
-    ),
-    (
-        "noun_plural_indefinite_genitive",
-        "noun_plural_indefinite_genitive",
-    ),
-    ("verb-baseform", "verb-baseform"),
-    ("verb_present_tense", "verb_present_tense"),
-    ("verb_past_tense", "verb_past_tense"),
-    ("verb_imperative", "verb_imperative"),
-    ("verb_present_participle", "verb_present_participle"),
-    ("verb_past_participle", "verb_past_participle"),
-    ("verb_passive_infinitive", "verb_passive_infinitive"),
-    ("verb_passive_present", "verb_passive_present"),
-    ("verb_passive_past", "verb_passive_past"),
-    ("adjective-baseform", "adjective-baseform"),
-    ("adjective_feminine_form", "adjective_feminine_form"),
-    ("adjective_neuter_form", "adjective_neuter_form"),
-    ("adjective_plural_form", "adjective_plural_form"),
-    ("adjective_comparative", "adjective_comparative"),
-    (
-        "adjective_superlative_indefinite",
-        "adjective_superlative_indefinite",
-    ),
-    (
-        "adjective_superlative_definite",
-        "adjective_superlative_definite",
-    ),
-    ("adverb-baseform", "adverb-baseform"),
-    ("adverb_comparative", "adverb_comparative"),
-    ("adverb_superlative", "adverb_superlative"),
-    ("pronoun-baseform", "pronoun-baseform"),
-    ("pronoun_object", "pronoun_object"),
-    ("pronoun_reflexive", "pronoun_reflexive"),
-    ("pronoun_plural_subject", "pronoun_plural_subject"),
-    ("pronoun_plural_object", "pronoun_plural_object"),
-    ("pronoun_plural_reflexive", "pronoun_plural_reflexive"),
-    ("determinative-baseform", "determinative-baseform"),
-    ("determinative_feminine_form", "determinative_feminine_form"),
-    ("determinative_neuter_form", "determinative_neuter_form"),
-    ("determinative_plural_form", "determinative_plural_form"),
-    ("preposition-baseform", "preposition-baseform"),
-    ("conjunction-baseform", "conjunction-baseform"),
-    ("subjunction-baseform", "subjunction-baseform"),
-    ("interjection-baseform", "interjection-baseform"),
+pub(crate) const WORD_FORM_HINT_OPTIONS: [&str; 42] = [
+    "unknown",
+    "noun-baseform",
+    "noun_plural",
+    "noun_singular_definite",
+    "noun_plural_definite",
+    "noun_singular_definite_genitive",
+    "noun_plural_definite_genitive",
+    "noun_singular_indefinite_genitive",
+    "noun_plural_indefinite_genitive",
+    "verb-baseform",
+    "verb_present_tense",
+    "verb_past_tense",
+    "verb_imperative",
+    "verb_present_participle",
+    "verb_past_participle",
+    "verb_passive_infinitive",
+    "verb_passive_present",
+    "verb_passive_past",
+    "adjective-baseform",
+    "adjective_feminine_form",
+    "adjective_neuter_form",
+    "adjective_plural_form",
+    "adjective_comparative",
+    "adjective_superlative_indefinite",
+    "adjective_superlative_definite",
+    "adverb-baseform",
+    "adverb_comparative",
+    "adverb_superlative",
+    "pronoun-baseform",
+    "pronoun_object",
+    "pronoun_reflexive",
+    "pronoun_plural_subject",
+    "pronoun_plural_object",
+    "pronoun_plural_reflexive",
+    "determinative-baseform",
+    "determinative_feminine_form",
+    "determinative_neuter_form",
+    "determinative_plural_form",
+    "preposition-baseform",
+    "conjunction-baseform",
+    "subjunction-baseform",
+    "interjection-baseform",
 ];
+
+/// 词形提示下拉的双语显示名。
+pub(crate) fn form_hint_label(lang: UiLanguage, hint: &str) -> String {
+    if hint == "unknown" {
+        return tr(lang, "未知", "Unknown").to_string();
+    }
+
+    if let Some(pos_key) = hint.strip_suffix("-baseform") {
+        if let Ok(pos) = PartOfSpeech::from_key(pos_key) {
+            return format!(
+                "{}_{}",
+                pos.display_name(lang),
+                field_label(lang, "base_form")
+            );
+        }
+    }
+
+    let label = field_label(lang, hint);
+    if label != "unknown" {
+        return label.to_string();
+    }
+
+    hint.to_string()
+}
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]

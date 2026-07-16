@@ -284,7 +284,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_现在时",
-        en_label: "verb_present_tense",
+        en_label: "Verb Present",
     },
     FieldMeta {
         key: "verb_past_tense",
@@ -295,7 +295,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_过去式",
-        en_label: "verb_past_tense",
+        en_label: "Verb Past",
     },
     FieldMeta {
         key: "verb_imperative",
@@ -306,7 +306,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_祈使式",
-        en_label: "verb_imperative",
+        en_label: "Verb Imperative",
     },
     FieldMeta {
         key: "noun_plural",
@@ -317,7 +317,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "名词_复数",
-        en_label: "noun_plural",
+        en_label: "Noun Plural",
     },
     FieldMeta {
         key: "noun_singular_definite",
@@ -328,7 +328,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "名词_单数特指",
-        en_label: "noun_singular_definite",
+        en_label: "Noun Singular Definite",
     },
     FieldMeta {
         key: "noun_plural_definite",
@@ -339,7 +339,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "名词_复数特指",
-        en_label: "noun_plural_definite",
+        en_label: "Noun Plural Definite",
     },
     FieldMeta {
         key: "adjective_neuter_form",
@@ -350,7 +350,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_中性",
-        en_label: "adjective_neuter_form",
+        en_label: "Adjective Neuter",
     },
     FieldMeta {
         key: "adjective_plural_form",
@@ -361,7 +361,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_复数",
-        en_label: "adjective_plural_form",
+        en_label: "Adjective Plural",
     },
     FieldMeta {
         key: "adjective_comparative",
@@ -372,7 +372,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_比较级",
-        en_label: "adjective_comparative",
+        en_label: "Adjective Comparative",
     },
     FieldMeta {
         key: "adjective_superlative_indefinite",
@@ -383,7 +383,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_最高级泛指",
-        en_label: "adjective_superlative_indefinite",
+        en_label: "Adjective Superlative Indefinite",
     },
     FieldMeta {
         key: "adjective_superlative_definite",
@@ -394,7 +394,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_最高级特指",
-        en_label: "adjective_superlative_definite",
+        en_label: "Adjective Superlative Definite",
     },
     FieldMeta {
         key: "adverb_comparative",
@@ -405,7 +405,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: false,
         default_answer_selected: false,
         zh_label: "副词_比较级",
-        en_label: "adverb_comparative",
+        en_label: "Adverb Comparative",
     },
     FieldMeta {
         key: "adverb_superlative",
@@ -416,7 +416,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: false,
         default_answer_selected: false,
         zh_label: "副词_最高级",
-        en_label: "adverb_superlative",
+        en_label: "Adverb Superlative",
     },
     FieldMeta {
         key: "verb_present_participle",
@@ -427,7 +427,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_现在分词",
-        en_label: "verb_present_participle",
+        en_label: "Verb Present Participle",
     },
     FieldMeta {
         key: "verb_past_participle",
@@ -438,7 +438,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_过去分词",
-        en_label: "verb_past_participle",
+        en_label: "Verb Past Participle",
     },
     FieldMeta {
         key: "verb_passive_infinitive",
@@ -449,7 +449,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_被动不定式",
-        en_label: "verb_passive_infinitive",
+        en_label: "Verb Passive Infinitive",
     },
     FieldMeta {
         key: "verb_passive_present",
@@ -460,7 +460,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "动词_被动现在时",
-        en_label: "verb_passive_present",
+        en_label: "Verb Passive Present",
     },
     FieldMeta {
         key: "verb_passive_past",
@@ -471,7 +471,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: false,
         default_answer_selected: false,
         zh_label: "动词_被动过去时",
-        en_label: "verb_passive_past",
+        en_label: "Verb Passive Past",
     },
     FieldMeta {
         key: "noun_singular_definite_genitive",
@@ -482,7 +482,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "名词_单数特指所有格",
-        en_label: "noun_singular_definite_genitive",
+        en_label: "Noun Singular Definite Genitive",
     },
     FieldMeta {
         key: "noun_plural_definite_genitive",
@@ -493,7 +493,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "名词_复数特指所有格",
-        en_label: "noun_plural_definite_genitive",
+        en_label: "Noun Plural Definite Genitive",
     },
     FieldMeta {
         key: "noun_singular_indefinite_genitive",
@@ -504,7 +504,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: false,
         default_answer_selected: false,
         zh_label: "名词_单数泛指所有格",
-        en_label: "noun_singular_indefinite_genitive",
+        en_label: "Noun Singular Indefinite Genitive",
     },
     FieldMeta {
         key: "noun_plural_indefinite_genitive",
@@ -515,7 +515,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: false,
         default_answer_selected: false,
         zh_label: "名词_复数泛指所有格",
-        en_label: "noun_plural_indefinite_genitive",
+        en_label: "Noun Plural Indefinite Genitive",
     },
     FieldMeta {
         key: "adjective_feminine_form",
@@ -526,7 +526,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "形容词_阴性",
-        en_label: "adjective_feminine_form",
+        en_label: "Adjective Feminine",
     },
     FieldMeta {
         key: "pronoun_object",
@@ -537,7 +537,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "代词_宾格",
-        en_label: "pronoun_object",
+        en_label: "Pronoun Object",
     },
     FieldMeta {
         key: "pronoun_reflexive",
@@ -548,7 +548,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "代词_反身",
-        en_label: "pronoun_reflexive",
+        en_label: "Pronoun Reflexive",
     },
     FieldMeta {
         key: "pronoun_plural_subject",
@@ -559,7 +559,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "代词_复数主格",
-        en_label: "pronoun_plural_subject",
+        en_label: "Pronoun Plural Subject",
     },
     FieldMeta {
         key: "pronoun_plural_object",
@@ -570,7 +570,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "代词_复数宾格",
-        en_label: "pronoun_plural_object",
+        en_label: "Pronoun Plural Object",
     },
     FieldMeta {
         key: "pronoun_plural_reflexive",
@@ -581,7 +581,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "代词_复数反身",
-        en_label: "pronoun_plural_reflexive",
+        en_label: "Pronoun Plural Reflexive",
     },
     FieldMeta {
         key: "determinative_feminine_form",
@@ -592,7 +592,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "限定词_阴性",
-        en_label: "determinative_feminine_form",
+        en_label: "Determinative Feminine",
     },
     FieldMeta {
         key: "determinative_neuter_form",
@@ -603,7 +603,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "限定词_中性",
-        en_label: "determinative_neuter_form",
+        en_label: "Determinative Neuter",
     },
     FieldMeta {
         key: "determinative_plural_form",
@@ -614,7 +614,7 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_search_visible: true,
         default_answer_selected: true,
         zh_label: "限定词_复数",
-        en_label: "determinative_plural_form",
+        en_label: "Determinative Plural",
     },
 ];
 

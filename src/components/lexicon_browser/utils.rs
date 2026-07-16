@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 pub use crate::structures::field_meta::DATA_COLUMN_KEYS;
 use crate::structures::field_meta::{
     default_search_column_visibility as default_search_column_visibility_from_meta,
-    entry_field_value,
+    entry_field_value, field_label,
 };
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
@@ -69,7 +69,7 @@ pub(super) fn format_sort_rules(rules: &[(usize, bool)], lang: UiLanguage) -> St
             format!(
                 "{}. {}{}",
                 idx + 1,
-                header_name(*col),
+                field_label(lang, header_name(*col)),
                 if *asc { "↑" } else { "↓" }
             )
         })
