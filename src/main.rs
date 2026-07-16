@@ -97,7 +97,7 @@ fn App() -> impl IntoView {
                 </button>
             </div>
             <a
-                href="https://discord.gg/8w7Yga98V"
+                href="https://discord.gg/U2z3FeUrmA"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="fixed bottom-2 right-2 z-[100] rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:bottom-4 sm:right-4 sm:px-3 sm:py-2 sm:text-xs"
