@@ -13,8 +13,7 @@ use super::dictionary_search::{
 use super::gemini_search::{query_word_with_gemini, test_gemini_connectivity};
 use super::{
     GeminiWordResult, WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, form_hint_label,
-    join_pipe,
-    normalize_part_of_speech, normalize_text_opt,
+    join_pipe, merge_word_result, normalize_part_of_speech, normalize_text_opt,
 };
 
 #[derive(Clone, Copy)]
@@ -351,36 +350,50 @@ pub fn AiResearcher(
                                     "{} {err}",
                                     tr(
                                         language,
-                                        "提示：Google Translate 回填失败，改用 Gemini 仅补中英。",
-                                        "Notice: Google Translate fill failed, using Gemini to fill Chinese/English only.",
+                                        "提示：Google Translate 回填失败，改用 Gemini 补全。",
+                                        "Notice: Google Translate fill failed; falling back to Gemini fill.",
                                     )
                                 ));
                             }
                         }
                     }
 
-                    if !used_google_translate && !gemini_token.is_empty() {
+                    let needs_degree_fill = results_need_adjective_degree_fill(&results);
+                    let should_call_gemini = !gemini_token.is_empty()
+                        && !ordbok_only
+                        && (!used_google_translate || needs_degree_fill);
+
+                    if should_call_gemini {
                         match query_word_with_gemini(&gemini_token, &word, &hint).await {
                             Ok(gemini_results) => {
-                                fill_missing_translations_from_gemini(
+                                fill_missing_fields_from_gemini(
                                     &mut results,
                                     &gemini_results,
                                     &hint,
                                 );
-                                source_label = tr(
-                                    language,
-                                    "Ordbok API + Gemini（仅补中英）",
-                                    "Ordbok API + Gemini (Chinese/English fill only)",
-                                )
-                                .to_string();
+                                source_label = if used_google_translate {
+                                    tr(
+                                        language,
+                                        "Ordbok API + Google Translate + Gemini（补缺词形）",
+                                        "Ordbok API + Google Translate + Gemini (missing forms)",
+                                    )
+                                    .to_string()
+                                } else {
+                                    tr(
+                                        language,
+                                        "Ordbok API + Gemini（补中英与缺词形）",
+                                        "Ordbok API + Gemini (translations and missing forms)",
+                                    )
+                                    .to_string()
+                                };
                             }
                             Err(err) => {
                                 set_status.set(format!(
                                     "{} {err}",
                                     tr(
                                         language,
-                                        "提示：Gemini 补全中英失败，保留词典结果。",
-                                        "Notice: Gemini Chinese/English fill failed; keeping dictionary result.",
+                                        "提示：Gemini 补全失败，保留词典结果。",
+                                        "Notice: Gemini fill failed; keeping dictionary result.",
                                     )
                                 ));
                             }
@@ -877,7 +890,7 @@ fn maybe_set_opt(reader: ReadSignal<String>, setter: WriteSignal<String>, value:
     }
 }
 
-fn fill_missing_translations_from_gemini(
+fn fill_missing_fields_from_gemini(
     dictionary_results: &mut [GeminiWordResult],
     gemini_results: &[GeminiWordResult],
     hint: &str,
@@ -886,20 +899,18 @@ fn fill_missing_translations_from_gemini(
         let Some(source) = find_best_translation_source(item, gemini_results, hint) else {
             continue;
         };
-
-        if item.chinese.is_empty() {
-            let zh = normalize_list_for_fill(&source.chinese);
-            if !zh.is_empty() {
-                item.chinese = zh;
-            }
-        }
-        if item.english.is_empty() {
-            let en = normalize_list_for_fill(&source.english);
-            if !en.is_empty() {
-                item.english = en;
-            }
-        }
+        merge_word_result(item, source.clone());
     }
+}
+
+fn results_need_adjective_degree_fill(results: &[GeminiWordResult]) -> bool {
+    results.iter().any(|item| {
+        let pos = normalize_part_of_speech(item.part_of_speech.clone(), "adjective");
+        pos == "adjective"
+            && (item.adjective_comparative.is_none()
+                || item.adjective_superlative_indefinite.is_none()
+                || item.adjective_superlative_definite.is_none())
+    })
 }
 
 fn find_best_translation_source<'a>(
@@ -926,12 +937,4 @@ fn find_best_translation_source<'a>(
             })
         })
         .or_else(|| (candidates.len() == 1).then(|| &candidates[0]))
-}
-
-fn normalize_list_for_fill(values: &[String]) -> Vec<String> {
-    values
-        .iter()
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-        .collect()
 }

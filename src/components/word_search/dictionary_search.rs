@@ -392,8 +392,12 @@ fn convert_ordbok_article(
             );
             result.adjective_comparative =
                 pick_inflection_form(&inflections, &["Komparativ"], &["Superlativ", "Bestemt"]);
-            result.adjective_superlative_indefinite =
-                pick_inflection_form(&inflections, &["Superlativ"], &["Bestemt"]);
+            result.adjective_superlative_indefinite = pick_inflection_form(
+                &inflections,
+                &["Superlativ", "Ubestemt"],
+                &["Bestemt"],
+            )
+            .or_else(|| pick_inflection_form(&inflections, &["Superlativ"], &["Bestemt"]));
             result.adjective_superlative_definite =
                 pick_inflection_form(&inflections, &["Superlativ", "Bestemt"], &[]);
         }

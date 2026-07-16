@@ -58,6 +58,18 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 请输出该词在词库中的完整信息，并且只返回 JSON（不要 markdown，不要解释）。\n\
 如果存在多个合理词条（例如同形异义、不同词性），请返回 JSON 数组。\n\
 如果只有一个词条，可返回单个 JSON 对象。\n\
+\n\
+【形容词等级字段硬性要求】\n\
+当 part_of_speech 为 adjective 时，必须尽量填写以下三个字段，不要无故留 null：\n\
+- adjective_comparative（比较级）\n\
+- adjective_superlative_indefinite（最高级泛指/不定）\n\
+- adjective_superlative_definite（最高级特指/定指）\n\
+填写规则：\n\
+1) 优先给出词典中的屈折形式，例如 stor → større / størst / største。\n\
+2) 若该形容词通常用分析式比较，填 mer + 原级、mest + 原级；特指最高级可用 den/det/de mest + 原级，或常见定指屈折（如 absolutteste）。\n\
+3) 仅当该词作为形容词确实不可比较（罕见）时，才允许这三个字段为 null。\n\
+4) 不要把阳性/中性/复数形式误填进比较级或最高级字段。\n\
+\n\
 对象结构严格如下（字段可为 null 或空数组）：\n\
 {{\n\
   \"part_of_speech\": \"noun|verb|adjective|pronoun|determinative|adverb|preposition|conjunction|subjunction|interjection\",\n\

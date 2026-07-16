@@ -89,7 +89,7 @@ pub(crate) fn merge_or_insert_word_result(
     }
 }
 
-fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
+pub(crate) fn merge_word_result(target: &mut GeminiWordResult, source: GeminiWordResult) {
     for value in source.english {
         push_unique_text(&mut target.english, value);
     }
