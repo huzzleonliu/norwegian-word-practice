@@ -123,3 +123,58 @@ html.theme-light .text-red-400 {
 html.theme-light .shadow-xl {
   --tw-shadow-color: rgb(15 23 42 / 0.08);
 }
+
+/* 使用说明浮层中的 Markdown 排版 */
+.instructions-markdown :is(h1, h2, h3, h4) {
+  margin: 0.85em 0 0.4em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: inherit;
+}
+.instructions-markdown h1 {
+  font-size: 1.35rem;
+}
+.instructions-markdown h2 {
+  font-size: 1.15rem;
+}
+.instructions-markdown h3 {
+  font-size: 1.05rem;
+}
+.instructions-markdown p,
+.instructions-markdown ul,
+.instructions-markdown ol {
+  margin: 0.55em 0;
+  line-height: 1.65;
+}
+.instructions-markdown ul,
+.instructions-markdown ol {
+  padding-left: 1.25rem;
+}
+.instructions-markdown code {
+  border-radius: 0.25rem;
+  background: rgb(148 163 184 / 0.18);
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+}
+.instructions-markdown pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  background: rgb(15 23 42 / 0.55);
+  padding: 0.75rem 1rem;
+  margin: 0.75em 0;
+}
+.instructions-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+.instructions-markdown a {
+  color: #34d399;
+  text-decoration: underline;
+}
+html.theme-light .instructions-markdown a {
+  color: #047857;
+}
+html.theme-light .instructions-markdown pre {
+  background: rgb(226 232 240 / 0.9);
+}
+
