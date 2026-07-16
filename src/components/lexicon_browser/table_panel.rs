@@ -62,6 +62,7 @@ pub fn LexiconTablePanel(
     #[prop(optional)] on_mark_hash_dirty: Option<Callback<String>>,
     #[prop(optional)] action_kind: Option<TableActionKind>,
     #[prop(optional)] show_select_buttons: Option<bool>,
+    #[prop(optional)] on_clear: Option<Callback<()>>,
 ) -> impl IntoView {
     const DATA_COLUMN_COUNT: usize = DATA_COLUMN_KEYS.len();
     const PAGINATION_THRESHOLD: usize = 100;
@@ -69,6 +70,7 @@ pub fn LexiconTablePanel(
     let action_kind = action_kind.unwrap_or(TableActionKind::ConfirmChanges);
     let show_select_buttons = show_select_buttons.unwrap_or(true);
     let on_mark_hash_dirty = on_mark_hash_dirty.unwrap_or(Callback::new(|_| {}));
+    let on_clear = on_clear.unwrap_or(Callback::new(|_| {}));
     let column_configs = build_column_configs();
     let header_column_configs = column_configs.clone();
     let row_column_configs = column_configs.clone();
@@ -320,9 +322,29 @@ pub fn LexiconTablePanel(
         </div>
         <div class="mt-3 space-y-3">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {if show_select_buttons {
-                    view! {
-                        <div class="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:gap-2">
+                <div class="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                    {match action_kind {
+                        TableActionKind::AddEntries => view! {
+                            <button
+                                type="button"
+                                on:click=move |_| on_confirm_changes.run(())
+                                class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                            >
+                                {move || tr(lang.get(), "添加多条", "Add Entries")}
+                            </button>
+                            <button
+                                type="button"
+                                on:click=move |_| on_clear.run(())
+                                class="w-full rounded border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                            >
+                                {move || tr(lang.get(), "清空", "Clear")}
+                            </button>
+                        }
+                        .into_any(),
+                        TableActionKind::ConfirmChanges => view! { <></> }.into_any(),
+                    }}
+                    {if show_select_buttons {
+                        view! {
                             <button
                                 type="button"
                                 on:click=move |_| on_select_visible_click.run(())
@@ -337,12 +359,12 @@ pub fn LexiconTablePanel(
                             >
                                 {move || tr(lang.get(), "全不选", "Unselect All")}
                             </button>
-                        </div>
-                    }
-                        .into_any()
-                } else {
-                    view! { <div class="hidden sm:block"></div> }.into_any()
-                }}
+                        }
+                            .into_any()
+                    } else {
+                        view! { <></> }.into_any()
+                    }}
+                </div>
 
                 {move || {
                     if should_paginate.get() {
@@ -404,16 +426,19 @@ pub fn LexiconTablePanel(
                     }
                 }}
 
-                <button
-                    type="button"
-                    on:click=move |_| on_confirm_changes.run(())
-                    class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
-                >
-                    {move || match action_kind {
-                        TableActionKind::ConfirmChanges => tr(lang.get(), "确认修改", "Confirm Changes"),
-                        TableActionKind::AddEntries => tr(lang.get(), "添加多条", "Add Entries"),
-                    }}
-                </button>
+                {match action_kind {
+                    TableActionKind::ConfirmChanges => view! {
+                        <button
+                            type="button"
+                            on:click=move |_| on_confirm_changes.run(())
+                            class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                        >
+                            {move || tr(lang.get(), "确认修改", "Confirm Changes")}
+                        </button>
+                    }
+                    .into_any(),
+                    TableActionKind::AddEntries => view! { <div class="hidden sm:block"></div> }.into_any(),
+                }}
             </div>
 
             <div class="min-h-6 text-sm">

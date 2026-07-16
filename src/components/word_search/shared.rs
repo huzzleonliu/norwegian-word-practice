@@ -59,12 +59,24 @@ pub(crate) fn normalize_part_of_speech_enum(raw: Option<String>, hint: &str) -> 
 pub(crate) fn build_bulk_csv_from_results(
     results: &[GeminiWordResult],
     hint: &str,
+    default_tags: &str,
 ) -> Result<String, String> {
     // 将多条 AI 结果转为 CSV 文本，供“多条新增”直接复用。
-    let entries = results
+    let tags = default_tags
+        .split('|')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    let mut entries = results
         .iter()
         .map(|item| WordBankEntry::try_from((item, hint)))
         .collect::<Result<Vec<_>, _>>()?;
+    if !tags.is_empty() {
+        for entry in &mut entries {
+            entry.tags = tags.clone();
+        }
+    }
     serialize_word_bank_csv(&entries)
 }
 

@@ -14,6 +14,7 @@ use crate::utils::i18n::tr;
 #[component]
 pub fn LexiconEditorAddMulti(
     on_submit: Callback<Vec<WordBankEntry>>,
+    on_clear: Callback<()>,
     bulk_input: ReadSignal<String>,
     bulk_errors: ReadSignal<Vec<String>>,
     bulk_success_message: ReadSignal<String>,
@@ -174,6 +175,7 @@ pub fn LexiconEditorAddMulti(
                                 })
                                 action_kind=TableActionKind::AddEntries
                                 show_select_buttons=false
+                                on_clear=on_clear
                             />
                         </section>
                     }

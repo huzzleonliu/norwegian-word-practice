@@ -95,12 +95,14 @@ pub struct SingleEntryFormState {
     pub set_single_adverb_comparative: WriteSignal<String>,
     pub single_adverb_superlative: ReadSignal<String>,
     pub set_single_adverb_superlative: WriteSignal<String>,
+    pub set_single_tags: WriteSignal<String>,
 }
 
 #[component]
 pub fn AiResearcher(
     actions: AiResearcherActions,
     single_form_state: SingleEntryFormState,
+    #[prop(optional)] reset_version: Option<ReadSignal<u64>>,
 ) -> impl IntoView {
     let AiResearcherActions {
         set_status,
@@ -178,6 +180,7 @@ pub fn AiResearcher(
         set_single_adverb_comparative,
         single_adverb_superlative,
         set_single_adverb_superlative,
+        set_single_tags,
     } = single_form_state;
 
     let lang = expect_context::<UiState>().ui_language;
@@ -185,11 +188,45 @@ pub fn AiResearcher(
     let (google_translate_token, set_google_translate_token) = signal(String::new());
     let (form_hint, set_form_hint) = signal("unknown".to_string());
     let (query_word, set_query_word) = signal(String::new());
+    let (default_tags_input, set_default_tags_input) = signal(String::new());
+    let (default_tags_confirmed, set_default_tags_confirmed) = signal(String::new());
     let (is_testing, set_is_testing) = signal(false);
     let (is_testing_google_translate, set_is_testing_google_translate) = signal(false);
     let (is_google_translate_verified, set_is_google_translate_verified) = signal(false);
     let (is_querying, set_is_querying) = signal(false);
     let (ordbok_only_mode, set_ordbok_only_mode) = signal(false);
+
+    if let Some(reset_version) = reset_version {
+        Effect::new(move |_| {
+            let version = reset_version.get();
+            if version == 0 {
+                return;
+            }
+            set_query_word.set(String::new());
+            set_form_hint.set("unknown".to_string());
+        });
+    }
+
+    let confirm_default_tags = move |_| {
+        let language = lang.get_untracked();
+        let normalized = normalize_default_tags(&default_tags_input.get_untracked());
+        set_default_tags_input.set(normalized.clone());
+        set_default_tags_confirmed.set(normalized.clone());
+        set_single_tags.set(normalized.clone());
+        set_status.set(if normalized.is_empty() {
+            tr(
+                language,
+                "默认标签已清空。",
+                "Default tags cleared.",
+            )
+            .to_string()
+        } else {
+            format!(
+                "{} {normalized}",
+                tr(language, "默认标签已确认：", "Default tags confirmed:")
+            )
+        });
+    };
 
     // 检测 Gemini Token 可用性。
     let test_connectivity = move |_| {
@@ -316,11 +353,13 @@ pub fn AiResearcher(
             return;
         }
         let hint = form_hint.get_untracked();
+        let default_tags = default_tags_confirmed.get_untracked();
         let ordbok_only = ordbok_only_mode.get_untracked();
         set_is_querying.set(true);
 
         let set_is_querying = set_is_querying;
         let set_status = set_status;
+        let set_single_tags = set_single_tags;
         spawn_local(async move {
             let (parsed_list, source_label) = match query_word_with_ordbok(&word, &hint).await {
                 Ok(mut results) if !results.is_empty() => {
@@ -543,6 +582,9 @@ pub fn AiResearcher(
                 if let Some(v) = join_pipe(parsed.english) {
                     set_if_blank(single_english, set_single_english, v);
                 }
+                if !default_tags.trim().is_empty() {
+                    set_single_tags.set(default_tags.clone());
+                }
 
                 maybe_set_opt(
                     single_verb_present_tense,
@@ -709,7 +751,7 @@ pub fn AiResearcher(
                     )
                 ));
             } else {
-                match build_bulk_csv_from_results(&parsed_list, &hint) {
+                match build_bulk_csv_from_results(&parsed_list, &hint, &default_tags) {
                     Ok(csv_text) => {
                         set_bulk_input.set(csv_text);
                         set_bulk_errors.set(Vec::new());
@@ -835,6 +877,32 @@ pub fn AiResearcher(
                 </label>
             </div>
 
+            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[auto_1fr_auto] md:items-center">
+                <span class="text-sm text-slate-300">
+                    {move || tr(lang.get(), "默认标签", "Default Tags")}
+                </span>
+                <input
+                    type="text"
+                    placeholder=move || {
+                        tr(
+                            lang.get(),
+                            "例如 duolingo|time（用 | 分隔）",
+                            "e.g. duolingo|time (pipe-separated)",
+                        )
+                    }
+                    prop:value=move || default_tags_input.get()
+                    on:input=move |ev| set_default_tags_input.set(event_target_value(&ev))
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                />
+                <button
+                    type="button"
+                    on:click=confirm_default_tags
+                    class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 md:w-auto"
+                >
+                    {move || tr(lang.get(), "确认", "Confirm")}
+                </button>
+            </div>
+
             <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr_auto]">
                 <select
                     prop:value=move || form_hint.get()
@@ -882,6 +950,14 @@ fn set_if_blank(reader: ReadSignal<String>, setter: WriteSignal<String>, value: 
     if reader.get_untracked().trim().is_empty() {
         setter.set(value);
     }
+}
+
+fn normalize_default_tags(raw: &str) -> String {
+    raw.split('|')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
+        .collect::<Vec<_>>()
+        .join("|")
 }
 
 fn maybe_set_opt(reader: ReadSignal<String>, setter: WriteSignal<String>, value: Option<String>) {

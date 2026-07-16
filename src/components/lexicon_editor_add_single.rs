@@ -10,6 +10,7 @@ use crate::utils::i18n::{field_label, tr};
 #[component]
 pub fn LexiconEditorAddSingle(
     on_submit: Callback<SubmitEvent>,
+    on_clear: Callback<()>,
     single_selected: ReadSignal<bool>,
     set_single_selected: WriteSignal<bool>,
     single_pos: ReadSignal<String>,
@@ -236,12 +237,21 @@ pub fn LexiconEditorAddSingle(
                 set_single_adverb_superlative,
             )}
 
-            <button
-                type="submit"
-                class="mt-3 w-full rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 sm:w-auto"
-            >
-                {move || tr(lang.get(), "添加单条", "Add Entry")}
-            </button>
+            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <button
+                    type="submit"
+                    class="w-full rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 sm:w-auto"
+                >
+                    {move || tr(lang.get(), "添加单条", "Add Entry")}
+                </button>
+                <button
+                    type="button"
+                    on:click=move |_| on_clear.run(())
+                    class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                >
+                    {move || tr(lang.get(), "清空", "Clear")}
+                </button>
+            </div>
         </form>
     }
 }

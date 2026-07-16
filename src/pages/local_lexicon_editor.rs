@@ -104,6 +104,61 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     let (bulk_input, set_bulk_input) = signal(String::new());
     let (bulk_errors, set_bulk_errors) = signal(Vec::<String>::new());
     let (bulk_success_message, set_bulk_success_message) = signal(String::new());
+    let (editor_reset_version, set_editor_reset_version) = signal(0_u64);
+
+    let clear_editor_forms = Callback::new(move |_| {
+        let language = lang.get_untracked();
+        set_single_selected.set(true);
+        set_single_pos.set("noun".to_string());
+        set_single_norwegian.set(String::new());
+        set_single_chinese.set(String::new());
+        set_single_english.set(String::new());
+        set_single_tags.set(String::new());
+        set_single_verb_present_tense.set(String::new());
+        set_single_past_tense.set(String::new());
+        set_single_imperative.set(String::new());
+        set_single_verb_present_participle.set(String::new());
+        set_single_verb_past_participle.set(String::new());
+        set_single_verb_passive_infinitive.set(String::new());
+        set_single_verb_passive_present.set(String::new());
+        set_single_verb_passive_past.set(String::new());
+        set_single_plural.set(String::new());
+        set_single_singular_definite.set(String::new());
+        set_single_plural_definite.set(String::new());
+        set_single_noun_singular_definite_genitive.set(String::new());
+        set_single_noun_plural_definite_genitive.set(String::new());
+        set_single_noun_singular_indefinite_genitive.set(String::new());
+        set_single_noun_plural_indefinite_genitive.set(String::new());
+        set_single_adjective_feminine_form.set(String::new());
+        set_single_neuter_form.set(String::new());
+        set_single_plural_form.set(String::new());
+        set_single_adjective_comparative.set(String::new());
+        set_single_adjective_superlative_indefinite.set(String::new());
+        set_single_adjective_superlative_definite.set(String::new());
+        set_single_pronoun_object.set(String::new());
+        set_single_pronoun_reflexive.set(String::new());
+        set_single_pronoun_plural_subject.set(String::new());
+        set_single_pronoun_plural_object.set(String::new());
+        set_single_pronoun_plural_reflexive.set(String::new());
+        set_single_determinative_feminine_form.set(String::new());
+        set_single_determinative_neuter_form.set(String::new());
+        set_single_determinative_plural_form.set(String::new());
+        set_single_adverb_comparative.set(String::new());
+        set_single_adverb_superlative.set(String::new());
+        set_bulk_input.set(String::new());
+        set_bulk_errors.set(Vec::new());
+        set_bulk_success_message.set(String::new());
+        set_editor_reset_version.update(|ver| *ver += 1);
+        set_status.set(
+            tr(
+                language,
+                "已清空编辑区填写内容。",
+                "Editor fields cleared.",
+            )
+            .to_string(),
+        );
+    });
+
     // 单条新增：构造草稿 -> 校验规范化 -> 写入全局词库并 bump 版本。
     let add_single_entry = Callback::new(move |ev: SubmitEvent| {
         let language = lang.get_untracked();
@@ -420,6 +475,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         set_single_adverb_comparative,
         single_adverb_superlative,
         set_single_adverb_superlative,
+        set_single_tags,
     };
 
     view! {
@@ -452,6 +508,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
 
                 <LexiconEditorAddSingle
                     on_submit=add_single_entry
+                    on_clear=clear_editor_forms
                     single_selected=single_selected
                     set_single_selected=set_single_selected
                     single_pos=single_pos
@@ -531,10 +588,12 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                 <AiResearcher
                     actions=ai_actions
                     single_form_state=single_form_state
+                    reset_version=editor_reset_version
                 />
 
                 <LexiconEditorAddMulti
                     on_submit=add_bulk_entries
+                    on_clear=clear_editor_forms
                     bulk_input=bulk_input
                     bulk_errors=bulk_errors
                     bulk_success_message=bulk_success_message
