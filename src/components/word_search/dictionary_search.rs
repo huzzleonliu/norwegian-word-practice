@@ -167,6 +167,7 @@ pub(crate) async fn query_word_with_ordbok(
 }
 
 /// 使用 Google Translate 回填中英文释义（不改词形字段）。
+/// 源语言固定为挪威语（`no`），避免短词被误判成英语等其它语言。
 pub(crate) async fn enrich_results_with_google_translate(
     results: &mut [GeminiWordResult],
     api_key: &str,
@@ -195,6 +196,7 @@ async fn translate_text_with_google(
 ) -> Result<String, String> {
     let payload_body = serde_json::json!({
         "q": text,
+        "source": "no",
         "target": target_language,
         "format": "text",
     })
