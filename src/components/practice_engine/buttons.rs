@@ -12,6 +12,8 @@ use crate::structures::pracresult::{
     AnswerStats, MAX_WRONG_ANSWERS_PER_FORM, PracticeResult, PracticedWordEntryResult,
 };
 use crate::utils::i18n::tr;
+
+pub use crate::utils::i18n::normalize_for_compare;
 use crate::utils::shuffle::shuffle_strings;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -206,20 +208,6 @@ pub fn handle_abort_click(
         .set_temp_practice_result
         .set(PracticeResult::default());
     set_current_page.set(abort_target_page);
-}
-
-/// 判题规范化规则：小写 + 去空白 + `|` 分段规整 + 挪威字母别名映射。
-pub fn normalize_for_compare(value: &str) -> String {
-    value
-        .split('|')
-        .map(str::trim)
-        .filter(|segment| !segment.is_empty())
-        .collect::<Vec<_>>()
-        .join("|")
-        .to_lowercase()
-        .replace('æ', "ae")
-        .replace('ø', "oe")
-        .replace('å', "aa")
 }
 
 /// 记录单字段判题结果并维护错法队列。

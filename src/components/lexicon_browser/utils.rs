@@ -8,7 +8,7 @@ use crate::structures::field_meta::{
     entry_field_value, field_label,
 };
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
-use crate::utils::i18n::tr;
+use crate::utils::i18n::{normalize_for_compare, tr};
 
 pub fn default_search_column_visibility() -> Vec<bool> {
     default_search_column_visibility_from_meta()
@@ -43,13 +43,14 @@ pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: 
     if trimmed.is_empty() {
         return true;
     }
-    let query_lower = trimmed.to_lowercase();
+    let query_normalized = normalize_for_compare(trimmed);
+    if query_normalized.is_empty() {
+        return true;
+    }
 
     (0..DATA_COLUMN_KEYS.len()).any(|idx| {
         columns.get(idx).copied().unwrap_or(false)
-            && column_value_text(entry, idx)
-                .to_lowercase()
-                .contains(&query_lower)
+            && normalize_for_compare(&column_value_text(entry, idx)).contains(&query_normalized)
     })
 }
 
