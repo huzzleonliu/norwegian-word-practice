@@ -31,6 +31,22 @@ impl UiLanguage {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum UiTheme {
+    Dark,
+    Light,
+}
+
+impl UiTheme {
+    /// 在黑夜/白天主题之间切换。
+    pub fn toggle(self) -> Self {
+        match self {
+            UiTheme::Dark => UiTheme::Light,
+            UiTheme::Light => UiTheme::Dark,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum PartOfSpeech {
     Verb,

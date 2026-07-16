@@ -4,7 +4,7 @@ use leptos::prelude::*;
 
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
-use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
+use crate::structures::word_bank_entry::{UiLanguage, UiTheme, WordBankEntry};
 
 /// 词库域状态：词条数据源与词库来源信息。
 #[derive(Clone, Copy)]
@@ -43,4 +43,6 @@ pub struct PracticeState {
 #[derive(Clone, Copy)]
 pub struct UiState {
     pub ui_language: ReadSignal<UiLanguage>,
+    #[allow(dead_code)]
+    pub ui_theme: ReadSignal<UiTheme>,
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="theme-dark">
 
 <head>
     <meta charset="utf-8" />
@@ -8,6 +8,18 @@
     <link data-trunk rel="tailwind-css" href="style/input.css" />
     <link data-trunk rel="copy-dir" href="data" />
     <link data-trunk rel="rust" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("ui_theme");
+          var root = document.documentElement;
+          root.classList.remove("theme-dark", "theme-light");
+          root.classList.add(theme === "light" ? "theme-light" : "theme-dark");
+        } catch (_) {
+          document.documentElement.classList.add("theme-dark");
+        }
+      })();
+    </script>
 </head>
 
 <body></body>
