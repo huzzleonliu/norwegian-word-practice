@@ -101,13 +101,6 @@ pub fn HomePage() -> impl IntoView {
                 />
 
                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                    <label
-                        for="pracresult-input"
-                        class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
-                    </label>
-
                     <button
                         type="button"
                         on:click=direct_start_practice_click
@@ -115,6 +108,15 @@ pub fn HomePage() -> impl IntoView {
                     >
                         {move || tr(lang.get(), "直接开始练习", "Start Practice")}
                     </button>
+
+                    <label
+                        for="pracresult-input"
+                        class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                    >
+                        {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
+                    </label>
+
+
                 </div>
             </section>
         </main>
