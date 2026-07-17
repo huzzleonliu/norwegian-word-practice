@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists
 COPY Cargo.toml Cargo.lock build.rs index.html Trunk.toml ./
 COPY src ./src
 COPY data ./data
+COPY docs ./docs
 COPY style ./style
 COPY package.json package-lock.json ./
 COPY tailwind.config.js ./

@@ -3,4 +3,6 @@ target = "index.html"
 dist = "dist"
 
 [watch]
-watch = ["src", "index.html", "style"]
+# docs/help 被 markdown_view! 在编译期嵌入；改 MD 必须触发 trunk 重建
+watch = ["src", "index.html", "style", "docs/help"]
+ignore = ["**/*.kra", "**/*.png~"]
