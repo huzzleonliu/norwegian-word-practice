@@ -35,7 +35,7 @@ fn App() -> impl IntoView {
         signal(structures::pracresult::PracticeResult::default());
     let (summary_return_page, set_summary_return_page) = signal(pages::AppPage::LexiconPractice);
 
-    let (instructions_open, set_instructions_open) = signal(false);
+    let (help_open, set_help_open) = signal(false);
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
@@ -101,7 +101,7 @@ fn App() -> impl IntoView {
             <div class="fixed bottom-2 right-2 z-[100] flex items-center gap-2 sm:bottom-4 sm:right-4">
                 <button
                     type="button"
-                    on:click=move |_| set_instructions_open.set(true)
+                    on:click=move |_| set_help_open.set(true)
                     class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
                 >
                     {move || tr(ui_language.get(), "使用说明", "Instructions")}
@@ -115,16 +115,16 @@ fn App() -> impl IntoView {
                     {move || tr(ui_language.get(), "问题反馈", "Feedback")}
                 </a>
             </div>
-            <pages::instructions::InstructionsOverlay
-                open=instructions_open
-                set_open=set_instructions_open
+            <pages::help::HelpOverlay
+                open=help_open
+                set_open=set_help_open
                 page=current_page
             />
             // 本项目不使用 URL 路由，页面切换通过 `AppPage` 枚举进行。
             {move || match current_page.get() {
                 pages::AppPage::Home => view! { <pages::home::HomePage/> }.into_any(),
                 pages::AppPage::PracticeModeSelect => {
-                    view! { <pages::practice_mode::PracticeModePage/> }.into_any()
+                    view! { <pages::practice_mode_select::PracticeModePage/> }.into_any()
                 }
                 pages::AppPage::LexiconMode => {
                     view! { <pages::lexicon_select::LexiconSelectPage/> }.into_any()
@@ -133,10 +133,10 @@ fn App() -> impl IntoView {
                     view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
                 }
                 pages::AppPage::LexiconSummary => {
-                    view! { <pages::lexicon_summary::LexiconSummaryPage/> }.into_any()
+                    view! { <pages::practice_result::LexiconSummaryPage/> }.into_any()
                 }
                 pages::AppPage::LocalLexiconEditor => {
-                    view! { <pages::local_lexicon_editor::LocalLexiconEditorPage/> }.into_any()
+                    view! { <pages::dictionary_editor::LocalLexiconEditorPage/> }.into_any()
                 }
                 pages::AppPage::SeriseSelect => {
                     view! { <pages::serise_select::SeriseSelectPage/> }.into_any()

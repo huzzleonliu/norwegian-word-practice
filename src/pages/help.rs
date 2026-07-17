@@ -9,7 +9,7 @@ use crate::structures::word_bank_entry::UiLanguage;
 use crate::utils::i18n::tr;
 
 #[component]
-pub fn InstructionsOverlay(
+pub fn HelpOverlay(
     open: ReadSignal<bool>,
     set_open: WriteSignal<bool>,
     page: ReadSignal<AppPage>,
@@ -45,7 +45,7 @@ pub fn InstructionsOverlay(
                             </button>
                         </div>
                         <div class="markdown-view instructions-markdown flex-1 overflow-y-auto px-4 py-4 text-sm text-slate-200 sm:px-6 sm:py-5">
-                            {move || instruction_markdown_view(page.get(), lang.get())}
+                            {move || help_markdown_view(page.get(), lang.get())}
                         </div>
                     </div>
                 </div>
@@ -55,89 +55,75 @@ pub fn InstructionsOverlay(
     }
 }
 
-fn instruction_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
+fn help_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
     match (page, language) {
         (AppPage::Home, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/home.zh.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/home.zh.md")} }.into_any()
         }
         (AppPage::Home, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/home.en.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/home.en.md")} }.into_any()
         }
         (AppPage::PracticeModeSelect, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/practice_mode_select.zh.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/practice_mode_select.zh.md")} }.into_any()
         }
         (AppPage::PracticeModeSelect, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/practice_mode_select.en.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/practice_mode_select.en.md")} }.into_any()
         }
         (AppPage::LexiconMode, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_mode.zh.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/lexicon_select.zh.md")} }.into_any()
         }
         (AppPage::LexiconMode, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_mode.en.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/lexicon_select.en.md")} }.into_any()
         }
         (AppPage::LexiconPractice, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_practice.zh.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/lexicon_practice.zh.md")} }.into_any()
         }
         (AppPage::LexiconPractice, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_practice.en.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/lexicon_practice.en.md")} }.into_any()
         }
         (AppPage::LexiconSummary, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_summary.zh.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/practice_result.zh.md")} }.into_any()
         }
         (AppPage::LexiconSummary, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/lexicon_summary.en.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/practice_result.en.md")} }.into_any()
         }
         (AppPage::LocalLexiconEditor, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/local_lexicon_editor.zh.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/dictionary_editor.zh.md")} }.into_any()
         }
         (AppPage::LocalLexiconEditor, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/local_lexicon_editor.en.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/dictionary_editor.en.md")} }.into_any()
         }
         (AppPage::SeriseSelect, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_select.zh.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/serise_select.zh.md")} }.into_any()
         }
         (AppPage::SeriseSelect, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_select.en.md")} }.into_any()
+            view! { {markdown_view!(file = "docs/help/serise_select.en.md")} }.into_any()
         }
         (AppPage::SeriseNumberPractice, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_number_practice.zh.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_number.zh.md")} }.into_any()
         }
         (AppPage::SeriseNumberPractice, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_number_practice.en.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_number.en.md")} }.into_any()
         }
         (AppPage::SeriseMonthPractice, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_month_practice.zh.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_month.zh.md")} }.into_any()
         }
         (AppPage::SeriseMonthPractice, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_month_practice.en.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_month.en.md")} }.into_any()
         }
         (AppPage::SerisePronounPractice, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_pronoun_practice.zh.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_pronoun.zh.md")} }.into_any()
         }
         (AppPage::SerisePronounPractice, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/instructions/serise_pronoun_practice.en.md")} }
-                .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_pronoun.en.md")} }.into_any()
         }
         (AppPage::SeriseInterrogativePractice, UiLanguage::Zh) => {
-            view! {
-                {markdown_view!(file = "docs/instructions/serise_interrogative_practice.zh.md")}
-            }
-            .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_interrogative.zh.md")} }
+                .into_any()
         }
         (AppPage::SeriseInterrogativePractice, UiLanguage::En) => {
-            view! {
-                {markdown_view!(file = "docs/instructions/serise_interrogative_practice.en.md")}
-            }
-            .into_any()
+            view! { {markdown_view!(file = "docs/help/serise_practice_interrogative.en.md")} }
+                .into_any()
         }
     }
 }
