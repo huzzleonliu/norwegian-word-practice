@@ -1,0 +1,178 @@
+{
+  "program": {
+    "candyMachine": "C2sf5YPcnrKabkXqs1615iF6Y2udrimMHis6rYnUQVN7",
+    "candyGuard": "EoDwnkGMgZcoikFS6dLuaDB552m7yx3u35eJvXoSPX6P",
+    "candyMachineCreator": "AhTwKrmr6jb2micF76NAaYSPQxUeRhfQwEhWizxCVvME",
+    "collectionMint": "9qcraUcqpzRuXKSuPBuGvc3xn5wb184MYzWadDUWfgay"
+  },
+  "items": {
+    "-1": {
+      "name": "Once and Once Again—Painting",
+      "image_hash": "22f45e4575b822968a9453e2068ba39e697220be5546df4b48080ff93f5eb83b",
+      "image_link": "https://gateway.irys.xyz/CGVihMGWWBEiAYeSQJZqSJERaAFyF3Qax4d8U4UNMM5h?ext=png",
+      "metadata_hash": "373b84478a4d22178a5a5fcd8019a6ae65aeb3be9332bd5f960b6fb6223b8e76",
+      "metadata_link": "https://gateway.irys.xyz/CqH3hmUVw6gNXDq92GPAG6maL9jpGLNnx1rw6ib4YBs6",
+      "onChain": true
+    },
+    "0": {
+      "name": "OAOA Painting #1",
+      "image_hash": "22f45e4575b822968a9453e2068ba39e697220be5546df4b48080ff93f5eb83b",
+      "image_link": "https://gateway.irys.xyz/5j1mrHTJTVutw4eaZTDf2sQjk2F3vhEFMa7TGrhQxAkT?ext=png",
+      "metadata_hash": "875deec1ac10d79ca4a9871f9235c4e568f992e861da4289d80f41c31a64ab59",
+      "metadata_link": "https://gateway.irys.xyz/HvBMXQTbLo2WzxV7dpgAWfM3n6XbDtBHK3cTpN19UKhK",
+      "onChain": true
+    },
+    "1": {
+      "name": "OAOA Painting #2",
+      "image_hash": "d92e07adfed94cb62b64859ac84a72ee0a3f534b8f36d64018d5065e01b8510c",
+      "image_link": "https://gateway.irys.xyz/DCpH7cQZrVmwgEM7er7c1XAtR8ghSLohrXSGHAQDGHYx?ext=png",
+      "metadata_hash": "1d950c141669a67c4e5d4dcc60737680a081373bd318e64b03761791486dc7eb",
+      "metadata_link": "https://gateway.irys.xyz/9xPfhy834Nk2EVhg1M9imHqnU99ZPHRvoJr7W3LZSiTj",
+      "onChain": true
+    },
+    "2": {
+      "name": "OAOA Painting #3",
+      "image_hash": "e734d3f69ef4419ff62e8b37d7575441cf365a63f9b55e98fd0c92398cd1844d",
+      "image_link": "https://gateway.irys.xyz/4KcNQu1YP3c1t9PHyPvYwGyN8qu3eRnYbudLrhL28efs?ext=png",
+      "metadata_hash": "ce08ac7e6d9c3dc73556f3d2bfae79d89ef436420400b84488013bfd105022f1",
+      "metadata_link": "https://gateway.irys.xyz/57RBA9ngcwSecN9eyY7bMEcH9WKQ9Cy6YdCgfbYufpCs",
+      "onChain": true
+    },
+    "3": {
+      "name": "OAOA Painting #4",
+      "image_hash": "f101f06cbecc80bc479b864b8488dfcd4719f1929de66b206f375bed753d2b9c",
+      "image_link": "https://gateway.irys.xyz/HzAT37J6wsU9gU1dtTLhiavtyymcPYP2QSQ2mQhXmZnT?ext=png",
+      "metadata_hash": "377eb6f647aae308ea729f9e0dcd2f1407dfbb0d6edc24594d6c9349ce1cd396",
+      "metadata_link": "https://gateway.irys.xyz/GE4PPipNwhsrHU1L1h2RsdBusiKQnh1neFrDCw4M6Rsa",
+      "onChain": true
+    },
+    "4": {
+      "name": "OAOA Painting #5",
+      "image_hash": "af026c86fc7dcd49660195c513fd905880a55cb505159ceb11430a4357d3b8e8",
+      "image_link": "https://gateway.irys.xyz/DnfyZ8dDLQUA9xU62pFyH6nw9LTmQa6xuuVaQbbq7hy1?ext=png",
+      "metadata_hash": "4d1533ef96c354a61df7457182b1af40a18f7a84eb1d98f2147b02c4c86b41d2",
+      "metadata_link": "https://gateway.irys.xyz/51x1tBhUhQRMQvSawtT2TsgPkfTkz3XPYpvVCdSin57q",
+      "onChain": true
+    },
+    "5": {
+      "name": "OAOA Painting #6",
+      "image_hash": "0c5e886937750344a8214df751fec1bb952fe9002370a17e7603c27e96b8a464",
+      "image_link": "https://gateway.irys.xyz/7CNUAfr53fU3cyptN48QMoixusaMed8eQzHPftVVHU1E?ext=png",
+      "metadata_hash": "98a46d354907de7dc1f3e4d486e45c73aa119c047adab4efa79f51726e84b23e",
+      "metadata_link": "https://gateway.irys.xyz/BpiWy9Pbba36MTboddTa9DKa88qF57pE1AJDvbeFphaL",
+      "onChain": true
+    },
+    "6": {
+      "name": "OAOA Painting #7",
+      "image_hash": "119edc4a54495c1b4d505f0f4117864efc4485d0dd613834622bac42f6c91d91",
+      "image_link": "https://gateway.irys.xyz/EjYZUrvFo2wVmSxhc8WCXz6DZcyuhkvnF5vs4gVo5hkA?ext=png",
+      "metadata_hash": "cdc4be7e564b094fdd5048e0a1305ee4af8f6a20b44365e7fa9c89d6fd2f03fc",
+      "metadata_link": "https://gateway.irys.xyz/GwDTxtwe5BgjBLxcHh7pfZ1mTNQ8tP5C1Ja75H78dhtq",
+      "onChain": true
+    },
+    "7": {
+      "name": "OAOA Painting #8",
+      "image_hash": "37a7cacb612a65f0f6a7dcc68561965cd2f796281a9c0f00302b7c04551be50d",
+      "image_link": "https://gateway.irys.xyz/37eMAfkcrwbNaDyhhwmPToy29RHLiZaApjmYXiM8LwGv?ext=png",
+      "metadata_hash": "328ca6efa6f5f8d893a5029a39ba778980abcfa547814a92588c7d78962982ca",
+      "metadata_link": "https://gateway.irys.xyz/GGVb8NE8HoRDR69VRnagYiwFrLKDgmwcGKmfSnneoA9B",
+      "onChain": true
+    },
+    "8": {
+      "name": "OAOA Painting #9",
+      "image_hash": "801e0c386767dfaba9bc4dce0d82648dccf4d5993b6286a69be0fc420949de89",
+      "image_link": "https://gateway.irys.xyz/4HL3AmSU2fNHg2cipEhCzJ8JegFxfhNNdw5e1FYPQG38?ext=png",
+      "metadata_hash": "b977be86733c974fb948cf5f95bb41f0e9aa2c81475b271ba3ba479373f0d97a",
+      "metadata_link": "https://gateway.irys.xyz/5sU6TqwqdsKwrUDNc8hgrkgt3TJjJWuA2fpzVyJ1b9Jr",
+      "onChain": true
+    },
+    "9": {
+      "name": "OAOA Painting #10",
+      "image_hash": "95069d6b7fca0aa5929e0644c5a4177b35fc4d241376904ffad3c577f33c15a7",
+      "image_link": "https://gateway.irys.xyz/GWA1o1aR86pqKF5LRFNpa29HBCXdVrz11UzNTeCsBEvs?ext=png",
+      "metadata_hash": "2585d9d6ff60ab702e93874ced4de52923289eb06f5306b54aecbac2b7600431",
+      "metadata_link": "https://gateway.irys.xyz/Hi1gDfqkBoUiTQMj1xEtmD18Hsr2cqMeBfiswtdRjRNV",
+      "onChain": true
+    },
+    "10": {
+      "name": "OAOA Painting #11",
+      "image_hash": "5f1c2fd3034956814f2600a4998699721c78fb354bf4be86687b6c8a65921a78",
+      "image_link": "https://gateway.irys.xyz/DVm3hsrLBat5Mxs45F9Evs64kqTeiB5Hb4CKiiHDxhnB?ext=png",
+      "metadata_hash": "565de7fc76468e804c4499f1fb076513600675c87219c6bcfb589cf8a098a98b",
+      "metadata_link": "https://gateway.irys.xyz/GCXD7EphBNtbUo8kH5ouGbhNsqzTY9MCdM74paT3MXVY",
+      "onChain": true
+    },
+    "11": {
+      "name": "OAOA Painting #12",
+      "image_hash": "077a84f9b60e56f0b5e145f73374f6f3cc0ee7a84d1c3635a89239023031b455",
+      "image_link": "https://gateway.irys.xyz/GgpCCeZrLzEbSY97mfp2HQVDm3rFvDuPD1KZd2VFiApF?ext=png",
+      "metadata_hash": "4ddd9a601333da11d5b75a4fd641ca6616922de8e65b5c997f457a449c557879",
+      "metadata_link": "https://gateway.irys.xyz/4J5mZpzCGXZ7gA3Fq64ryjmkvQqpykS2NDfz5rRrCSQ5",
+      "onChain": true
+    },
+    "12": {
+      "name": "OAOA Painting #13",
+      "image_hash": "38bd19e8956f644efa7ed04716088fe3c1e0a7cfcaa16f0a632680bf263bfc35",
+      "image_link": "https://gateway.irys.xyz/EXQumoWMq3m7WJhv4ew5rWjAb11nAvR4xit2FAVaoQUy?ext=png",
+      "metadata_hash": "1c32856bbf67b62778fcf6ed267f3f32aac8a1b840c52e78351645f5410472ea",
+      "metadata_link": "https://gateway.irys.xyz/CcaVCgPiHqfpvwezNY2x485i8L8ENTnmZo6dZoBoKnnT",
+      "onChain": true
+    },
+    "13": {
+      "name": "OAOA Painting #14",
+      "image_hash": "4187ed324549d9d2c5934cc43d230ced9f8eefc5b467262974afecc417041492",
+      "image_link": "https://gateway.irys.xyz/HTGTT2wYKPhbNUHGCjNVvwSqVigwynSaHqwbd3pgT4mn?ext=png",
+      "metadata_hash": "65cd4ae3827035bd56da65527ce204ff8b10a421dc0e93c9d585506a9cf24096",
+      "metadata_link": "https://gateway.irys.xyz/D9PGcLftVbEY1dSFKxVXcteAVaBEPaiUAHowyXg3U5gH",
+      "onChain": true
+    },
+    "14": {
+      "name": "OAOA Painting #15",
+      "image_hash": "0ef7940439681ca31b293a3ad4c0dc9d94b26d1e1f4a376108ad402063e80cba",
+      "image_link": "https://gateway.irys.xyz/7ehepScJGJundA23oYcqrCkA4XV1mHF1ktTbG1mHr9iU?ext=png",
+      "metadata_hash": "41085442a3ad046bc3657ab8ce4b19754ab3d983fa9ad69cf692040c30f147ae",
+      "metadata_link": "https://gateway.irys.xyz/HY3SEZ83BHVrwGf4eVcoLbfa2wHba6JT3iWcLRQEPjbg",
+      "onChain": true
+    },
+    "15": {
+      "name": "OAOA Painting #16",
+      "image_hash": "33ff75785220b702ca1730f2600e7180ac87318181f3bd6c02bf6550771e7954",
+      "image_link": "https://gateway.irys.xyz/Ckhk3UhgYtogGUL9oUY5NZkumhxC5o227LDdTPHQusUS?ext=png",
+      "metadata_hash": "4c62f7bb203835283a0b80dfa6f7d0816055fe7173de1eeab6f79e6a424fe6ad",
+      "metadata_link": "https://gateway.irys.xyz/6DyyUACgCiNToVKjpcfzu4FoYFvJzrgyUvLcAHNMwKMM",
+      "onChain": true
+    },
+    "16": {
+      "name": "OAOA Painting #17",
+      "image_hash": "9c4d7e784c0e04a7415bd4f6346fa05a24c4f5d02ccefccee97bcc3985cc0642",
+      "image_link": "https://gateway.irys.xyz/9d4YVQZCTna6B59rfWSAfsbrRfKneu99T9jAepADV1Dt?ext=png",
+      "metadata_hash": "f2ded4d92601ceef7b3179ea5956ec1ca28b21d2b0db55d395134e844b982ca1",
+      "metadata_link": "https://gateway.irys.xyz/Brqy3w6M79EA9EgurKAe9Y76usEoBv4VByeLZZMTbnPb",
+      "onChain": true
+    },
+    "17": {
+      "name": "OAOA Painting #18",
+      "image_hash": "ff790de75eceefab1b0799329c19691c020a36c6811d1ff57c839dd96250a55b",
+      "image_link": "https://gateway.irys.xyz/2cRyt5jKGaxSFbha6Sh2Po2nwCVxBiFCqxfnzv9ipbBD?ext=png",
+      "metadata_hash": "8ecf01173e3cd7e24c33dca9b269125d2b74165e6a6b32abbfa8a52e8928aa00",
+      "metadata_link": "https://gateway.irys.xyz/9Wkh5fX4ijmJJVLV6jTFsMf4nvsmsimsHJiLApYCKCrq",
+      "onChain": true
+    },
+    "18": {
+      "name": "OAOA Painting #19",
+      "image_hash": "6599ffa2260fc536c638e3298516b08c49d3a36ca7e14968603b3dae20809e06",
+      "image_link": "https://gateway.irys.xyz/D13X6KHfEknTTK2xBjbdGSqh6Cf5upAhPhNFxdzSRNE7?ext=png",
+      "metadata_hash": "9cc72c64528c820360d3a27214cba8396f404d258ee6cb07043d2853378ce6a7",
+      "metadata_link": "https://gateway.irys.xyz/53DqknsHAuwTRRT6UEa5nhhZn2Q7D9JdNb7BV6ofcU65",
+      "onChain": true
+    },
+    "19": {
+      "name": "OAOA Painting #20",
+      "image_hash": "df8bb0697d9ae11f1b47b5676c03fad257487e79bbaa4a3a772ff20912a60bd7",
+      "image_link": "https://gateway.irys.xyz/2rKNpzjbntphQPCAMGPVdU8gr3NfL1WopoCvgmFKnJFp?ext=png",
+      "metadata_hash": "74928eaf2a5f613c9b8a0365274bddd238d4c42b2c2a66ec01e4555c01bdca1e",
+      "metadata_link": "https://gateway.irys.xyz/3Drqkkcu6BCYWopW8BAtnbnhrzFsCH28nxXWytzp4Fcg",
+      "onChain": true
+    }
+  }
+}

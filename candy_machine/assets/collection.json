@@ -1,0 +1,17 @@
+{
+  "name": "Once and Once Again—Painting",
+  "symbol": "OAOA",
+  "description": "Once and Once Again (OAOA) Painting v1.0 — a collection of 20 monochrome digital ink paintings by Huzz.",
+  "seller_fee_basis_points": 500,
+  "image": "collection.png",
+  "external_url": "",
+  "properties": {
+    "files": [
+      {
+        "uri": "collection.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

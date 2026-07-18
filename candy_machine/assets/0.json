@@ -1,0 +1,43 @@
+{
+  "name": "OAOA Painting #1",
+  "symbol": "OAOA",
+  "description": "Once and Once Again — Painting v1.0 by Huzz. A monochrome digital ink painting from the OAOA art series.",
+  "seller_fee_basis_points": 500,
+  "image": "0.png",
+  "external_url": "",
+  "attributes": [
+    {
+      "trait_type": "Series",
+      "value": "Once and Once Again"
+    },
+    {
+      "trait_type": "Version",
+      "value": "Painting v1.0"
+    },
+    {
+      "trait_type": "Edition",
+      "value": "1"
+    },
+    {
+      "trait_type": "Medium",
+      "value": "Digital Ink"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Monochrome"
+    },
+    {
+      "trait_type": "Aspect",
+      "value": "1:1"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "0.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

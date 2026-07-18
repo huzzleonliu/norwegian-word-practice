@@ -1,0 +1,31 @@
+{
+  "tokenStandard": "nft",
+  "number": 20,
+  "symbol": "OAOA",
+  "sellerFeeBasisPoints": 500,
+  "isMutable": true,
+  "isSequential": false,
+  "ruleSet": null,
+  "creators": [
+    {
+      "address": "YGR2KWyPtqGTcWZ2QiSMfdq5ProDGVvhwFe6KqrYZJx",
+      "share": 100
+    }
+  ],
+  "hiddenSettings": null,
+  "uploadMethod": "bundlr",
+  "awsConfig": null,
+  "pinataConfig": null,
+  "sdriveApiKey": null,
+  "nftStorageAuthToken": null,
+  "shdwStorageAccount": null,
+  "maxEditionSupply": null,
+  "guards": {
+    "default": {
+      "solPayment": {
+        "value": 0.1,
+        "destination": "YGR2KWyPtqGTcWZ2QiSMfdq5ProDGVvhwFe6KqrYZJx"
+      }
+    }
+  }
+}
