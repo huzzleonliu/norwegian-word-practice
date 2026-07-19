@@ -6,6 +6,16 @@ use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
 use crate::structures::word_bank_entry::{UiLanguage, UiTheme, WordBankEntry};
 
+/// 编程式导航：内部走 `leptos_router`，对外保持 `.set(AppPage)` 用法。
+#[derive(Clone, Copy)]
+pub struct NavigateToPage(pub Callback<AppPage>);
+
+impl NavigateToPage {
+    pub fn set(self, page: AppPage) {
+        self.0.run(page);
+    }
+}
+
 /// 词库域状态：词条数据源与词库来源信息。
 #[derive(Clone, Copy)]
 pub struct LexiconState {

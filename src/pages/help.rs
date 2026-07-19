@@ -12,7 +12,7 @@ use crate::utils::i18n::tr;
 pub fn HelpOverlay(
     open: ReadSignal<bool>,
     set_open: WriteSignal<bool>,
-    page: ReadSignal<AppPage>,
+    page: Signal<AppPage>,
 ) -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
 

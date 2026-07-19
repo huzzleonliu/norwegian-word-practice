@@ -4,7 +4,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
@@ -14,7 +14,7 @@ use crate::utils::i18n::tr;
 
 #[component]
 pub fn SeriseSelectPage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let practice_state = expect_context::<PracticeState>();
     let lang = expect_context::<UiState>().ui_language;
@@ -137,7 +137,7 @@ fn load_series_word_bank(
     lexicon_state: LexiconState,
     practice_state: PracticeState,
     set_status: WriteSignal<String>,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     lang: ReadSignal<UiLanguage>,
 ) {
     // 系列模式统一加载 `series-word-bank.csv`，再按 tag 过滤选题范围。

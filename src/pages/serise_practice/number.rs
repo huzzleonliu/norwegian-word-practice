@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use leptos::prelude::*;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_engine::{
     AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
@@ -77,7 +77,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
     initialize_temp_practice_result(lexicon_state, practice_state);
 
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
     let (group_statuses, set_group_statuses) = signal(HashMap::<String, String>::new());

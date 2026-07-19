@@ -5,7 +5,7 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::{PracticeState, UiState};
+use crate::app_state::{NavigateToPage, PracticeState, UiState};
 use crate::pages::AppPage;
 use crate::structures::field_meta::{answer_stats_mut, for_each_answer_stats_pair_mut};
 use crate::structures::pracresult::{
@@ -25,7 +25,7 @@ pub enum RestartTempBehavior {
 #[component]
 pub fn FinishPracticeButton(
     practice_state: PracticeState,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
     summary_return_page: AppPage,
@@ -96,7 +96,7 @@ pub fn RestartPracticeButton(
 #[component]
 pub fn AbortPracticeButton(
     practice_state: PracticeState,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     abort_target_page: AppPage,
     #[prop(optional)] label: Option<String>,
     #[prop(optional)] class: Option<String>,
@@ -140,7 +140,7 @@ pub fn create_temp_practice_result(
 pub fn handle_finish_click(
     practice_state: PracticeState,
     lang: crate::structures::word_bank_entry::UiLanguage,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     set_status: WriteSignal<String>,
     finish_target_page: AppPage,
 ) {
@@ -201,7 +201,7 @@ pub fn handle_restart_click(
 /// 放弃动作：清空临时统计并返回指定页面。
 pub fn handle_abort_click(
     practice_state: PracticeState,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     abort_target_page: AppPage,
 ) {
     practice_state

@@ -1,6 +1,9 @@
-//! 应用入口：初始化全局信号、注入 Context，并按 `AppPage` 分发页面组件。
+//! 应用入口：全局 Context + 官方 `leptos_router` 路由表。
 
 use leptos::prelude::*;
+use leptos_router::components::{Redirect, Route, Router, Routes};
+use leptos_router::hooks::{use_location, use_navigate};
+use leptos_router::path;
 
 mod app_state;
 mod components;
@@ -10,6 +13,8 @@ mod structures;
 mod tests;
 mod utils;
 
+use app_state::NavigateToPage;
+use pages::AppPage;
 use structures::word_bank_entry::{UiLanguage, UiTheme};
 use utils::i18n::tr;
 use utils::theme::{apply_theme, load_stored_theme};
@@ -20,7 +25,6 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let (current_page, set_current_page) = signal(pages::AppPage::Home);
     let (word_bank_entries, set_word_bank_entries) = signal(Vec::new());
     let (word_bank_data_version, set_word_bank_data_version) = signal(0_u64);
     let (word_bank_source_name, set_word_bank_source_name) = signal("尚未加载词库".to_string());
@@ -33,7 +37,7 @@ fn App() -> impl IntoView {
         signal(structures::pracresult::PracticeResult::default());
     let (last_completed_practice_result, set_last_completed_practice_result) =
         signal(structures::pracresult::PracticeResult::default());
-    let (summary_return_page, set_summary_return_page) = signal(pages::AppPage::LexiconPractice);
+    let (summary_return_page, set_summary_return_page) = signal(AppPage::LexiconPractice);
 
     let (help_open, set_help_open) = signal(false);
     let (wallet_address, set_wallet_address) = signal(Option::<String>::None);
@@ -46,8 +50,6 @@ fn App() -> impl IntoView {
         apply_theme(ui_theme.get());
     });
 
-    // 统一在根组件注入页面路由与全局状态，子页面通过 `expect_context` 获取。
-    provide_context(set_current_page);
     provide_context(app_state::LexiconState {
         entries: word_bank_entries,
         set_entries: set_word_bank_entries,
@@ -72,7 +74,7 @@ fn App() -> impl IntoView {
         ui_language,
         ui_theme,
     });
-    let wallet_state = app_state::WalletState {
+    provide_context(app_state::WalletState {
         address: wallet_address,
         set_address: set_wallet_address,
         busy: wallet_busy,
@@ -81,20 +83,63 @@ fn App() -> impl IntoView {
         set_status: set_wallet_status,
         connect_nonce: wallet_connect_nonce,
         set_connect_nonce: set_wallet_connect_nonce,
-    };
-    provide_context(wallet_state);
+    });
 
-    // 从「铸造 NFT」入口触发连接后，连接成功自动进入铸造页。
+    view! {
+        <Router>
+            <AppChrome
+                ui_language=ui_language
+                set_ui_language=set_ui_language
+                ui_theme=ui_theme
+                set_ui_theme=set_ui_theme
+                help_open=help_open
+                set_help_open=set_help_open
+                pending_mint_navigation=pending_mint_navigation
+                set_pending_mint_navigation=set_pending_mint_navigation
+                wallet_address=wallet_address
+            />
+        </Router>
+    }
+}
+
+#[component]
+fn AppChrome(
+    ui_language: ReadSignal<UiLanguage>,
+    set_ui_language: WriteSignal<UiLanguage>,
+    ui_theme: ReadSignal<UiTheme>,
+    set_ui_theme: WriteSignal<UiTheme>,
+    help_open: ReadSignal<bool>,
+    set_help_open: WriteSignal<bool>,
+    pending_mint_navigation: ReadSignal<bool>,
+    set_pending_mint_navigation: WriteSignal<bool>,
+    wallet_address: ReadSignal<Option<String>>,
+) -> impl IntoView {
+    let navigate = use_navigate();
+    let navigate_to_page = NavigateToPage(Callback::new({
+        let navigate = navigate.clone();
+        move |page: AppPage| {
+            navigate(page.path(), Default::default());
+        }
+    }));
+    provide_context(navigate_to_page);
+
+    let location = use_location();
+    let current_page = Signal::derive(move || {
+        AppPage::from_path(&location.pathname.get()).unwrap_or(AppPage::Home)
+    });
+
+    let wallet_state = expect_context::<app_state::WalletState>();
+
     Effect::new(move |_| {
         if pending_mint_navigation.get() && wallet_address.get().is_some() {
             set_pending_mint_navigation.set(false);
-            set_current_page.set(pages::AppPage::MintNft);
+            navigate_to_page.set(AppPage::MintNft);
         }
     });
 
     let open_mint_page = move |_| {
         if wallet_state.is_connected() {
-            set_current_page.set(pages::AppPage::MintNft);
+            navigate_to_page.set(AppPage::MintNft);
         } else {
             set_pending_mint_navigation.set(true);
             wallet_state.request_connect();
@@ -162,44 +207,23 @@ fn App() -> impl IntoView {
                 set_open=set_help_open
                 page=current_page
             />
-            // 本项目不使用 URL 路由，页面切换通过 `AppPage` 枚举进行。
-            {move || match current_page.get() {
-                pages::AppPage::Home => view! { <pages::home::HomePage/> }.into_any(),
-                pages::AppPage::PracticeModeSelect => {
-                    view! { <pages::practice_mode_select::PracticeModePage/> }.into_any()
-                }
-                pages::AppPage::LexiconMode => {
-                    view! { <pages::lexicon_select::LexiconSelectPage/> }.into_any()
-                }
-                pages::AppPage::LexiconPractice => {
-                    view! { <pages::lexicon_practice::LexiconPracticePage/> }.into_any()
-                }
-                pages::AppPage::LexiconSummary => {
-                    view! { <pages::practice_result::LexiconSummaryPage/> }.into_any()
-                }
-                pages::AppPage::LocalLexiconEditor => {
-                    view! { <pages::dictionary_editor::LocalLexiconEditorPage/> }.into_any()
-                }
-                pages::AppPage::MintNft => {
-                    view! { <pages::mint_nft::MintNftPage/> }.into_any()
-                }
-                pages::AppPage::SeriseSelect => {
-                    view! { <pages::serise_select::SeriseSelectPage/> }.into_any()
-                }
-                pages::AppPage::SeriseNumberPractice => {
-                    view! { <pages::serise_practice::number::NumberSerisePracticePage/> }.into_any()
-                }
-                pages::AppPage::SeriseMonthPractice => {
-                    view! { <pages::serise_practice::month::MonthSerisePracticePage/> }.into_any()
-                }
-                pages::AppPage::SerisePronounPractice => {
-                    view! { <pages::serise_practice::pronoun::PronounSerisePracticePage/> }.into_any()
-                }
-                pages::AppPage::SeriseInterrogativePractice => {
-                    view! { <pages::serise_practice::interrogative::InterrogativeSerisePracticePage/> }
-                        .into_any()
-                }
-            }}
+            <Routes fallback=|| view! { <Redirect path="/" /> }>
+                <Route path=path!("/") view=pages::home::HomePage/>
+                <Route path=path!("/practice") view=pages::practice_mode_select::PracticeModePage/>
+                <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
+                <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
+                <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
+                <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
+                <Route path=path!("/mint") view=pages::mint_nft::MintNftPage/>
+                <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>
+                <Route path=path!("/series/number") view=pages::serise_practice::number::NumberSerisePracticePage/>
+                <Route path=path!("/series/month") view=pages::serise_practice::month::MonthSerisePracticePage/>
+                <Route path=path!("/series/pronoun") view=pages::serise_practice::pronoun::PronounSerisePracticePage/>
+                <Route
+                    path=path!("/series/interrogative")
+                    view=pages::serise_practice::interrogative::InterrogativeSerisePracticePage
+                />
+            </Routes>
         </div>
     }
 }

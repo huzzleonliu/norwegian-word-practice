@@ -4,7 +4,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::{LexiconState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, UiState};
 use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
@@ -16,7 +16,7 @@ include!(concat!(env!("OUT_DIR"), "/lexicon_word_bank_catalog.rs"));
 
 #[component]
 pub fn PracticeModePage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let lang = expect_context::<UiState>().ui_language;
     let default_word_bank = LEXICON_WORD_BANK_FILES

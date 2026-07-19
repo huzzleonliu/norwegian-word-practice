@@ -5,7 +5,7 @@ use leptos::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use leptos::task::spawn_local;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
@@ -16,7 +16,7 @@ use crate::utils::pracresult_crypto::parse_practice_result_from_import;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let practice_state = expect_context::<PracticeState>();
     let ui_state = expect_context::<UiState>();
@@ -126,7 +126,7 @@ pub fn HomePage() -> impl IntoView {
 fn import_pracresult_from_file(
     ev: Event,
     set_status: WriteSignal<String>,
-    set_current_page: WriteSignal<AppPage>,
+    set_current_page: NavigateToPage,
     set_practice_result: WriteSignal<PracticeResult>,
     set_selected_word_entry_ids: WriteSignal<Vec<String>>,
     ui_language: ReadSignal<UiLanguage>,

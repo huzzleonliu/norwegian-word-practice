@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::*;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_engine::{
     AbortPracticeButton, CheckAnswersError, FinishPracticeButton, PracticeEntry, PracticeSettings,
@@ -19,7 +19,7 @@ use crate::utils::i18n::tr;
 
 #[component]
 pub fn LexiconPracticePage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let practice_state = expect_context::<PracticeState>();
     let lang = expect_context::<UiState>().ui_language;

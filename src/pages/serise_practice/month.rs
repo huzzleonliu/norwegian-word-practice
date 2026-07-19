@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use leptos::prelude::*;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
 use crate::components::practice_engine::{
     AbortPracticeButton, CheckAnswersError, FinishPracticeButton, PracticeEntry,
@@ -27,7 +27,7 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
     initialize_temp_practice_result(lexicon_state, practice_state);
 
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let (prompt_field_a, _) = signal("chinese".to_string());
     let (prompt_field_b, _) = signal("english".to_string());
     let (answer_fields, _) = signal(vec!["base_form".to_string()]);

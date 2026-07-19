@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::lexicon_browser::{LexiconBrowser, LexiconBrowserMode};
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
@@ -13,7 +13,7 @@ use crate::utils::shuffle::shuffle_strings;
 
 #[component]
 pub fn LexiconSelectPage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let practice_state = expect_context::<PracticeState>();
     let entries = lexicon_state.entries;

@@ -2,9 +2,8 @@
 
 use leptos::prelude::*;
 
-use crate::app_state::{LexiconState, PracticeState, UiState};
+use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
-use crate::pages::AppPage;
 use crate::structures::field_meta::for_each_answer_stats;
 use crate::structures::pracresult::{PracticeResult, PracticedWordEntryResult};
 use crate::structures::word_bank_entry::{PartOfSpeech, UiLanguage, WordBankEntry};
@@ -13,7 +12,7 @@ use crate::utils::pracresult_crypto::serialize_practice_result_for_export;
 
 #[component]
 pub fn LexiconSummaryPage() -> impl IntoView {
-    let set_current_page = expect_context::<WriteSignal<AppPage>>();
+    let set_current_page = expect_context::<NavigateToPage>();
     let lexicon_state = expect_context::<LexiconState>();
     let practice_state = expect_context::<PracticeState>();
     let lang = expect_context::<UiState>().ui_language;
