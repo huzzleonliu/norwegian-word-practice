@@ -1,6 +1,6 @@
 /**
- * OAOA Candy Machine mint helper for browser (Phantom / window.solana).
- * Loaded as an ES module; exposes window.__oaoaMintNft().
+ * OAOA Candy Machine helpers for browser (Phantom / window.solana).
+ * Exposes window.__oaoaMintNft() and window.__oaoaHasCollectionNft(owner).
  */
 const RPC = "https://api.devnet.solana.com";
 const CANDY_MACHINE = "C2sf5YPcnrKabkXqs1615iF6Y2udrimMHis6rYnUQVN7";
@@ -15,12 +15,14 @@ async function loadSdk() {
     { publicKey, generateSigner, some, transactionBuilder },
     { setComputeUnitLimit },
     { walletAdapterIdentity },
+    { mplTokenMetadata, fetchAllDigitalAssetWithTokenByOwner },
   ] = await Promise.all([
     import("https://esm.sh/@metaplex-foundation/umi-bundle-defaults@0.9.2"),
     import("https://esm.sh/@metaplex-foundation/mpl-candy-machine@6.0.1"),
     import("https://esm.sh/@metaplex-foundation/umi@0.9.2"),
     import("https://esm.sh/@metaplex-foundation/mpl-toolbox@0.9.4"),
     import("https://esm.sh/@metaplex-foundation/umi-signer-wallet-adapters@0.9.2"),
+    import("https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.3.0"),
   ]);
   return {
     createUmi,
@@ -33,8 +35,34 @@ async function loadSdk() {
     transactionBuilder,
     setComputeUnitLimit,
     walletAdapterIdentity,
+    mplTokenMetadata,
+    fetchAllDigitalAssetWithTokenByOwner,
   };
 }
+
+/** @param {string} ownerPubkey */
+window.__oaoaHasCollectionNft = async function __oaoaHasCollectionNft(ownerPubkey) {
+  if (!ownerPubkey || typeof ownerPubkey !== "string") {
+    return false;
+  }
+  const sdk = await loadSdk();
+  const umi = sdk.createUmi(RPC).use(sdk.mplTokenMetadata());
+  const assets = await sdk.fetchAllDigitalAssetWithTokenByOwner(
+    umi,
+    sdk.publicKey(ownerPubkey)
+  );
+  const collection = COLLECTION_MINT;
+  return assets.some((asset) => {
+    const col = asset?.metadata?.collection;
+    if (!col) return false;
+    // umi Option: { __option: 'Some', value: { key, verified } } or similar shapes
+    const value = col.__option === "Some" ? col.value : col.value ?? col;
+    if (!value) return false;
+    const key = (value.key ?? value.address ?? value)?.toString?.() ?? String(value.key ?? "");
+    const verified = value.verified === true || value.verified === 1;
+    return verified && key === collection;
+  });
+};
 
 window.__oaoaMintNft = async function __oaoaMintNft() {
   const provider = window.solana;

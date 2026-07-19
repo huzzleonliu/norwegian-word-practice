@@ -9,6 +9,7 @@ use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
+use crate::gates;
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
 
@@ -229,13 +230,12 @@ pub fn PracticeModePage() -> impl IntoView {
                 </div>
 
                 <div class="mt-10 text-left sm:text-right">
-                    <button
-                        type="button"
-                        on:click=move |_| set_current_page.set(AppPage::LocalLexiconEditor)
+                    <gates::NftGatedNavigateButton
+                        target=AppPage::LocalLexiconEditor
                         class="text-sm text-slate-400 underline underline-offset-4 hover:text-slate-300"
                     >
                         {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}
-                    </button>
+                    </gates::NftGatedNavigateButton>
                 </div>
             </section>
         </main>

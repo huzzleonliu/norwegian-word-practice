@@ -7,6 +7,7 @@ use leptos_router::path;
 
 mod app_state;
 mod components;
+mod gates;
 mod pages;
 mod structures;
 #[cfg(test)]
@@ -14,6 +15,9 @@ mod tests;
 mod utils;
 
 use app_state::NavigateToPage;
+use gates::{
+    install_gate_effects, request_mint_page, NftGateState, OwnershipStatus, RequireNftPage,
+};
 use pages::AppPage;
 use structures::word_bank_entry::{UiLanguage, UiTheme};
 use utils::i18n::tr;
@@ -49,7 +53,8 @@ fn App() -> impl IntoView {
     let (wallet_busy, set_wallet_busy) = signal(false);
     let (wallet_status, set_wallet_status) = signal(String::new());
     let (wallet_connect_nonce, set_wallet_connect_nonce) = signal(0_u64);
-    let (pending_mint_navigation, set_pending_mint_navigation) = signal(false);
+    let (ownership, set_ownership) = signal(OwnershipStatus::Disconnected);
+    let (gate_pending, set_gate_pending) = signal(Option::<gates::GateIntent>::None);
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
@@ -96,6 +101,12 @@ fn App() -> impl IntoView {
         connect_nonce: wallet_connect_nonce,
         set_connect_nonce: set_wallet_connect_nonce,
     });
+    provide_context(NftGateState {
+        ownership,
+        set_ownership,
+        pending: gate_pending,
+        set_pending: set_gate_pending,
+    });
 
     view! {
         <Router>
@@ -106,9 +117,6 @@ fn App() -> impl IntoView {
                 set_ui_theme=set_ui_theme
                 help_open=help_open
                 set_help_open=set_help_open
-                pending_mint_navigation=pending_mint_navigation
-                set_pending_mint_navigation=set_pending_mint_navigation
-                wallet_address=wallet_address
             />
         </Router>
     }
@@ -122,9 +130,6 @@ fn AppChrome(
     set_ui_theme: WriteSignal<UiTheme>,
     help_open: ReadSignal<bool>,
     set_help_open: WriteSignal<bool>,
-    pending_mint_navigation: ReadSignal<bool>,
-    set_pending_mint_navigation: WriteSignal<bool>,
-    wallet_address: ReadSignal<Option<String>>,
 ) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_page = NavigateToPage(Callback::new({
@@ -141,21 +146,11 @@ fn AppChrome(
     });
 
     let wallet_state = expect_context::<app_state::WalletState>();
-
-    Effect::new(move |_| {
-        if pending_mint_navigation.get() && wallet_address.get().is_some() {
-            set_pending_mint_navigation.set(false);
-            navigate_to_page.set(AppPage::MintNft);
-        }
-    });
+    let gate = expect_context::<NftGateState>();
+    install_gate_effects(gate, wallet_state, navigate_to_page);
 
     let open_mint_page = move |_| {
-        if wallet_state.is_connected() {
-            navigate_to_page.set(AppPage::MintNft);
-        } else {
-            set_pending_mint_navigation.set(true);
-            wallet_state.request_connect();
-        }
+        request_mint_page(gate, wallet_state, navigate_to_page);
     };
 
     view! {
@@ -225,7 +220,7 @@ fn AppChrome(
                 <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
                 <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
                 <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
-                <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
+                <Route path=path!("/editor") view=GatedLocalLexiconEditorPage/>
                 <Route path=path!("/mint") view=pages::mint_nft::MintNftPage/>
                 <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>
                 <Route path=path!("/series/number") view=pages::serise_practice::number::NumberSerisePracticePage/>
@@ -237,5 +232,14 @@ fn AppChrome(
                 />
             </Routes>
         </div>
+    }
+}
+
+#[component]
+fn GatedLocalLexiconEditorPage() -> impl IntoView {
+    view! {
+        <RequireNftPage>
+            <pages::dictionary_editor::LocalLexiconEditorPage/>
+        </RequireNftPage>
     }
 }
