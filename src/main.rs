@@ -97,6 +97,7 @@ fn App() -> impl IntoView {
                         )
                     }}
                 </button>
+                <components::wallet_button::WalletConnectButton/>
             </div>
             <div class="fixed bottom-2 right-2 z-[100] flex items-center gap-2 sm:bottom-4 sm:right-4">
                 <button
