@@ -2,6 +2,9 @@
 /dist
 /node_modules
 **/*.kra
+**/*.kra~
 **/*.png~
 **/*.png
-**/*.kra~
+!public/nft/*.png
+candy_machine/
+TEMP/

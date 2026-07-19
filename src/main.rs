@@ -36,6 +36,11 @@ fn App() -> impl IntoView {
     let (summary_return_page, set_summary_return_page) = signal(pages::AppPage::LexiconPractice);
 
     let (help_open, set_help_open) = signal(false);
+    let (wallet_address, set_wallet_address) = signal(Option::<String>::None);
+    let (wallet_busy, set_wallet_busy) = signal(false);
+    let (wallet_status, set_wallet_status) = signal(String::new());
+    let (wallet_connect_nonce, set_wallet_connect_nonce) = signal(0_u64);
+    let (pending_mint_navigation, set_pending_mint_navigation) = signal(false);
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
@@ -67,6 +72,35 @@ fn App() -> impl IntoView {
         ui_language,
         ui_theme,
     });
+    let wallet_state = app_state::WalletState {
+        address: wallet_address,
+        set_address: set_wallet_address,
+        busy: wallet_busy,
+        set_busy: set_wallet_busy,
+        status: wallet_status,
+        set_status: set_wallet_status,
+        connect_nonce: wallet_connect_nonce,
+        set_connect_nonce: set_wallet_connect_nonce,
+    };
+    provide_context(wallet_state);
+
+    // 从「铸造 NFT」入口触发连接后，连接成功自动进入铸造页。
+    Effect::new(move |_| {
+        if pending_mint_navigation.get() && wallet_address.get().is_some() {
+            set_pending_mint_navigation.set(false);
+            set_current_page.set(pages::AppPage::MintNft);
+        }
+    });
+
+    let open_mint_page = move |_| {
+        if wallet_state.is_connected() {
+            set_current_page.set(pages::AppPage::MintNft);
+        } else {
+            set_pending_mint_navigation.set(true);
+            wallet_state.request_connect();
+        }
+    };
+
     view! {
         <div>
             <div class="fixed right-2 top-2 z-[100] flex items-center gap-2 sm:right-4 sm:top-4">
@@ -115,6 +149,13 @@ fn App() -> impl IntoView {
                 >
                     {move || tr(ui_language.get(), "问题反馈", "Feedback")}
                 </a>
+                <button
+                    type="button"
+                    on:click=open_mint_page
+                    class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
+                >
+                    {move || tr(ui_language.get(), "铸造 NFT", "Mint NFT")}
+                </button>
             </div>
             <pages::help::HelpOverlay
                 open=help_open
@@ -138,6 +179,9 @@ fn App() -> impl IntoView {
                 }
                 pages::AppPage::LocalLexiconEditor => {
                     view! { <pages::dictionary_editor::LocalLexiconEditorPage/> }.into_any()
+                }
+                pages::AppPage::MintNft => {
+                    view! { <pages::mint_nft::MintNftPage/> }.into_any()
                 }
                 pages::AppPage::SeriseSelect => {
                     view! { <pages::serise_select::SeriseSelectPage/> }.into_any()

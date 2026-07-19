@@ -10,6 +10,8 @@ COPY Cargo.toml Cargo.lock build.rs index.html Trunk.toml ./
 COPY src ./src
 COPY data ./data
 COPY docs ./docs
+COPY public ./public
+COPY js ./js
 COPY style ./style
 COPY package.json package-lock.json ./
 COPY tailwind.config.js ./

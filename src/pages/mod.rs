@@ -5,6 +5,7 @@ pub mod help;
 pub mod home;
 pub mod lexicon_practice;
 pub mod lexicon_select;
+pub mod mint_nft;
 pub mod practice_mode_select;
 pub mod practice_result;
 pub mod serise_practice;
@@ -18,6 +19,7 @@ pub enum AppPage {
     LexiconPractice,
     LexiconSummary,
     LocalLexiconEditor,
+    MintNft,
     SeriseSelect,
     SeriseNumberPractice,
     SeriseMonthPractice,
