@@ -17,6 +17,9 @@ use app_state::NavigateToPage;
 use pages::AppPage;
 use structures::word_bank_entry::{UiLanguage, UiTheme};
 use utils::i18n::tr;
+use utils::lexicon_storage::{
+    load_stored_lexicon, save_stored_lexicon, DEFAULT_SOURCE_NAME,
+};
 use utils::theme::{apply_theme, load_stored_theme};
 
 fn main() {
@@ -25,9 +28,11 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let (word_bank_entries, set_word_bank_entries) = signal(Vec::new());
+    let (initial_entries, initial_source_name) = load_stored_lexicon()
+        .unwrap_or_else(|| (Vec::new(), DEFAULT_SOURCE_NAME.to_string()));
+    let (word_bank_entries, set_word_bank_entries) = signal(initial_entries);
     let (word_bank_data_version, set_word_bank_data_version) = signal(0_u64);
-    let (word_bank_source_name, set_word_bank_source_name) = signal("尚未加载词库".to_string());
+    let (word_bank_source_name, set_word_bank_source_name) = signal(initial_source_name);
     let (ui_language, set_ui_language) = signal(UiLanguage::Zh);
     let (ui_theme, set_ui_theme) = signal(load_stored_theme());
     let (selected_word_entry_ids, set_selected_word_entry_ids) = signal(Vec::<String>::new());
@@ -48,6 +53,13 @@ fn App() -> impl IntoView {
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
+    });
+
+    // 词库变更（选择 / 导入 / 编辑）后写入 localStorage，刷新可恢复。
+    Effect::new(move |_| {
+        let entries = word_bank_entries.get();
+        let source_name = word_bank_source_name.get();
+        save_stored_lexicon(&entries, &source_name);
     });
 
     provide_context(app_state::LexiconState {
