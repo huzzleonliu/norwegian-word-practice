@@ -3,8 +3,98 @@
 use leptos::prelude::*;
 
 use super::utils::{DATA_COLUMN_KEYS, header_name};
-use crate::structures::word_bank_entry::UiLanguage;
+use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
+use crate::utils::csv_schema::serialize_word_bank_csv;
 use crate::utils::i18n::{field_label, tr};
+
+/// 导出当前已提交词库为 CSV（草稿需先「确认修改」）。
+#[component]
+pub fn ExportLexiconCsvButton(
+    lang: ReadSignal<UiLanguage>,
+    entries: ReadSignal<Vec<WordBankEntry>>,
+    set_status: WriteSignal<String>,
+    #[prop(optional, into)] class: Option<String>,
+) -> impl IntoView {
+    let class = class.unwrap_or_else(|| {
+        "w-full rounded border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+            .to_string()
+    });
+
+    let on_click = move |_| {
+        let language = lang.get_untracked();
+        let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
+            Ok(content) => content,
+            Err(err) => {
+                set_status.set(format!(
+                    "{} {err}",
+                    tr(language, "导出失败：", "Export failed:")
+                ));
+                return;
+            }
+        };
+
+        match export_csv_download("word-bank.csv", &csv_content) {
+            Ok(()) => set_status
+                .set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
+            Err(err) => set_status.set(format!(
+                "{} {err}",
+                tr(language, "导出失败：", "Export failed:")
+            )),
+        }
+    };
+
+    view! {
+        <button type="button" class=class on:click=on_click>
+            {move || tr(lang.get(), "导出词库 CSV", "Export Lexicon CSV")}
+        </button>
+    }
+}
+
+/// 浏览器端下载导出文件（WASM 环境通过 Blob + ObjectURL 触发保存）。
+fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::{JsCast, JsValue};
+
+        let parts = js_sys::Array::new();
+        parts.push(&JsValue::from_str(content));
+        let blob = web_sys::Blob::new_with_str_sequence(&parts)
+            .map_err(|_| "无法创建 CSV Blob".to_string())?;
+        let object_url = web_sys::Url::create_object_url_with_blob(&blob)
+            .map_err(|_| "无法创建下载 URL".to_string())?;
+
+        let window = web_sys::window().ok_or_else(|| "无法获取 window".to_string())?;
+        let document = window
+            .document()
+            .ok_or_else(|| "无法获取 document".to_string())?;
+        let anchor = document
+            .create_element("a")
+            .map_err(|_| "无法创建下载节点".to_string())?
+            .dyn_into::<web_sys::HtmlAnchorElement>()
+            .map_err(|_| "无法转换下载节点".to_string())?;
+
+        anchor.set_href(&object_url);
+        anchor.set_download(filename);
+
+        let body = document
+            .body()
+            .ok_or_else(|| "页面 body 不存在".to_string())?;
+        body.append_child(&anchor)
+            .map_err(|_| "无法挂载下载节点".to_string())?;
+        anchor.click();
+        anchor.remove();
+
+        web_sys::Url::revoke_object_url(&object_url).map_err(|_| "无法释放下载 URL".to_string())?;
+        Ok(())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = filename;
+        let _ = content;
+        Err("导出仅在浏览器环境可用。".to_string())
+    }
+}
 
 #[component]
 pub fn LexiconSearchPanel(

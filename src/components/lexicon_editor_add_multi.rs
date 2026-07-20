@@ -140,6 +140,7 @@ pub fn LexiconEditorAddMulti(
                                 col_widths=preview_col_widths
                                 sort_state=preview_sort_state
                                 row_items=preview_row_items
+                                entries=preview_entries
                                 on_sort_by_column=noop_sort
                                 on_start_resize=noop_resize
                                 on_begin_selected_drag=noop_selected_drag

@@ -2,11 +2,31 @@
 
 ## Local Lexicon Editor
 
-Edit a local lexicon in the browser: manual add, dictionary/AI-assisted fill-in, table editing, and CSV import/export. The console at the top shows status. After editing the table, click **Confirm Changes** before exporting.
+Customize a private lexicon in the browser: single-entry add, dictionary/AI-assisted fill-in, bulk preview write, plus in-table editing and export.
+
+### Access Requirements
+
+This page is gated by NFT ownership:
+
+* If no wallet is connected, the app triggers **Connect Wallet**
+* If a wallet is connected but does not hold an NFT from this collection, **Mint NFT** opens in a new tab
+* You can use this page only after connecting a wallet that holds at least one NFT from the series
+
+Open it from **Local Lexicon Editor** on the practice mode selection page (bottom-right), or go to `/editor` (the same gate applies).
+
+### Page Overview
+
+1. **Status console** — operation feedback; reminds you to **Confirm Changes** before exporting  
+2. **Single Add** — manually add one entry  
+3. **Dictionary-first lookup** — Ordbok → Gemini helpers; results go to the single form or bulk preview  
+4. **Bulk Add** — write preview rows into the lexicon  
+5. **Lexicon Browser (Edit)** — edit/delete/search in a table; export CSV at the bottom  
+
+The lexicon is stored in the browser (usually restored after refresh). Use the top-left control to return to practice mode selection. This page does not start practice directly.
 
 ### Single Add
 
-Fill in Norwegian base form and inflection fields by part of speech, plus translations and tags, then click **Add Entry**.
+Fill Norwegian base form and inflection fields by part of speech, plus translations and tags, then click **Add Entry**.
 
 * **Clear** resets the single-entry form (usually without clearing saved tokens / default tags)
 * Successful adds are written into the current lexicon immediately
@@ -15,14 +35,14 @@ Fill in Norwegian base form and inflection fields by part of speech, plus transl
 
 Auto-fill fields from a Norwegian word form:
 
-1. Optionally configure Gemini / Google Translate tokens and test connectivity
-2. Enter the word form to look up; you may also set default tags
-3. Run lookup: Ordbok first, Gemini for missing fields when needed; Google Translate often fills Chinese/English
-4. **Ordbok only** disables the Gemini fallback
+1. Optionally configure Gemini / Google Translate tokens and test connectivity  
+2. Enter the word form; you may set default tags  
+3. Run lookup: Ordbok first, Gemini for gaps when needed; Google Translate often fills Chinese/English  
+4. **Ordbok only** disables the Gemini fallback  
 
 Results may:
 
-* fill the **Single Add** form above, or
+* fill the **Single Add** form above, or  
 * go to the **Bulk Add** preview table (multiple senses / parts of speech)
 
 ### Bulk Add
@@ -33,14 +53,15 @@ Shows multi-entry previews from lookup. Click **Add Entries** to write them into
 
 View and edit the current lexicon in a spreadsheet-like table:
 
-* Edit cell values
-* Mark rows for deletion (drag to multi-select)
-* Click **Confirm Changes** to apply deletions, save edits, and run id checks
-* Search, column visibility, sorting, and pagination work similarly to the word-selection page
+* Edit cells; mark rows for deletion (drag to multi-select)
+* You **must click Confirm Changes** before deletions/edits are written and id checks run
+* Search, column visibility, sorting, column resize, and pagination are available
 
-### Import and Export
+### Export CSV
 
-* **Import Lexicon CSV**: import from your computer (usually overwrites the current lexicon)
-* **Export Lexicon CSV**: download the current lexicon. Confirm table edits first
+The export control sits at the bottom of the lexicon browser, **to the left of Confirm Changes**. There is no import button on this page anymore—import on the practice mode selection page.
 
-Return to the practice mode selection page from the top left. This page does not start practice directly—go back, load/import the lexicon, then practice.
+* Export uses the **committed** lexicon, not unconfirmed table drafts
+* After edits or deletions, click **Confirm Changes**, then **Export Lexicon CSV**
+
+You can re-import the downloaded file via **Import Lexicon CSV** on the practice mode selection page.

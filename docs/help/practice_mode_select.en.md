@@ -35,8 +35,10 @@ Click **Import Lexicon CSV** and select a properly formatted lexicon file from y
 
 ### 5 Local Lexicon Editor
 
-The **Local Lexicon Editor** link at the bottom right opens lexicon editing.
+The **Local Lexicon Editor** link at the bottom right opens the lexicon editor page.
 
-* In paid mode, you can customize a private word bank of your own, then return here to import it or continue practicing.
+* You must connect a wallet that holds an NFT from this collection; otherwise the app will prompt you to connect, or open the mint page in a new tab
+* On the editor page you can customize a private lexicon and export CSV from the lexicon browser; CSV import is still done on this page
+* Exported files can be loaded here with **Import Lexicon CSV** before practicing
 
 Use **Back to previous page** in the top left to return to the home page.

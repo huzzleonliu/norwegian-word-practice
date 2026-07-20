@@ -472,6 +472,7 @@ pub fn LexiconBrowser(
                     col_widths=col_widths
                     sort_state=sort_state
                     row_items=row_items
+                    entries=entries
                     on_sort_by_column=on_sort_by_column
                     on_start_resize=on_start_resize
                     on_begin_selected_drag=on_begin_selected_drag

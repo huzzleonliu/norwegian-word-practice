@@ -4,9 +4,8 @@ use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
 use crate::app_state::{LexiconState, UiState};
-use crate::components::import_csv::ImportCsvButton;
 use crate::components::lexicon_browser::{
-    LexiconBrowser, LexiconBrowserMode, parse_pipe_list, serialize_word_bank_csv,
+    LexiconBrowser, LexiconBrowserMode, parse_pipe_list,
 };
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
@@ -376,29 +375,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
         ));
         set_bulk_success_message.set(tr(language, "成功导入", "Imported").to_string());
     });
-    let export_csv_click = move |_| {
-        let language = lang.get_untracked();
-        // 导出读取全局已提交词库；表格中的草稿修改需先在浏览器中“确认修改”。
-        let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
-            Ok(content) => content,
-            Err(err) => {
-                set_status.set(format!(
-                    "{} {err}",
-                    tr(language, "导出失败：", "Export failed:")
-                ));
-                return;
-            }
-        };
-
-        match export_csv_download("word-bank.csv", &csv_content) {
-            Ok(()) => set_status
-                .set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
-            Err(err) => set_status.set(format!(
-                "{} {err}",
-                tr(language, "导出失败：", "Export failed:")
-            )),
-        }
-    };
     let ai_actions = AiResearcherActions {
         set_status,
         set_bulk_input,
@@ -630,28 +606,6 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     data_version=data_version
                     mode=LexiconBrowserMode::Edit
                 />
-
-                <div class="mt-4 flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                    <ImportCsvButton
-                        input_id="lexicon-import-csv-input".to_string()
-                        label=Signal::derive(move || {
-                            tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
-                        })
-                        class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium hover:bg-slate-700 sm:w-auto".to_string()
-                        set_entries=set_entries
-                        set_status=set_status
-                        set_data_version=set_data_version
-                        ui_language=lang
-                        set_source_name=lexicon_state.set_source_name
-                    />
-                    <button
-                        type="button"
-                        on:click=export_csv_click
-                        class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
-                    >
-                        {move || tr(lang.get(), "导出词库 CSV", "Export Lexicon CSV")}
-                    </button>
-                </div>
             </section>
         </main>
     }
@@ -668,51 +622,5 @@ fn parse_optional_input(raw: &str) -> Option<String> {
         None
     } else {
         Some(trimmed.to_string())
-    }
-}
-
-/// 浏览器端下载导出文件（WASM 环境通过 Blob + ObjectURL 触发保存）。
-fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
-    #[cfg(target_arch = "wasm32")]
-    {
-        use wasm_bindgen::{JsCast, JsValue};
-
-        let parts = js_sys::Array::new();
-        parts.push(&JsValue::from_str(content));
-        let blob = web_sys::Blob::new_with_str_sequence(&parts)
-            .map_err(|_| "无法创建 CSV Blob".to_string())?;
-        let object_url = web_sys::Url::create_object_url_with_blob(&blob)
-            .map_err(|_| "无法创建下载 URL".to_string())?;
-
-        let window = web_sys::window().ok_or_else(|| "无法获取 window".to_string())?;
-        let document = window
-            .document()
-            .ok_or_else(|| "无法获取 document".to_string())?;
-        let anchor = document
-            .create_element("a")
-            .map_err(|_| "无法创建下载节点".to_string())?
-            .dyn_into::<web_sys::HtmlAnchorElement>()
-            .map_err(|_| "无法转换下载节点".to_string())?;
-
-        anchor.set_href(&object_url);
-        anchor.set_download(filename);
-
-        let body = document
-            .body()
-            .ok_or_else(|| "页面 body 不存在".to_string())?;
-        body.append_child(&anchor)
-            .map_err(|_| "无法挂载下载节点".to_string())?;
-        anchor.click();
-        anchor.remove();
-
-        web_sys::Url::revoke_object_url(&object_url).map_err(|_| "无法释放下载 URL".to_string())?;
-        Ok(())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let _ = filename;
-        let _ = content;
-        Err("导出仅在浏览器环境可用。".to_string())
     }
 }

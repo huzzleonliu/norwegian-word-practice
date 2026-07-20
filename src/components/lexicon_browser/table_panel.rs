@@ -3,6 +3,7 @@
 use leptos::prelude::*;
 
 use super::utils::{DATA_COLUMN_KEYS, input_to_option, parse_pipe_list};
+use super::search_panel::ExportLexiconCsvButton;
 use crate::structures::field_meta::{entry_field_value, field_meta};
 use crate::structures::word_bank_entry::{
     PART_OF_SPEECH_OPTIONS, PartOfSpeech, UiLanguage, WordBankEntry,
@@ -41,6 +42,8 @@ pub fn LexiconTablePanel(
     col_widths: ReadSignal<Vec<u16>>,
     sort_state: ReadSignal<Vec<(usize, bool)>>,
     row_items: Signal<Vec<(usize, WordBankEntry)>>,
+    /// 已提交词库（导出用；不含未确认的表格草稿）。
+    entries: ReadSignal<Vec<WordBankEntry>>,
     on_sort_by_column: Callback<(usize, bool)>,
     on_start_resize: Callback<(usize, leptos::ev::MouseEvent)>,
     on_begin_selected_drag: Callback<(usize, bool)>,
@@ -428,13 +431,20 @@ pub fn LexiconTablePanel(
 
                 {match action_kind {
                     TableActionKind::ConfirmChanges => view! {
-                        <button
-                            type="button"
-                            on:click=move |_| on_confirm_changes.run(())
-                            class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
-                        >
-                            {move || tr(lang.get(), "确认修改", "Confirm Changes")}
-                        </button>
+                        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+                            <ExportLexiconCsvButton
+                                lang=lang
+                                entries=entries
+                                set_status=set_status
+                            />
+                            <button
+                                type="button"
+                                on:click=move |_| on_confirm_changes.run(())
+                                class="w-full rounded border border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                            >
+                                {move || tr(lang.get(), "确认修改", "Confirm Changes")}
+                            </button>
+                        </div>
                     }
                     .into_any(),
                     TableActionKind::AddEntries => view! { <div class="hidden sm:block"></div> }.into_any(),
