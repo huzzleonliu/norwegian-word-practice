@@ -21,15 +21,16 @@ For fixed series practice. Currently includes numbers, months, pronouns, interro
 
 ### 3 Load Built-in Lexicon
 
-Choose a built-in CSV from the dropdown (for example `word-bank.csv`), then click **Load Lexicon**.
+Choose a built-in encrypted lexicon from the dropdown (for example `word-bank.nwpdict`), then click **Load Lexicon**.
 
 * A successful load overwrites the current lexicon, and the entry count appears in the status line above and in the console.
 * If no lexicon is loaded yet, complete this step first, or use the import option below instead.
 
-### 4 Import Lexicon CSV
+### 4 Import Lexicon File
 
-Click **Import Lexicon CSV** and select a properly formatted lexicon file from your computer.
+Click **Import Lexicon File** and select a lexicon file from your computer.
 
+* Both plain `.csv` and encrypted `.nwpdict` are supported (`.nwpdict` is auto-decrypted on import)
 * Import also overwrites the current lexicon. This is useful for word lists you exported or edited yourself.
 * Results appear in the mini console in the middle of the page.
 
@@ -38,7 +39,7 @@ Click **Import Lexicon CSV** and select a properly formatted lexicon file from y
 The **Local Lexicon Editor** link at the bottom right opens the lexicon editor page.
 
 * You must connect a wallet that holds an NFT from this collection; otherwise the app will prompt you to connect, or open the mint page in a new tab
-* On the editor page you can customize a private lexicon and export CSV from the lexicon browser; CSV import is still done on this page
-* Exported files can be loaded here with **Import Lexicon CSV** before practicing
+* On the editor page you can customize a private lexicon and export encrypted lexicon files (`.nwpdict`) from the lexicon browser; import is still done on this page
+* Exported files can be loaded here with **Import Lexicon File** before practicing
 
 Use **Back to previous page** in the top left to return to the home page.

@@ -1,4 +1,4 @@
-//! 通用 CSV 导入按钮：读取本地文件并覆盖全局词库状态。
+//! 通用词库导入按钮：支持明文 CSV 与加密 `.nwpdict`，读取后覆盖全局词库状态。
 
 use leptos::ev::Event;
 use leptos::prelude::*;
@@ -7,6 +7,8 @@ use leptos::task::spawn_local;
 
 #[cfg(target_arch = "wasm32")]
 use crate::components::lexicon_browser::parse_word_bank_csv;
+#[cfg(target_arch = "wasm32")]
+use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
 
@@ -36,7 +38,7 @@ pub fn ImportCsvButton(
         <input
             id=input_id.clone()
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.nwpdict,text/csv,application/json,text/plain"
             class="hidden"
             on:change=import_csv_click
         />
@@ -133,7 +135,18 @@ fn import_csv_from_file(
                 }
             };
 
-            match parse_word_bank_csv(&content) {
+            let csv_content = match parse_lexicon_import_content(&content) {
+                Ok(csv) => csv,
+                Err(err) => {
+                    set_status.set(format!(
+                        "{} {err}",
+                        tr(lang, "导入失败：", "Import failed:")
+                    ));
+                    return;
+                }
+            };
+
+            match parse_word_bank_csv(&csv_content) {
                 Ok(word_list) => {
                     let count = word_list.len();
                     // 导入语义为“覆盖当前词库”，并 bump `data_version` 触发依赖组件重置草稿。

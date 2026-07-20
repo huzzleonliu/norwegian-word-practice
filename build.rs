@@ -1,4 +1,4 @@
-//! 编译期脚本：扫描 `data/lexicon-word-bank` 下的 CSV 文件，
+//! 编译期脚本：扫描 `data/lexicon-word-bank` 下的加密词库（`.nwpdict`）文件，
 //! 生成 `LEXICON_WORD_BANK_FILES` 常量供运行时下拉框使用。
 
 use std::env;
@@ -30,7 +30,7 @@ fn collect_word_bank_files(dir: &PathBuf) -> Vec<String> {
     entries
         .filter_map(Result::ok)
         .map(|entry| entry.path())
-        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("csv"))
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("nwpdict"))
         .filter_map(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())

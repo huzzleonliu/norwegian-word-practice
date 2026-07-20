@@ -2,7 +2,7 @@
 
 ## Select Words to Practice
 
-Pick which words from the currently loaded lexicon to practice next, then start lexicon practice. Before entering this page, load a built-in lexicon or import a CSV on the practice mode selection page.
+Pick which words from the currently loaded lexicon to practice next, then start lexicon practice. Before entering this page, load a built-in lexicon or import a lexicon file on the practice mode selection page.
 
 ### Current Lexicon Status
 
@@ -26,11 +26,11 @@ The lexicon browser on this page runs in **query mode**: mainly for choosing pra
 
 **Start Practice** reads the committed lexicon selection. Draft checks that were not confirmed are ignored.
 
-### Export CSV
+### Export Encrypted Lexicon
 
-**Export Lexicon CSV** sits at the bottom of the lexicon browser, to the left of **Confirm Changes**.
+**Export Lexicon File** sits at the bottom of the lexicon browser, to the left of **Confirm Changes**.
 
-* Export uses the **committed** lexicon (including confirmed selection flags)
+* Export writes an encrypted lexicon file (`.nwpdict`) from the **committed** lexicon (including confirmed selection flags)
 * If you just changed checks, click **Confirm Changes** before exporting
 
 ### Start Practice

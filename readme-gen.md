@@ -158,7 +158,7 @@ build.rs                          # 编译期扫描词库 CSV，生成内置词�
 
 文件：`src/pages/serise_select.rs`
 
-- 固定加载 `series-word-bank.csv`
+- 固定加载 `series-word-bank.nwpdict`
 - 按 tag 筛选当前系列的 id（如 `cardinal_number`、`month` 等）
 - 写入 `selected_word_entry_ids` 并跳转对应系列练习页
 

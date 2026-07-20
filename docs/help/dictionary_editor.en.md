@@ -57,11 +57,12 @@ View and edit the current lexicon in a spreadsheet-like table:
 * You **must click Confirm Changes** before deletions/edits are written and id checks run
 * Search, column visibility, sorting, column resize, and pagination are available
 
-### Export CSV
+### Export Encrypted Lexicon (.nwpdict)
 
 The export control sits at the bottom of the lexicon browser, **to the left of Confirm Changes**. There is no import button on this page anymore—import on the practice mode selection page.
 
+* Export generates an encrypted lexicon file (`.nwpdict`), not plain CSV
 * Export uses the **committed** lexicon, not unconfirmed table drafts
-* After edits or deletions, click **Confirm Changes**, then **Export Lexicon CSV**
+* After edits or deletions, click **Confirm Changes**, then **Export Lexicon File**
 
-You can re-import the downloaded file via **Import Lexicon CSV** on the practice mode selection page.
+You can import the file directly via **Import Lexicon File** on the practice mode selection page (it will auto-decrypt). Plain CSV import remains supported.

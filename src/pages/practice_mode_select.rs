@@ -11,6 +11,7 @@ use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::gates;
 use crate::pages::AppPage;
+use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::utils::i18n::tr;
 
 include!(concat!(env!("OUT_DIR"), "/lexicon_word_bank_catalog.rs"));
@@ -23,7 +24,7 @@ pub fn PracticeModePage() -> impl IntoView {
     let default_word_bank = LEXICON_WORD_BANK_FILES
         .iter()
         .copied()
-        .find(|file| *file == "word-bank.csv")
+        .find(|file| *file == "word-bank.nwpdict")
         .or_else(|| LEXICON_WORD_BANK_FILES.first().copied())
         .unwrap_or("")
         .to_string();
@@ -61,10 +62,12 @@ pub fn PracticeModePage() -> impl IntoView {
                     .send()
                     .await
                     .map_err(|err| format!("下载失败: {err}"))?;
-                let csv_text = response
+                let raw_lexicon_text = response
                     .text()
                     .await
                     .map_err(|err| format!("读取响应失败: {err}"))?;
+                let csv_text = parse_lexicon_import_content(&raw_lexicon_text)
+                    .map_err(|err| format!("解密词库失败: {err}"))?;
                 parse_word_bank_csv(&csv_text)
             }
             .await;
@@ -104,8 +107,8 @@ pub fn PracticeModePage() -> impl IntoView {
         if count == 0 {
             tr(
                 language,
-                "尚未加载词库，请先在本页选择词库或导入词库 CSV。",
-                "No lexicon loaded. Select one or import CSV first.",
+                "尚未加载词库，请先在本页选择词库或导入词库文件。",
+                "No lexicon loaded. Select one or import a lexicon file first.",
             )
             .to_string()
         } else {
@@ -183,7 +186,7 @@ pub fn PracticeModePage() -> impl IntoView {
                             <ImportCsvButton
                                 input_id="practice-mode-import-csv-input".to_string()
                                 label=Signal::derive(move || {
-                                    tr(lang.get(), "导入词库 CSV", "Import Lexicon CSV").to_string()
+                                    tr(lang.get(), "导入词库文件", "Import Lexicon File").to_string()
                                 })
                                 class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto".to_string()
                                 set_entries=lexicon_state.set_entries

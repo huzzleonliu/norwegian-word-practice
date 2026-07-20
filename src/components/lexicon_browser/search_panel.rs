@@ -5,9 +5,10 @@ use leptos::prelude::*;
 use super::utils::{DATA_COLUMN_KEYS, header_name};
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::csv_schema::serialize_word_bank_csv;
+use crate::utils::dictionary_crypto::serialize_encrypted_lexicon_export;
 use crate::utils::i18n::{field_label, tr};
 
-/// 导出当前已提交词库为 CSV（草稿需先「确认修改」）。
+/// 导出当前已提交词库为加密 `.nwpdict`（草稿需先「确认修改」）。
 #[component]
 pub fn ExportLexiconCsvButton(
     lang: ReadSignal<UiLanguage>,
@@ -33,9 +34,26 @@ pub fn ExportLexiconCsvButton(
             }
         };
 
-        match export_csv_download("word-bank.csv", &csv_content) {
-            Ok(()) => set_status
-                .set(tr(language, "词库 CSV 已导出。", "Lexicon CSV exported.").to_string()),
+        let encrypted_payload = match serialize_encrypted_lexicon_export(&csv_content) {
+            Ok(content) => content,
+            Err(err) => {
+                set_status.set(format!(
+                    "{} {err}",
+                    tr(language, "导出失败：", "Export failed:")
+                ));
+                return;
+            }
+        };
+
+        match export_csv_download("word-bank.nwpdict", &encrypted_payload) {
+            Ok(()) => set_status.set(
+                tr(
+                    language,
+                    "加密词库已导出（.nwpdict）。",
+                    "Encrypted lexicon exported (.nwpdict).",
+                )
+                .to_string(),
+            ),
             Err(err) => set_status.set(format!(
                 "{} {err}",
                 tr(language, "导出失败：", "Export failed:")
@@ -45,7 +63,7 @@ pub fn ExportLexiconCsvButton(
 
     view! {
         <button type="button" class=class on:click=on_click>
-            {move || tr(lang.get(), "导出词库 CSV", "Export Lexicon CSV")}
+            {move || tr(lang.get(), "导出词库文件", "Export Lexicon File")}
         </button>
     }
 }

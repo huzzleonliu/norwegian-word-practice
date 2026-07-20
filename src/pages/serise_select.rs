@@ -10,6 +10,7 @@ use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::UiLanguage;
+use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::utils::i18n::tr;
 
 #[component]
@@ -140,8 +141,8 @@ fn load_series_word_bank(
     set_current_page: NavigateToPage,
     lang: ReadSignal<UiLanguage>,
 ) {
-    // 系列模式统一加载 `series-word-bank.csv`，再按 tag 过滤选题范围。
-    let selected_file = "series-word-bank.csv";
+    // 系列模式统一加载加密词库 `series-word-bank.nwpdict`，再按 tag 过滤选题范围。
+    let selected_file = "series-word-bank.nwpdict";
     let language = lang.get_untracked();
     let series_name = tr(language, series_name_zh, series_name_en);
     set_status.set(format!(
@@ -156,10 +157,12 @@ fn load_series_word_bank(
                 .send()
                 .await
                 .map_err(|err| format!("下载失败: {err}"))?;
-            let csv_text = response
+            let encrypted_text = response
                 .text()
                 .await
                 .map_err(|err| format!("读取响应失败: {err}"))?;
+            let csv_text = parse_lexicon_import_content(&encrypted_text)
+                .map_err(|err| format!("解密词库失败: {err}"))?;
             parse_word_bank_csv(&csv_text)
         }
         .await;
