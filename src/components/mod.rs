@@ -2,6 +2,7 @@
 
 pub mod import_csv;
 pub mod lexicon_browser;
+pub mod lexicon_file_crypto_panel;
 pub mod lexicon_editor_add_multi;
 pub mod lexicon_editor_add_single;
 #[path = "mini-console.rs"]

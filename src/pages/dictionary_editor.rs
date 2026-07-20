@@ -7,6 +7,7 @@ use crate::app_state::{LexiconState, UiState};
 use crate::components::lexicon_browser::{
     LexiconBrowser, LexiconBrowserMode, parse_pipe_list,
 };
+use crate::components::lexicon_file_crypto_panel::LexiconFileCryptoPanel;
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
 use crate::components::mini_console::MiniConsole;
@@ -606,6 +607,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     data_version=data_version
                     mode=LexiconBrowserMode::Edit
                 />
+                <LexiconFileCryptoPanel set_status=set_status/>
             </section>
         </main>
     }
