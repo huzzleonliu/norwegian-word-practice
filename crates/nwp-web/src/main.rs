@@ -16,7 +16,9 @@ mod utils;
 
 use app_state::NavigateToPage;
 use gates::{
-    install_gate_effects, request_mint_page, NftGateState, OwnershipStatus, RequireNftPage,
+    install_gate_effects, open_mint_in_new_tab, ownership_checker_from_window_fn,
+    provide_gate_runtime, request_mint_page, AppGateIntent, AppGateRuntime, AppNftGateState,
+    OwnershipStatus, RequireNftPage, WalletGateHandle,
 };
 use pages::AppPage;
 use structures::word_bank_entry::{UiLanguage, UiTheme};
@@ -54,7 +56,7 @@ fn App() -> impl IntoView {
     let (wallet_status, set_wallet_status) = signal(String::new());
     let (wallet_connect_nonce, set_wallet_connect_nonce) = signal(0_u64);
     let (ownership, set_ownership) = signal(OwnershipStatus::Disconnected);
-    let (gate_pending, set_gate_pending) = signal(Option::<gates::GateIntent>::None);
+    let (gate_pending, set_gate_pending) = signal(Option::<AppGateIntent>::None);
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
@@ -101,7 +103,7 @@ fn App() -> impl IntoView {
         connect_nonce: wallet_connect_nonce,
         set_connect_nonce: set_wallet_connect_nonce,
     });
-    provide_context(NftGateState {
+    provide_context(AppNftGateState {
         ownership,
         set_ownership,
         pending: gate_pending,
@@ -146,11 +148,35 @@ fn AppChrome(
     });
 
     let wallet_state = expect_context::<app_state::WalletState>();
-    let gate = expect_context::<NftGateState>();
-    install_gate_effects(gate, wallet_state, navigate_to_page);
+    let gate = expect_context::<AppNftGateState>();
 
-    let open_mint_page = move |_| {
-        request_mint_page(gate, wallet_state, navigate_to_page);
+    let gate_runtime = AppGateRuntime {
+        gate,
+        wallet: WalletGateHandle {
+            address: wallet_state.address,
+            request_connect: Callback::new(move |_| {
+                wallet_state.request_connect();
+            }),
+        },
+        navigate: Callback::new(move |page: AppPage| {
+            navigate_to_page.set(page);
+        }),
+        on_access_denied: Callback::new(|_| {
+            open_mint_in_new_tab();
+        }),
+        on_fallback: Callback::new(move |_| {
+            navigate_to_page.set(AppPage::MintNft);
+        }),
+        checker: ownership_checker_from_window_fn("__oaoaHasCollectionNft"),
+    };
+    provide_gate_runtime(gate_runtime.clone());
+    install_gate_effects(gate_runtime.clone());
+
+    let open_mint_page = {
+        let gate_runtime = gate_runtime.clone();
+        move |_| {
+            request_mint_page(&gate_runtime);
+        }
     };
 
     view! {

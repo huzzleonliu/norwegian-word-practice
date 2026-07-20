@@ -1,10 +1,11 @@
 /target
-/dist
-/node_modules
+**/target
+**/dist
+**/node_modules
 **/*.kra
 **/*.kra~
 **/*.png~
 **/*.png
-!public/nft/*.png
+!**/public/nft/*.png
 candy_machine/
-TEMP/
+

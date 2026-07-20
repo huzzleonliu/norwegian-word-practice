@@ -1,0 +1,14 @@
+[package]
+name = "leptos-solana-gate"
+version = "0.1.0"
+edition = "2024"
+description = "Leptos page/component guards for Solana NFT ownership checks"
+license = "MIT"
+readme = "readme.md"
+keywords = ["leptos", "solana", "nft", "gate", "wasm"]
+categories = ["wasm", "web-programming"]
+
+[dependencies]
+browser-solana = { path = "../browser-solana" }
+leptos = { version = "0.8.20", features = ["csr"] }
+send_wrapper = "0.6"
