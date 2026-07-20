@@ -3,7 +3,7 @@
 use leptos::prelude::*;
 
 use super::utils::{DATA_COLUMN_KEYS, input_to_option, parse_pipe_list};
-use super::search_panel::ExportLexiconCsvButton;
+use super::search_panel::ExportLexiconFileButton;
 use crate::structures::field_meta::{entry_field_value, field_meta};
 use crate::structures::word_bank_entry::{
     PART_OF_SPEECH_OPTIONS, PartOfSpeech, UiLanguage, WordBankEntry,
@@ -432,7 +432,7 @@ pub fn LexiconTablePanel(
                 {match action_kind {
                     TableActionKind::ConfirmChanges => view! {
                         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-                            <ExportLexiconCsvButton
+                            <ExportLexiconFileButton
                                 lang=lang
                                 entries=entries
                                 set_status=set_status

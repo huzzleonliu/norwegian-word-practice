@@ -6,6 +6,20 @@ use crate::app_state::{NavigateToPage, WalletState};
 use crate::gates::state::{GateIntent, NftGateState, OwnershipStatus};
 use crate::pages::AppPage;
 
+/// 异步刷新当前钱包的持仓状态。
+pub fn refresh_wallet_ownership(gate: NftGateState, pubkey: String) {
+    gate.set_ownership.set(OwnershipStatus::Checking);
+    leptos::task::spawn_local(async move {
+        match crate::utils::nft_ownership::wallet_owns_collection_nft(&pubkey).await {
+            Ok(true) => gate.set_ownership.set(OwnershipStatus::Owns),
+            Ok(false) | Err(_) => {
+                // 查询失败时保守视为未持有，避免误放行。
+                gate.set_ownership.set(OwnershipStatus::Missing);
+            }
+        }
+    });
+}
+
 /// 在新标签页打开 Mint 页。
 pub fn open_mint_in_new_tab() {
     let Some(window) = web_sys::window() else {
@@ -79,16 +93,7 @@ pub fn install_gate_effects(
                 gate.set_ownership.set(OwnershipStatus::Disconnected);
             }
             Some(pubkey) => {
-                gate.set_ownership.set(OwnershipStatus::Checking);
-                leptos::task::spawn_local(async move {
-                    match crate::utils::nft_ownership::wallet_owns_collection_nft(&pubkey).await {
-                        Ok(true) => gate.set_ownership.set(OwnershipStatus::Owns),
-                        Ok(false) | Err(_) => {
-                            // 查询失败时保守视为未持有，避免误放行。
-                            gate.set_ownership.set(OwnershipStatus::Missing);
-                        }
-                    }
-                });
+                refresh_wallet_ownership(gate, pubkey);
             }
         }
     });

@@ -1,17 +1,15 @@
 //! 系列练习选择页：按标签加载系列词库并跳转到对应系列练习页面。
 
-use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
-use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::UiLanguage;
-use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::utils::i18n::tr;
+use crate::utils::lexicon_file::{DEFAULT_SERIES_WORD_BANK_FILE, load_lexicon_entries_from_url};
 
 #[component]
 pub fn SeriseSelectPage() -> impl IntoView {
@@ -142,7 +140,7 @@ fn load_series_word_bank(
     lang: ReadSignal<UiLanguage>,
 ) {
     // 系列模式统一加载加密词库 `series-word-bank.nwpdict`，再按 tag 过滤选题范围。
-    let selected_file = "series-word-bank.nwpdict";
+    let selected_file = DEFAULT_SERIES_WORD_BANK_FILE;
     let language = lang.get_untracked();
     let series_name = tr(language, series_name_zh, series_name_en);
     set_status.set(format!(
@@ -152,20 +150,8 @@ fn load_series_word_bank(
     ));
 
     spawn_local(async move {
-        let result = async {
-            let response = Request::get(&format!("/data/series-word-bank/{selected_file}"))
-                .send()
-                .await
-                .map_err(|err| format!("下载失败: {err}"))?;
-            let encrypted_text = response
-                .text()
-                .await
-                .map_err(|err| format!("读取响应失败: {err}"))?;
-            let csv_text = parse_lexicon_import_content(&encrypted_text)
-                .map_err(|err| format!("解密词库失败: {err}"))?;
-            parse_word_bank_csv(&csv_text)
-        }
-        .await;
+        let path = format!("/data/series-word-bank/{selected_file}");
+        let result = load_lexicon_entries_from_url(&path).await;
 
         match result {
             Ok(word_list) => {

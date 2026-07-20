@@ -5,12 +5,11 @@ use leptos::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use leptos::task::spawn_local;
 
-#[cfg(target_arch = "wasm32")]
-use crate::components::lexicon_browser::parse_word_bank_csv;
-#[cfg(target_arch = "wasm32")]
-use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
+use crate::utils::lexicon_file::LEXICON_FILE_INPUT_ACCEPT;
+#[cfg(target_arch = "wasm32")]
+use crate::utils::lexicon_file::parse_lexicon_entries_from_text;
 
 #[component]
 pub fn ImportCsvButton(
@@ -38,7 +37,7 @@ pub fn ImportCsvButton(
         <input
             id=input_id.clone()
             type="file"
-            accept=".csv,.nwpdict,text/csv,application/json,text/plain"
+            accept=LEXICON_FILE_INPUT_ACCEPT
             class="hidden"
             on:change=import_csv_click
         />
@@ -135,18 +134,7 @@ fn import_csv_from_file(
                 }
             };
 
-            let csv_content = match parse_lexicon_import_content(&content) {
-                Ok(csv) => csv,
-                Err(err) => {
-                    set_status.set(format!(
-                        "{} {err}",
-                        tr(lang, "导入失败：", "Import failed:")
-                    ));
-                    return;
-                }
-            };
-
-            match parse_word_bank_csv(&csv_content) {
+            match parse_lexicon_entries_from_text(&content) {
                 Ok(word_list) => {
                     let count = word_list.len();
                     // 导入语义为“覆盖当前词库”，并 bump `data_version` 触发依赖组件重置草稿。

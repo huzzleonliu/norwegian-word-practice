@@ -1,18 +1,16 @@
-//! 练习模式选择页：加载词库、导入 CSV，并分流到词库练习/系列练习/本地编辑器。
+//! 练习模式选择页：加载词库、导入词库文件，并分流到词库练习/系列练习/本地编辑器。
 
-use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, UiState};
 use crate::components::import_csv::ImportCsvButton;
-use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::gates;
 use crate::pages::AppPage;
-use crate::utils::dictionary_crypto::parse_lexicon_import_content;
 use crate::utils::i18n::tr;
+use crate::utils::lexicon_file::{DEFAULT_BUILTIN_WORD_BANK_FILE, load_lexicon_entries_from_url};
 
 include!(concat!(env!("OUT_DIR"), "/lexicon_word_bank_catalog.rs"));
 
@@ -24,7 +22,7 @@ pub fn PracticeModePage() -> impl IntoView {
     let default_word_bank = LEXICON_WORD_BANK_FILES
         .iter()
         .copied()
-        .find(|file| *file == "word-bank.nwpdict")
+        .find(|file| *file == DEFAULT_BUILTIN_WORD_BANK_FILE)
         .or_else(|| LEXICON_WORD_BANK_FILES.first().copied())
         .unwrap_or("")
         .to_string();
@@ -53,24 +51,8 @@ pub fn PracticeModePage() -> impl IntoView {
         ));
 
         spawn_local(async move {
-            let result = async {
-                let request_url = format!(
-                    "/data/lexicon-word-bank/{selected_file}?v={}",
-                    js_sys::Date::now()
-                );
-                let response = Request::get(&request_url)
-                    .send()
-                    .await
-                    .map_err(|err| format!("下载失败: {err}"))?;
-                let raw_lexicon_text = response
-                    .text()
-                    .await
-                    .map_err(|err| format!("读取响应失败: {err}"))?;
-                let csv_text = parse_lexicon_import_content(&raw_lexicon_text)
-                    .map_err(|err| format!("解密词库失败: {err}"))?;
-                parse_word_bank_csv(&csv_text)
-            }
-            .await;
+            let path = format!("/data/lexicon-word-bank/{selected_file}");
+            let result = load_lexicon_entries_from_url(&path).await;
 
             match result {
                 Ok(word_list) => {

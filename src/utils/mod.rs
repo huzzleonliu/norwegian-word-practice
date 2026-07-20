@@ -5,6 +5,7 @@ pub mod csv_schema;
 pub mod dictionary;
 pub mod dictionary_crypto;
 pub mod i18n;
+pub mod lexicon_file;
 pub mod lexicon_storage;
 pub mod nft_ownership;
 pub mod oaoa_mint;

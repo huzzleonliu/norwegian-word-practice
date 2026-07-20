@@ -3,7 +3,9 @@
 use leptos::prelude::*;
 
 use crate::app_state::{NavigateToPage, UiState, WalletState};
-use crate::gates::action::{open_mint_in_new_tab, request_nft_gated_page};
+use crate::gates::action::{
+    open_mint_in_new_tab, refresh_wallet_ownership, request_nft_gated_page,
+};
 use crate::gates::state::{NftGateState, OwnershipStatus};
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
@@ -95,21 +97,7 @@ pub fn RequireNftPage(children: ChildrenFn) -> impl IntoView {
                                     let Some(pubkey) = wallet.address.get_untracked() else {
                                         return;
                                     };
-                                    gate.set_ownership.set(OwnershipStatus::Checking);
-                                    leptos::task::spawn_local(async move {
-                                        match crate::utils::nft_ownership::wallet_owns_collection_nft(
-                                            &pubkey,
-                                        )
-                                        .await
-                                        {
-                                            Ok(true) => {
-                                                gate.set_ownership.set(OwnershipStatus::Owns)
-                                            }
-                                            Ok(false) | Err(_) => {
-                                                gate.set_ownership.set(OwnershipStatus::Missing)
-                                            }
-                                        }
-                                    });
+                                    refresh_wallet_ownership(gate, pubkey);
                                 }
                             >
                                 {move || tr(lang.get(), "我已铸造，重新校验", "I minted — recheck")}

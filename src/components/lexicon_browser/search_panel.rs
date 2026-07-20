@@ -4,13 +4,14 @@ use leptos::prelude::*;
 
 use super::utils::{DATA_COLUMN_KEYS, header_name};
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
-use crate::utils::csv_schema::serialize_word_bank_csv;
-use crate::utils::dictionary_crypto::serialize_encrypted_lexicon_export;
 use crate::utils::i18n::{field_label, tr};
+use crate::utils::lexicon_file::{
+    LEXICON_EXPORT_FILE_NAME, serialize_encrypted_lexicon_from_entries,
+};
 
 /// 导出当前已提交词库为加密 `.nwpdict`（草稿需先「确认修改」）。
 #[component]
-pub fn ExportLexiconCsvButton(
+pub fn ExportLexiconFileButton(
     lang: ReadSignal<UiLanguage>,
     entries: ReadSignal<Vec<WordBankEntry>>,
     set_status: WriteSignal<String>,
@@ -23,7 +24,8 @@ pub fn ExportLexiconCsvButton(
 
     let on_click = move |_| {
         let language = lang.get_untracked();
-        let csv_content = match serialize_word_bank_csv(&entries.get_untracked()) {
+        let encrypted_payload = match serialize_encrypted_lexicon_from_entries(&entries.get_untracked())
+        {
             Ok(content) => content,
             Err(err) => {
                 set_status.set(format!(
@@ -34,18 +36,7 @@ pub fn ExportLexiconCsvButton(
             }
         };
 
-        let encrypted_payload = match serialize_encrypted_lexicon_export(&csv_content) {
-            Ok(content) => content,
-            Err(err) => {
-                set_status.set(format!(
-                    "{} {err}",
-                    tr(language, "导出失败：", "Export failed:")
-                ));
-                return;
-            }
-        };
-
-        match export_csv_download("word-bank.nwpdict", &encrypted_payload) {
+        match export_lexicon_download(LEXICON_EXPORT_FILE_NAME, &encrypted_payload) {
             Ok(()) => set_status.set(
                 tr(
                     language,
@@ -68,8 +59,8 @@ pub fn ExportLexiconCsvButton(
     }
 }
 
-/// 浏览器端下载导出文件（WASM 环境通过 Blob + ObjectURL 触发保存）。
-fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
+/// 浏览器端下载词库文件（WASM 环境通过 Blob + ObjectURL 触发保存）。
+fn export_lexicon_download(filename: &str, content: &str) -> Result<(), String> {
     #[cfg(target_arch = "wasm32")]
     {
         use wasm_bindgen::{JsCast, JsValue};
@@ -77,7 +68,7 @@ fn export_csv_download(filename: &str, content: &str) -> Result<(), String> {
         let parts = js_sys::Array::new();
         parts.push(&JsValue::from_str(content));
         let blob = web_sys::Blob::new_with_str_sequence(&parts)
-            .map_err(|_| "无法创建 CSV Blob".to_string())?;
+            .map_err(|_| "无法创建导出文件 Blob".to_string())?;
         let object_url = web_sys::Url::create_object_url_with_blob(&blob)
             .map_err(|_| "无法创建下载 URL".to_string())?;
 
