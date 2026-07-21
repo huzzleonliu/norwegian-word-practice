@@ -50,7 +50,7 @@ pub(super) fn entry_matches_filter(entry: &WordBankEntry, query: &str, columns: 
 
     (0..DATA_COLUMN_KEYS.len()).any(|idx| {
         columns.get(idx).copied().unwrap_or(false)
-            && normalize_for_compare(&column_value_text(entry, idx)).contains(&query_normalized)
+            && normalize_for_compare(&column_search_text(entry, idx)).contains(&query_normalized)
     })
 }
 
@@ -107,4 +107,21 @@ fn column_value_text(entry: &WordBankEntry, col_idx: usize) -> String {
         .get(col_idx)
         .map(|key| entry_field_value(entry, key))
         .unwrap_or_default()
+}
+
+/// 搜索用列文本：词性同时包含稳定 key 与中/英文显示名，便于按界面语言筛选。
+fn column_search_text(entry: &WordBankEntry, col_idx: usize) -> String {
+    let Some(key) = DATA_COLUMN_KEYS.get(col_idx).copied() else {
+        return String::new();
+    };
+    if key == "part_of_speech" {
+        format!(
+            "{} {} {}",
+            entry.part_of_speech.as_key(),
+            entry.part_of_speech.display_name(UiLanguage::Zh),
+            entry.part_of_speech.display_name(UiLanguage::En),
+        )
+    } else {
+        entry_field_value(entry, key)
+    }
 }
