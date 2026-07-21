@@ -436,7 +436,7 @@ fn pos_variant_sections(
                 <FormField lang=lang field_key="adverb_superlative" required=false value=single_adverb_superlative set_value=set_single_adverb_superlative/>
             },
         ),
-        "preposition" | "conjunction" | "subjunction" | "interjection" => variant_section(
+        "preposition" | "conjunction" | "subjunction" | "interjection" | "phrase" => variant_section(
             l,
             tr(l, "不可变词性", "Invariant Part of Speech"),
             view! {

@@ -72,7 +72,7 @@ fn build_research_prompt(word: &str, hint: &str) -> String {
 \n\
 对象结构严格如下（字段可为 null 或空数组）：\n\
 {{\n\
-  \"part_of_speech\": \"noun|verb|adjective|pronoun|determinative|adverb|preposition|conjunction|subjunction|interjection\",\n\
+  \"part_of_speech\": \"noun|verb|adjective|pronoun|determinative|adverb|preposition|conjunction|subjunction|interjection|phrase\",\n\
   \"base_form\": \"\",\n\
   \"chinese\": [],\n\
   \"english\": [],\n\

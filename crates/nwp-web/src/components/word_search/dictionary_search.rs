@@ -477,6 +477,7 @@ fn map_ordbok_word_class_to_key(word_class: Option<&str>, hint: &str) -> Option<
         "Konjunksjon" => Some("conjunction"),
         "Subjunksjon" => Some("subjunction"),
         "Interjeksjon" => Some("interjection"),
+        "Frase" | "Uttrykk" | "Flerordsuttrykk" => Some("phrase"),
         "Talord" => {
             if matches!(hinted, Some(PartOfSpeech::Adjective)) {
                 Some("adjective")

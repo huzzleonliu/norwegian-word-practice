@@ -126,7 +126,8 @@ fn validate_forms_by_part_of_speech(
         | PartOfSpeech::Preposition
         | PartOfSpeech::Conjunction
         | PartOfSpeech::Subjunction
-        | PartOfSpeech::Interjection => {}
+        | PartOfSpeech::Interjection
+        | PartOfSpeech::Phrase => {}
     }
     Ok(())
 }

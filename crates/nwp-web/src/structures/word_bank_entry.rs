@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const PART_OF_SPEECH_OPTIONS: [&str; 10] = [
+pub const PART_OF_SPEECH_OPTIONS: [&str; 11] = [
     "verb",
     "noun",
     "adjective",
@@ -13,6 +13,7 @@ pub const PART_OF_SPEECH_OPTIONS: [&str; 10] = [
     "conjunction",
     "subjunction",
     "interjection",
+    "phrase",
 ];
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -59,6 +60,8 @@ pub enum PartOfSpeech {
     Conjunction,
     Subjunction,
     Interjection,
+    /// 词组：除中文、id、原型、selected、词性外，其余字段均可为空。
+    Phrase,
 }
 
 impl PartOfSpeech {
@@ -75,6 +78,7 @@ impl PartOfSpeech {
             PartOfSpeech::Conjunction => "conjunction",
             PartOfSpeech::Subjunction => "subjunction",
             PartOfSpeech::Interjection => "interjection",
+            PartOfSpeech::Phrase => "phrase",
         }
     }
 
@@ -90,6 +94,7 @@ impl PartOfSpeech {
             "conjunction" => Ok(PartOfSpeech::Conjunction),
             "subjunction" => Ok(PartOfSpeech::Subjunction),
             "interjection" => Ok(PartOfSpeech::Interjection),
+            "phrase" => Ok(PartOfSpeech::Phrase),
             _ => Err(format!(
                 "词性不合法，请从预设选项中选择：{}",
                 PART_OF_SPEECH_OPTIONS.join(", ")
@@ -110,6 +115,7 @@ impl PartOfSpeech {
                 PartOfSpeech::Conjunction => "并列连词",
                 PartOfSpeech::Subjunction => "从属连词",
                 PartOfSpeech::Interjection => "感叹词",
+                PartOfSpeech::Phrase => "词组",
             },
             UiLanguage::En => match self {
                 PartOfSpeech::Verb => "Verb",
@@ -122,6 +128,7 @@ impl PartOfSpeech {
                 PartOfSpeech::Conjunction => "Conjunction",
                 PartOfSpeech::Subjunction => "Subjunction",
                 PartOfSpeech::Interjection => "Interjection",
+                PartOfSpeech::Phrase => "Phrase",
             },
         }
     }

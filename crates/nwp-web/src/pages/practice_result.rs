@@ -492,7 +492,8 @@ fn build_part_of_speech_correct_answer(entry: &WordBankEntry, language: UiLangua
         PartOfSpeech::Preposition
         | PartOfSpeech::Conjunction
         | PartOfSpeech::Subjunction
-        | PartOfSpeech::Interjection => {}
+        | PartOfSpeech::Interjection
+        | PartOfSpeech::Phrase => {}
     }
 
     if parts.is_empty() {

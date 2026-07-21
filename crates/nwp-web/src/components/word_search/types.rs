@@ -8,7 +8,7 @@ use crate::utils::i18n::tr;
 
 use super::shared::{normalize_part_of_speech_enum, normalize_text_list, normalize_text_opt};
 
-pub(crate) const WORD_FORM_HINT_OPTIONS: [&str; 42] = [
+pub(crate) const WORD_FORM_HINT_OPTIONS: [&str; 43] = [
     "unknown",
     "noun-baseform",
     "noun_plural",
@@ -51,6 +51,7 @@ pub(crate) const WORD_FORM_HINT_OPTIONS: [&str; 42] = [
     "conjunction-baseform",
     "subjunction-baseform",
     "interjection-baseform",
+    "phrase-baseform",
 ];
 
 /// 词形提示下拉的双语显示名。
