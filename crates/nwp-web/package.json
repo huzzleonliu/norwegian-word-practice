@@ -1,5 +1,5 @@
 {
-  "name": "nwp-web",
+  "name": "norwegian-word-practice",
   "private": true,
   "devDependencies": {
     "tailwindcss": "^3.4.17"

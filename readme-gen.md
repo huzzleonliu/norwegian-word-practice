@@ -23,52 +23,41 @@
 │  │  ├─ style/
 │  │  ├─ data/
 │  │  ├─ docs/
-│  │  ├─ public/
-│  │  └─ nginx.conf
-│  ├─ browser-solana/         # 通用浏览器 Solana WASM 适配
-│  └─ leptos-solana-gate/     # Leptos 门禁状态机与组件
+│  │  └─ public/
+│  └─ solana-gate/            # Solana / 门禁共享逻辑（占位）
 └─ candy_machine/             # 独立目录，不进 workspace
 ```
 
 ---
 
-## 2. 本地开发（在 web crate 内）
-
-### 2.1 依赖安装
+## 2. 本地开发（在 crate 内）
 
 ```bash
 cd crates/nwp-web
 npm ci
-```
-
-### 2.2 启动开发服务器
-
-```bash
-cd crates/nwp-web
 trunk serve
 ```
 
 说明：
 
-- `Trunk.toml`、`tailwind.config.js`、`package.json` 都在 `crates/nwp-web`。
-- 若环境变量 `NO_COLOR=1` 导致 trunk 报参错，使用：
+- `Trunk.toml` / `tailwind.config.js` / `package.json` 都跟 web crate 走。
+- 根目录不再放前端开发入口配置。
+- 若环境变量 `NO_COLOR=1` 导致 trunk 报参错，使用 `NO_COLOR=true trunk serve`。
 
-```bash
-NO_COLOR=true trunk serve
-```
+依赖其他 workspace crate 时，在 `crates/nwp-web/Cargo.toml` 写 path 依赖即可；在 crate 内跑 `trunk serve` 仍可正常解析。
 
 ---
 
 ## 3. 构建与测试
 
-在 workspace 根目录：
+根目录：
 
 ```bash
 cargo check --workspace --all-targets
-cargo test --workspace
+cargo test
 ```
 
-在 web crate 内：
+web crate：
 
 ```bash
 cd crates/nwp-web
@@ -79,26 +68,15 @@ NO_COLOR=true trunk build --release
 
 ## 4. Docker 打包链路
 
-根目录 `Dockerfile` 采用多阶段构建：
+根目录 `Dockerfile`：
 
-1. `rust:1.90-slim` 阶段：
-   - 安装 `wasm32-unknown-unknown`
-   - 安装 `trunk@0.21.14 --locked`
-   - 安装 `nodejs/npm` 与全局 `tailwindcss`
-   - 在 `crates/nwp-web` 内执行 `trunk build --release`
-2. `nginx:alpine` 阶段：
-   - 拷贝 `crates/nwp-web/dist/` 到 nginx 静态目录
-   - 使用 `crates/nwp-web/nginx.conf`
-
-构建：
+1. builder：安装 wasm target / trunk / node / tailwind
+2. 拷贝 workspace + `crates/nwp-web` + `crates/solana-gate`
+3. 在 `crates/nwp-web` 内 `npm ci` + `trunk build --release`
+4. runner：nginx 托管 `dist/`，使用 `crates/nwp-web/nginx.conf`
 
 ```bash
 docker build -t norwegian-word-practice:latest .
-```
-
-运行：
-
-```bash
 docker run --rm -p 8080:80 norwegian-word-practice:latest
 ```
 
@@ -106,10 +84,6 @@ docker run --rm -p 8080:80 norwegian-word-practice:latest
 
 ## 5. 注意事项
 
-- `Cargo.lock` 只保留根目录一份；成员 crate 内不要再放 lock 文件。
-- 前端工具链（Trunk / Tailwind / npm）跟随 `nwp-web`，不要再放到仓库根目录。
-- Solana 分层：
-  - `browser-solana`：钱包 / JS bridge / Candy Machine RPC（无业务常量）
-  - `leptos-solana-gate`：门禁状态机、`RequireNftPage`、`GatedNavigateButton`
-  - `nwp-web`：OAOA 常量（`structures/nft_collection`）、`js/oaoa-mint.js`、i18n 包装与 Mint 页
-- JS 助手 `crates/nwp-web/js/oaoa-mint.js` 由 Trunk 挂载；常量需与 `structures/nft_collection` 保持一致。
+- `Cargo.lock` 只保留在仓库根目录。
+- `candy_machine/` 保持独立，不加入 workspace。
+- 新增共享库时优先放进 `crates/`，再由 `nwp-web` 通过 path 依赖引用。

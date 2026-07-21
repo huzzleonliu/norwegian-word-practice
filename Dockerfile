@@ -11,14 +11,12 @@ RUN rustup target add wasm32-unknown-unknown \
 
 # Workspace manifests
 COPY Cargo.toml Cargo.lock ./
-COPY crates/nwp-web/Cargo.toml crates/nwp-web/build.rs crates/nwp-web/index.html crates/nwp-web/Trunk.toml ./crates/nwp-web/
-COPY crates/browser-solana/Cargo.toml ./crates/browser-solana/
-COPY crates/browser-solana/src ./crates/browser-solana/src
-COPY crates/leptos-solana-gate/Cargo.toml ./crates/leptos-solana-gate/
-COPY crates/leptos-solana-gate/src ./crates/leptos-solana-gate/src
+COPY crates/nwp-web/Cargo.toml crates/nwp-web/build.rs crates/nwp-web/index.html crates/nwp-web/Trunk.toml crates/nwp-web/tailwind.config.js ./crates/nwp-web/
+COPY crates/solana-gate/Cargo.toml ./crates/solana-gate/
+COPY crates/solana-gate/src ./crates/solana-gate/src
 
 # Frontend toolchain files
-COPY crates/nwp-web/package.json crates/nwp-web/package-lock.json crates/nwp-web/tailwind.config.js ./crates/nwp-web/
+COPY crates/nwp-web/package.json crates/nwp-web/package-lock.json ./crates/nwp-web/
 
 # App sources/assets
 COPY crates/nwp-web/src ./crates/nwp-web/src
@@ -28,8 +26,8 @@ COPY crates/nwp-web/public ./crates/nwp-web/public
 COPY crates/nwp-web/js ./crates/nwp-web/js
 COPY crates/nwp-web/style ./crates/nwp-web/style
 
-RUN npm --prefix crates/nwp-web ci
 WORKDIR /workspace/crates/nwp-web
+RUN npm ci
 RUN NO_COLOR=true trunk build --release
 
 FROM docker.io/library/nginx:alpine AS runner

@@ -8,4 +8,4 @@
 **/*.png
 !**/public/nft/*.png
 candy_machine/
-
+TEMP/

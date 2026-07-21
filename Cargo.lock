@@ -120,19 +120,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "browser-solana"
-version = "0.1.0"
-dependencies = [
- "base64",
- "gloo-net",
- "js-sys",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -934,15 +921,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "leptos-solana-gate"
-version = "0.1.0"
-dependencies = [
- "browser-solana",
- "leptos",
- "send_wrapper",
-]
-
-[[package]]
 name = "leptos_config"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1156,12 +1134,10 @@ name = "nwp-web"
 version = "0.1.0"
 dependencies = [
  "base64",
- "browser-solana",
  "csv",
  "gloo-net",
  "js-sys",
  "leptos",
- "leptos-solana-gate",
  "leptos_router",
  "markdown_view_leptos",
  "serde",
@@ -1873,6 +1849,10 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "solana-gate"
+version = "0.1.0"
 
 [[package]]
 name = "stable_deref_trait"

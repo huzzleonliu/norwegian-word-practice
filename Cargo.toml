@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "crates/nwp-web",
-    "crates/browser-solana",
-    "crates/leptos-solana-gate",
+    "crates/solana-gate",
 ]
 default-members = ["crates/nwp-web"]
 resolver = "2"

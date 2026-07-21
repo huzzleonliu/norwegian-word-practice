@@ -11,15 +11,10 @@
 
 ```text
 .
-├─ Cargo.toml                 # workspace 入口
-├─ Cargo.lock
-├─ Dockerfile                 # 部署入口
-├─ readme.md / readme-gen.md
-├─ crates/
-│  ├─ nwp-web/                # 网站 app（Leptos/WASM）
-│  ├─ browser-solana/         # 通用浏览器 Solana WASM 适配
-│  └─ leptos-solana-gate/     # Leptos NFT / 持仓门禁组件
-└─ candy_machine/             # 独立目录，不进 workspace
+├─ Cargo.toml / Cargo.lock / Dockerfile / readme*
+└─ crates/
+   ├─ nwp-web/          # 网站 app（Leptos + Trunk）
+   └─ solana-gate/      # Solana / 门禁共享逻辑（占位）
 ```
 
 ## 本地开发
@@ -44,7 +39,7 @@ trunk serve
 
 ```bash
 cargo check --workspace --all-targets
-cargo test --workspace
+cargo test
 ```
 
 在 web crate 内：

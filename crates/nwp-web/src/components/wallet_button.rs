@@ -5,7 +5,7 @@ use leptos::task::spawn_local;
 
 use crate::app_state::{UiState, WalletState};
 use crate::utils::i18n::tr;
-use browser_solana::{connect_wallet, disconnect_wallet, shorten_address};
+use crate::utils::solana_wallet::{connect_wallet, disconnect_wallet, shorten_address};
 
 #[component]
 pub fn WalletConnectButton() -> impl IntoView {

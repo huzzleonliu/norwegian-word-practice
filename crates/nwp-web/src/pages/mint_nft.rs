@@ -8,21 +8,12 @@ use crate::app_state::{UiState, WalletState};
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::structures::nft_collection::{
-    CANDY_MACHINE_ID, COLLECTION_IMAGE_URL, COLLECTION_METADATA_URL, ITEMS_REDEEMED_OFFSET,
-    NFT_MINT_PRICE_SOL, NFT_TOTAL_SUPPLY, SOLANA_RPC_URL,
+    CANDY_MACHINE_ID, COLLECTION_IMAGE_URL, COLLECTION_METADATA_URL, NFT_MINT_PRICE_SOL,
+    NFT_TOTAL_SUPPLY,
 };
+use crate::utils::candy_machine::fetch_items_redeemed;
 use crate::utils::i18n::tr;
-use browser_solana::{fetch_items_redeemed, mint_via_window_fn, CandyMachineQuery};
-
-const OAOA_MINT_FN: &str = "__oaoaMintNft";
-
-fn oaoa_candy_machine_query() -> CandyMachineQuery<'static> {
-    CandyMachineQuery {
-        rpc_url: SOLANA_RPC_URL,
-        candy_machine_id: CANDY_MACHINE_ID,
-        items_redeemed_offset: ITEMS_REDEEMED_OFFSET,
-    }
-}
+use crate::utils::oaoa_mint::mint_nft_with_wallet;
 
 #[derive(Clone, Deserialize)]
 struct CollectionMeta {
@@ -45,12 +36,12 @@ pub fn MintNftPage() -> impl IntoView {
     let refresh = move || {
         set_loading.set(true);
         spawn_local(async move {
-            match fetch_items_redeemed(oaoa_candy_machine_query()).await {
+            match fetch_items_redeemed().await {
                 Ok(count) => {
                     set_sold.set(count.min(NFT_TOTAL_SUPPLY));
                     set_status.set(String::new());
                 }
-                Err(err) => set_status.set(err.to_string()),
+                Err(err) => set_status.set(err),
             }
             if let Ok(response) = gloo_net::http::Request::get(COLLECTION_METADATA_URL)
                 .send()
@@ -106,7 +97,7 @@ pub fn MintNftPage() -> impl IntoView {
         );
         let language = lang.get_untracked();
         spawn_local(async move {
-            match mint_via_window_fn(OAOA_MINT_FN).await {
+            match mint_nft_with_wallet().await {
                 Ok(result) => {
                     set_status.set(format!(
                         "{} {} | mint={}",
@@ -114,7 +105,7 @@ pub fn MintNftPage() -> impl IntoView {
                         result.signature,
                         result.mint
                     ));
-                    if let Ok(count) = fetch_items_redeemed(oaoa_candy_machine_query()).await {
+                    if let Ok(count) = fetch_items_redeemed().await {
                         set_sold.set(count.min(NFT_TOTAL_SUPPLY));
                     }
                 }
