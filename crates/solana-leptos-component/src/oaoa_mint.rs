@@ -36,12 +36,10 @@ pub async fn mint_nft_with_wallet() -> Result<MintResult, String> {
     let mint_fn = mint_fn
         .dyn_ref::<Function>()
         .ok_or_else(|| "Mint 脚本接口无效。".to_string())?;
-    let promise = mint_fn
-        .call0(&JsValue::NULL)
-        .map_err(|err| js_error_message(err))?;
+    let promise = mint_fn.call0(&JsValue::NULL).map_err(js_error_message)?;
     let value = JsFuture::from(Promise::resolve(&promise))
         .await
-        .map_err(|err| js_error_message(err))?;
+        .map_err(js_error_message)?;
     let signature = Reflect::get(&value, &JsValue::from_str("signature"))
         .ok()
         .and_then(|v| v.as_string())

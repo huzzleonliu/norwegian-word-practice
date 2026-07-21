@@ -1,5 +1,3 @@
-//! Solana 浏览器钱包连接：通过 `window.solana`（Phantom 等）完成连接与断开。
-
 use js_sys::{Function, Promise, Reflect};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
@@ -53,16 +51,13 @@ pub async fn connect_wallet() -> Result<String, String> {
     let connect = connect
         .dyn_ref::<Function>()
         .ok_or_else(|| "钱包 connect 接口无效。".to_string())?;
-    let result = connect
-        .call0(&provider)
-        .map_err(|err| js_error_message(err))?;
+    let result = connect.call0(&provider).map_err(js_error_message)?;
     let result = JsFuture::from(Promise::resolve(&result))
         .await
-        .map_err(|err| js_error_message(err))?;
+        .map_err(js_error_message)?;
     let public_key = Reflect::get(&result, &JsValue::from_str("publicKey"))
         .map_err(|_| "连接结果缺少 publicKey。".to_string())?;
     if public_key.is_undefined() || public_key.is_null() {
-        // 部分钱包把公钥挂在 provider 上
         let public_key = Reflect::get(&provider, &JsValue::from_str("publicKey"))
             .map_err(|_| "无法读取钱包公钥。".to_string())?;
         return public_key_to_string(&public_key);
@@ -81,15 +76,13 @@ pub async fn disconnect_wallet() -> Result<(), String> {
     let disconnect = disconnect
         .dyn_ref::<Function>()
         .ok_or_else(|| "钱包 disconnect 接口无效。".to_string())?;
-    let result = disconnect
-        .call0(&provider)
-        .map_err(|err| js_error_message(err))?;
+    let result = disconnect.call0(&provider).map_err(js_error_message)?;
     if result.is_undefined() || result.is_null() {
         return Ok(());
     }
     let _ = JsFuture::from(Promise::resolve(&result))
         .await
-        .map_err(|err| js_error_message(err))?;
+        .map_err(js_error_message)?;
     Ok(())
 }
 

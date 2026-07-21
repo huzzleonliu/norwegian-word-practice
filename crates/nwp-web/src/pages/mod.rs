@@ -5,7 +5,6 @@ pub mod help;
 pub mod home;
 pub mod lexicon_practice;
 pub mod lexicon_select;
-pub mod mint_nft;
 pub mod practice_mode_select;
 pub mod practice_result;
 pub mod serise_practice;
@@ -19,7 +18,6 @@ pub enum AppPage {
     LexiconPractice,
     LexiconSummary,
     LocalLexiconEditor,
-    MintNft,
     SeriseSelect,
     SeriseNumberPractice,
     SeriseMonthPractice,
@@ -37,7 +35,6 @@ impl AppPage {
             Self::LexiconPractice => "/lexicon/practice",
             Self::LexiconSummary => "/lexicon/summary",
             Self::LocalLexiconEditor => "/editor",
-            Self::MintNft => "/mint",
             Self::SeriseSelect => "/series",
             Self::SeriseNumberPractice => "/series/number",
             Self::SeriseMonthPractice => "/series/month",
@@ -56,7 +53,6 @@ impl AppPage {
             "/lexicon/practice" => Some(Self::LexiconPractice),
             "/lexicon/summary" => Some(Self::LexiconSummary),
             "/editor" => Some(Self::LocalLexiconEditor),
-            "/mint" => Some(Self::MintNft),
             "/series" => Some(Self::SeriseSelect),
             "/series/number" => Some(Self::SeriseNumberPractice),
             "/series/month" => Some(Self::SeriseMonthPractice),
@@ -96,7 +92,6 @@ mod tests {
             AppPage::LexiconPractice,
             AppPage::LexiconSummary,
             AppPage::LocalLexiconEditor,
-            AppPage::MintNft,
             AppPage::SeriseSelect,
             AppPage::SeriseNumberPractice,
             AppPage::SeriseMonthPractice,
@@ -110,10 +105,7 @@ mod tests {
 
     #[test]
     fn from_path_normalizes_trailing_slash() {
-        assert_eq!(
-            AppPage::from_path("/mint/"),
-            Some(AppPage::MintNft)
-        );
+        assert_eq!(AppPage::from_path("/editor/"), Some(AppPage::LocalLexiconEditor));
         assert_eq!(AppPage::from_path("/series/number/"), Some(AppPage::SeriseNumberPractice));
     }
 }

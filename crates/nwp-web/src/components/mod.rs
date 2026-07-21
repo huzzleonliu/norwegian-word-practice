@@ -9,5 +9,4 @@ pub mod lexicon_editor_add_single;
 pub mod mini_console;
 pub mod practice_engine;
 pub mod return_button;
-pub mod wallet_button;
 pub mod word_search;

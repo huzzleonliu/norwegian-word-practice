@@ -4,9 +4,7 @@ use base64::Engine;
 use gloo_net::http::Request;
 use serde_json::Value;
 
-use crate::structures::nft_collection::{
-    CANDY_MACHINE_ID, ITEMS_REDEEMED_OFFSET, SOLANA_RPC_URL,
-};
+use crate::nft_collection::{CANDY_MACHINE_ID, ITEMS_REDEEMED_OFFSET, SOLANA_RPC_URL};
 
 /// 查询 Candy Machine 的 `items_redeemed`（已售数量）。
 pub async fn fetch_items_redeemed() -> Result<u64, String> {

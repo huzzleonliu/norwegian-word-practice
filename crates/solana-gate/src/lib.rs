@@ -1,6 +1,17 @@
-//! Solana / 门禁相关共享逻辑（占位 crate，后续再迁入具体实现）。
+//! Solana 门禁库：
+//! - 门禁状态/动作
+//! - 页面守卫与组件守卫
 
-#![allow(dead_code)]
+mod action;
+mod components;
+mod state;
 
-/// 占位 API：后续在此导出门禁与链上辅助能力。
-pub fn placeholder() {}
+pub use action::{
+    build_gate_runtime, install_gate_effects, request_mint_page,
+    request_nft_gated_path,
+};
+pub use components::{GateLocale, NftGatedNavigateButton, RequireNftPage};
+pub use state::{
+    CryptoGateMode, GateIntent, GateRuntime, GateWalletState, NftGateState,
+    OwnershipStatus,
+};

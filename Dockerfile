@@ -14,6 +14,8 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/nwp-web/Cargo.toml crates/nwp-web/build.rs crates/nwp-web/index.html crates/nwp-web/Trunk.toml crates/nwp-web/tailwind.config.js ./crates/nwp-web/
 COPY crates/solana-gate/Cargo.toml ./crates/solana-gate/
 COPY crates/solana-gate/src ./crates/solana-gate/src
+COPY crates/solana-leptos-component/Cargo.toml ./crates/solana-leptos-component/
+COPY crates/solana-leptos-component/src ./crates/solana-leptos-component/src
 
 # Frontend toolchain files
 COPY crates/nwp-web/package.json crates/nwp-web/package-lock.json ./crates/nwp-web/

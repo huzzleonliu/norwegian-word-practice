@@ -1,15 +1,23 @@
-//! 右上角 Solana 钱包连接按钮。
-
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::{UiState, WalletState};
-use crate::utils::i18n::tr;
-use crate::utils::solana_wallet::{connect_wallet, disconnect_wallet, shorten_address};
+use crate::locale::GateLocale;
+use crate::state::WalletState;
+use crate::{connect_wallet, disconnect_wallet, shorten_address};
 
+fn tr_locale(locale: GateLocale, zh: &str, en: &str) -> String {
+    match locale {
+        GateLocale::Zh => zh.to_string(),
+        GateLocale::En => en.to_string(),
+    }
+}
+
+/// 可复用钱包连接按钮（依赖 `WalletState` context）。
 #[component]
-pub fn WalletConnectButton() -> impl IntoView {
-    let lang = expect_context::<UiState>().ui_language;
+pub fn WalletConnectButton(
+    #[prop(optional, into)] locale: Option<Signal<GateLocale>>,
+) -> impl IntoView {
+    let locale = locale.unwrap_or_else(|| Signal::derive(|| GateLocale::Zh));
     let wallet = expect_context::<WalletState>();
 
     let run_connect = move || {
@@ -18,7 +26,7 @@ pub fn WalletConnectButton() -> impl IntoView {
         }
         wallet.set_busy.set(true);
         wallet.set_status.set(String::new());
-        let language = lang.get_untracked();
+        let current_locale = locale.get_untracked();
         spawn_local(async move {
             match connect_wallet().await {
                 Ok(pubkey) => {
@@ -28,7 +36,7 @@ pub fn WalletConnectButton() -> impl IntoView {
                 Err(err) => {
                     wallet.set_status.set(format!(
                         "{} {err}",
-                        tr(language, "连接失败：", "Connect failed:")
+                        tr_locale(current_locale, "连接失败：", "Connect failed:")
                     ));
                 }
             }
@@ -55,7 +63,7 @@ pub fn WalletConnectButton() -> impl IntoView {
         if wallet.address.get_untracked().is_some() {
             wallet.set_busy.set(true);
             wallet.set_status.set(String::new());
-            let language = lang.get_untracked();
+            let current_locale = locale.get_untracked();
             spawn_local(async move {
                 match disconnect_wallet().await {
                     Ok(()) => {
@@ -65,7 +73,7 @@ pub fn WalletConnectButton() -> impl IntoView {
                     Err(err) => {
                         wallet.set_status.set(format!(
                             "{} {err}",
-                            tr(language, "断开失败：", "Disconnect failed:")
+                            tr_locale(current_locale, "断开失败：", "Disconnect failed:")
                         ));
                     }
                 }
@@ -86,17 +94,17 @@ pub fn WalletConnectButton() -> impl IntoView {
                 title=move || wallet.status.get()
             >
                 {move || {
-                    let language = lang.get();
+                    let current_locale = locale.get();
                     if wallet.busy.get() {
-                        return tr(language, "处理中…", "Working…").to_string();
+                        return tr_locale(current_locale, "处理中…", "Working…");
                     }
                     match wallet.address.get() {
                         Some(pubkey) => format!(
                             "{} {}",
-                            tr(language, "已连接", "Connected"),
+                            tr_locale(current_locale, "已连接", "Connected"),
                             shorten_address(&pubkey)
                         ),
-                        None => tr(language, "连接钱包", "Connect Wallet").to_string(),
+                        None => tr_locale(current_locale, "连接钱包", "Connect Wallet"),
                     }
                 }}
             </button>

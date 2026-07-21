@@ -2,6 +2,7 @@
 members = [
     "crates/nwp-web",
     "crates/solana-gate",
+    "crates/solana-leptos-component",
 ]
 default-members = ["crates/nwp-web"]
 resolver = "2"

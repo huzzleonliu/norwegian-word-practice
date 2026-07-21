@@ -93,12 +93,6 @@ fn help_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
         (AppPage::LocalLexiconEditor, UiLanguage::En) => {
             view! { {markdown_view!(file = "docs/help/dictionary_editor.en.md")} }.into_any()
         }
-        (AppPage::MintNft, UiLanguage::Zh) => {
-            view! { {markdown_view!(file = "docs/help/mint_nft.zh.md")} }.into_any()
-        }
-        (AppPage::MintNft, UiLanguage::En) => {
-            view! { {markdown_view!(file = "docs/help/mint_nft.en.md")} }.into_any()
-        }
         (AppPage::SeriseSelect, UiLanguage::Zh) => {
             view! { {markdown_view!(file = "docs/help/serise_select.zh.md")} }.into_any()
         }

@@ -1,5 +1,3 @@
-//! 查询钱包是否持有 OAOA Collection NFT（调用浏览器端 JS 助手）。
-
 use js_sys::{Function, Promise, Reflect};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;

@@ -7,7 +7,6 @@ use leptos_router::path;
 
 mod app_state;
 mod components;
-mod gates;
 mod pages;
 mod structures;
 #[cfg(test)]
@@ -15,15 +14,10 @@ mod tests;
 mod utils;
 
 use app_state::NavigateToPage;
-use gates::{
-    install_gate_effects, request_mint_page, NftGateState, OwnershipStatus, RequireNftPage,
-};
 use pages::AppPage;
 use structures::word_bank_entry::{UiLanguage, UiTheme};
 use utils::i18n::tr;
-use utils::lexicon_storage::{
-    load_stored_lexicon, save_stored_lexicon, DEFAULT_SOURCE_NAME,
-};
+use utils::lexicon_storage::{load_stored_lexicon, save_stored_lexicon, DEFAULT_SOURCE_NAME};
 use utils::theme::{apply_theme, load_stored_theme};
 
 fn main() {
@@ -32,8 +26,8 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let (initial_entries, initial_source_name) = load_stored_lexicon()
-        .unwrap_or_else(|| (Vec::new(), DEFAULT_SOURCE_NAME.to_string()));
+    let (initial_entries, initial_source_name) =
+        load_stored_lexicon().unwrap_or_else(|| (Vec::new(), DEFAULT_SOURCE_NAME.to_string()));
     let (word_bank_entries, set_word_bank_entries) = signal(initial_entries);
     let (word_bank_data_version, set_word_bank_data_version) = signal(0_u64);
     let (word_bank_source_name, set_word_bank_source_name) = signal(initial_source_name);
@@ -49,12 +43,6 @@ fn App() -> impl IntoView {
     let (summary_return_page, set_summary_return_page) = signal(AppPage::LexiconPractice);
 
     let (help_open, set_help_open) = signal(false);
-    let (wallet_address, set_wallet_address) = signal(Option::<String>::None);
-    let (wallet_busy, set_wallet_busy) = signal(false);
-    let (wallet_status, set_wallet_status) = signal(String::new());
-    let (wallet_connect_nonce, set_wallet_connect_nonce) = signal(0_u64);
-    let (ownership, set_ownership) = signal(OwnershipStatus::Disconnected);
-    let (gate_pending, set_gate_pending) = signal(Option::<gates::GateIntent>::None);
 
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
@@ -91,22 +79,6 @@ fn App() -> impl IntoView {
         ui_language,
         ui_theme,
     });
-    provide_context(app_state::WalletState {
-        address: wallet_address,
-        set_address: set_wallet_address,
-        busy: wallet_busy,
-        set_busy: set_wallet_busy,
-        status: wallet_status,
-        set_status: set_wallet_status,
-        connect_nonce: wallet_connect_nonce,
-        set_connect_nonce: set_wallet_connect_nonce,
-    });
-    provide_context(NftGateState {
-        ownership,
-        set_ownership,
-        pending: gate_pending,
-        set_pending: set_gate_pending,
-    });
 
     view! {
         <Router>
@@ -121,7 +93,6 @@ fn App() -> impl IntoView {
         </Router>
     }
 }
-
 #[component]
 fn AppChrome(
     ui_language: ReadSignal<UiLanguage>,
@@ -144,14 +115,6 @@ fn AppChrome(
     let current_page = Signal::derive(move || {
         AppPage::from_path(&location.pathname.get()).unwrap_or(AppPage::Home)
     });
-
-    let wallet_state = expect_context::<app_state::WalletState>();
-    let gate = expect_context::<NftGateState>();
-    install_gate_effects(gate, wallet_state, navigate_to_page);
-
-    let open_mint_page = move |_| {
-        request_mint_page(gate, wallet_state, navigate_to_page);
-    };
 
     view! {
         <div>
@@ -183,7 +146,6 @@ fn AppChrome(
                         )
                     }}
                 </button>
-                <components::wallet_button::WalletConnectButton/>
             </div>
             <div class="fixed bottom-2 right-2 z-[100] flex items-center gap-2 sm:bottom-4 sm:right-4">
                 <button
@@ -201,13 +163,6 @@ fn AppChrome(
                 >
                     {move || tr(ui_language.get(), "问题反馈", "Feedback")}
                 </a>
-                <button
-                    type="button"
-                    on:click=open_mint_page
-                    class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
-                >
-                    {move || tr(ui_language.get(), "铸造 NFT", "Mint NFT")}
-                </button>
             </div>
             <pages::help::HelpOverlay
                 open=help_open
@@ -220,8 +175,7 @@ fn AppChrome(
                 <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
                 <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
                 <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
-                <Route path=path!("/editor") view=GatedLocalLexiconEditorPage/>
-                <Route path=path!("/mint") view=pages::mint_nft::MintNftPage/>
+                <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
                 <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>
                 <Route path=path!("/series/number") view=pages::serise_practice::number::NumberSerisePracticePage/>
                 <Route path=path!("/series/month") view=pages::serise_practice::month::MonthSerisePracticePage/>
@@ -232,14 +186,5 @@ fn AppChrome(
                 />
             </Routes>
         </div>
-    }
-}
-
-#[component]
-fn GatedLocalLexiconEditorPage() -> impl IntoView {
-    view! {
-        <RequireNftPage>
-            <pages::dictionary_editor::LocalLexiconEditorPage/>
-        </RequireNftPage>
     }
 }
