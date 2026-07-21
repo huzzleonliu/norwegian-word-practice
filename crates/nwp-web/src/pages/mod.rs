@@ -4,6 +4,7 @@ pub mod dictionary_editor;
 pub mod help;
 pub mod home;
 pub mod lexicon_practice;
+pub mod lexicon_remember;
 pub mod lexicon_select;
 pub mod practice_mode_select;
 pub mod practice_result;
@@ -16,6 +17,7 @@ pub enum AppPage {
     PracticeModeSelect,
     LexiconMode,
     LexiconPractice,
+    LexiconRemember,
     LexiconSummary,
     LocalLexiconEditor,
     SeriseSelect,
@@ -33,6 +35,7 @@ impl AppPage {
             Self::PracticeModeSelect => "/practice",
             Self::LexiconMode => "/lexicon",
             Self::LexiconPractice => "/lexicon/practice",
+            Self::LexiconRemember => "/lexicon/remember",
             Self::LexiconSummary => "/lexicon/summary",
             Self::LocalLexiconEditor => "/editor",
             Self::SeriseSelect => "/series",
@@ -51,6 +54,7 @@ impl AppPage {
             "/practice" => Some(Self::PracticeModeSelect),
             "/lexicon" => Some(Self::LexiconMode),
             "/lexicon/practice" => Some(Self::LexiconPractice),
+            "/lexicon/remember" => Some(Self::LexiconRemember),
             "/lexicon/summary" => Some(Self::LexiconSummary),
             "/editor" => Some(Self::LocalLexiconEditor),
             "/series" => Some(Self::SeriseSelect),
@@ -90,6 +94,7 @@ mod tests {
             AppPage::PracticeModeSelect,
             AppPage::LexiconMode,
             AppPage::LexiconPractice,
+            AppPage::LexiconRemember,
             AppPage::LexiconSummary,
             AppPage::LocalLexiconEditor,
             AppPage::SeriseSelect,

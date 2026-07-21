@@ -174,6 +174,7 @@ fn AppChrome(
                 <Route path=path!("/practice") view=pages::practice_mode_select::PracticeModePage/>
                 <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
                 <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
+                <Route path=path!("/lexicon/remember") view=pages::lexicon_remember::LexiconRememberPage/>
                 <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
                 <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
                 <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>

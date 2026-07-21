@@ -81,6 +81,12 @@ fn help_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
         (AppPage::LexiconPractice, UiLanguage::En) => {
             view! { {markdown_view!(file = "docs/help/lexicon_practice.en.md")} }.into_any()
         }
+        (AppPage::LexiconRemember, UiLanguage::Zh) => {
+            view! { {markdown_view!(file = "docs/help/lexicon_practice.zh.md")} }.into_any()
+        }
+        (AppPage::LexiconRemember, UiLanguage::En) => {
+            view! { {markdown_view!(file = "docs/help/lexicon_practice.en.md")} }.into_any()
+        }
         (AppPage::LexiconSummary, UiLanguage::Zh) => {
             view! { {markdown_view!(file = "docs/help/practice_result.zh.md")} }.into_any()
         }

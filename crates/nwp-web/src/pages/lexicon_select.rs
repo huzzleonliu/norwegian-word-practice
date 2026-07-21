@@ -59,10 +59,8 @@ pub fn LexiconSelectPage() -> impl IntoView {
         }
     });
 
-    let start_practice_click = move |_| {
+    let start_remember_click = move |_| {
         let language = lang.get_untracked();
-        // 注意：这里读取的是全局 `entries`（已提交状态），不是浏览器内部草稿。
-        // 因此在 Query 表格里改勾选后，需先点击“确认修改”再开始练习。
         let mut selected_ids = collect_selected_entry_ids(&entries.get_untracked());
         if selected_ids.is_empty() {
             set_status.set(
@@ -75,7 +73,25 @@ pub fn LexiconSelectPage() -> impl IntoView {
             );
             return;
         }
+        shuffle_strings(&mut selected_ids);
+        set_selected_word_entry_ids.set(selected_ids);
+        set_current_page.set(AppPage::LexiconRemember);
+    };
 
+    let start_practice_click = move |_| {
+        let language = lang.get_untracked();
+        let mut selected_ids = collect_selected_entry_ids(&entries.get_untracked());
+        if selected_ids.is_empty() {
+            set_status.set(
+                tr(
+                    language,
+                    "请先选择至少 1 条词条，再开始练习。",
+                    "Please select at least one entry before starting.",
+                )
+                .to_string(),
+            );
+            return;
+        }
         shuffle_strings(&mut selected_ids);
         set_selected_word_entry_ids.set(selected_ids);
         set_current_page.set(AppPage::LexiconPractice);
@@ -129,13 +145,21 @@ pub fn LexiconSelectPage() -> impl IntoView {
                     mode=LexiconBrowserMode::Query
                 />
 
-                <div class="mt-6 flex justify-center">
+                <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                    <button
+                        type="button"
+                        on:click=start_remember_click
+                        class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-700 bg-emerald-700 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                    >
+                        {move || tr(lang.get(), "快速记忆练习", "Quick Memory Practice")}
+                    </button>
+
                     <button
                         type="button"
                         on:click=start_practice_click
                         class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-700 bg-emerald-700 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
                     >
-                        {move || tr(lang.get(), "开始练习", "Start Practice")}
+                        {move || tr(lang.get(), "拼写练习", "Spelling Practice")}
                     </button>
                 </div>
             </section>

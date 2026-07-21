@@ -13,7 +13,10 @@ pub use buttons::{
     AbortPracticeButton, FinishPracticeButton, RestartPracticeButton, RestartTempBehavior,
     create_temp_practice_result, normalize_for_compare, record_field_check_result,
 };
-pub use entry::{CheckPracticeButton, PracticeEntry, answer_input_key};
+pub use entry::{
+    CheckPracticeButton, PracticeEntry, answer_input_key, entry_field_value,
+    is_answer_field_available,
+};
 pub use settings::{PracticeSettings, default_answer_fields};
 pub use utils::{
     CheckAnswersError, apply_check_results, clear_practice_round_local_state,

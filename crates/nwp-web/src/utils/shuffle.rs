@@ -12,6 +12,11 @@ pub fn shuffle_strings(values: &mut [String]) {
     }
 }
 
+/// 生成 `[0, upper_exclusive)` 范围内随机索引（公开给记忆练习等模块选用随机变体）。
+pub fn pick_index(upper_exclusive: usize) -> usize {
+    random_index(upper_exclusive)
+}
+
 /// 生成 `[0, upper_exclusive)` 范围内随机索引。
 fn random_index(upper_exclusive: usize) -> usize {
     if upper_exclusive <= 1 {
