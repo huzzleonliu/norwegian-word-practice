@@ -2,7 +2,10 @@
 
 use leptos::prelude::*;
 
-use super::utils::{DATA_COLUMN_KEYS, input_to_option, parse_pipe_list};
+use super::utils::{
+    DATA_COLUMN_KEYS, default_table_column_visibility, input_to_option, parse_pipe_list,
+};
+use super::column_groups_panel::ColumnGroupCheckboxes;
 use super::search_panel::ExportLexiconFileButton;
 use crate::structures::field_meta::{entry_field_value, field_meta};
 use crate::structures::word_bank_entry::{
@@ -38,7 +41,6 @@ struct ColumnConfig {
 pub fn LexiconTablePanel(
     lang: ReadSignal<UiLanguage>,
     is_query_mode: bool,
-    search_columns: ReadSignal<Vec<bool>>,
     col_widths: ReadSignal<Vec<u16>>,
     sort_state: ReadSignal<Vec<(usize, bool)>>,
     row_items: Signal<Vec<(usize, WordBankEntry)>>,
@@ -77,6 +79,8 @@ pub fn LexiconTablePanel(
     let column_configs = build_column_configs();
     let header_column_configs = column_configs.clone();
     let row_column_configs = column_configs.clone();
+    let (visible_columns, set_visible_columns) = signal(default_table_column_visibility());
+    let (visibility_expanded, set_visibility_expanded) = signal(false);
     let (current_page, set_current_page) = signal(1_usize);
     let (page_target, set_page_target) = signal("1".to_string());
     let _ = (baseline_entries, set_baseline_entries, row_undo);
@@ -145,6 +149,55 @@ pub fn LexiconTablePanel(
     });
 
     view! {
+        <div class="mb-3">
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <button
+                    type="button"
+                    on:click=move |_| {
+                        set_visibility_expanded.update(|expanded| *expanded = !*expanded)
+                    }
+                    class="inline-flex w-full items-center justify-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 sm:w-auto sm:justify-start"
+                >
+                    {move || {
+                        if visibility_expanded.get() {
+                            tr(lang.get(), "隐藏显示列选择", "Hide Column Selection")
+                        } else {
+                            tr(lang.get(), "选择显示列", "Select Visible Columns")
+                        }
+                    }}
+                </button>
+                <button
+                    type="button"
+                    on:click=move |_| set_visible_columns.set(vec![true; DATA_COLUMN_COUNT])
+                    class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium hover:bg-slate-700 sm:w-auto"
+                >
+                    {move || tr(lang.get(), "全选显示列", "Show all columns")}
+                </button>
+                <button
+                    type="button"
+                    on:click=move |_| set_visible_columns.set(default_table_column_visibility())
+                    class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium hover:bg-slate-700 sm:w-auto"
+                >
+                    {move || tr(lang.get(), "恢复默认列", "Reset default columns")}
+                </button>
+            </div>
+            {move || {
+                if visibility_expanded.get() {
+                    view! {
+                        <div class="mt-3">
+                            <ColumnGroupCheckboxes
+                                lang=lang
+                                columns=visible_columns
+                                set_columns=set_visible_columns
+                            />
+                        </div>
+                    }
+                        .into_any()
+                } else {
+                    view! { <></> }.into_any()
+                }
+            }}
+        </div>
         <div class="max-h-[420px] overflow-auto pr-0 sm:pr-1">
             <table class="w-max min-w-full border-collapse table-fixed whitespace-nowrap text-sm">
                 <colgroup>
@@ -160,7 +213,7 @@ pub fn LexiconTablePanel(
                                     <col
                                         class:hidden=move || {
                                             idx < DATA_COLUMN_COUNT
-                                                && !search_columns
+                                                && !visible_columns
                                                     .get()
                                                     .get(idx)
                                                     .copied()
@@ -217,7 +270,7 @@ pub fn LexiconTablePanel(
                                             class:cursor-pointer=sortable
                                             class:hidden=move || {
                                                 idx < DATA_COLUMN_COUNT
-                                                    && !search_columns
+                                                    && !visible_columns
                                                         .get()
                                                         .get(idx)
                                                         .copied()
@@ -266,7 +319,7 @@ pub fn LexiconTablePanel(
                                             col_idx,
                                             config,
                                             lang,
-                                            search_columns,
+                                            visible_columns,
                                             on_begin_selected_drag,
                                             on_drag_over_selected,
                                         )
@@ -277,7 +330,7 @@ pub fn LexiconTablePanel(
                                             col_idx,
                                             config,
                                             lang,
-                                            search_columns,
+                                            visible_columns,
                                             on_begin_selected_drag,
                                             on_drag_over_selected,
                                             set_entries,
@@ -478,7 +531,7 @@ fn render_query_cell(
     col_idx: usize,
     config: ColumnConfig,
     lang: ReadSignal<UiLanguage>,
-    search_columns: ReadSignal<Vec<bool>>,
+    visible_columns: ReadSignal<Vec<bool>>,
     on_begin_selected_drag: Callback<(usize, bool)>,
     on_drag_over_selected: Callback<(usize, leptos::ev::MouseEvent)>,
 ) -> AnyView {
@@ -486,7 +539,7 @@ fn render_query_cell(
         ColumnEditorKind::SelectedToggle => view! {
             <td
                 class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
-                class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
                 on:mousedown=move |ev: leptos::ev::MouseEvent| {
                     if ev.button() == 0 {
                         ev.prevent_default();
@@ -504,7 +557,7 @@ fn render_query_cell(
         _ => view! {
             <td
                 class="border border-slate-800 p-2"
-                class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
             >
                 {column_display_text(&entry, config.key, lang.get())}
             </td>
@@ -520,7 +573,7 @@ fn render_edit_cell(
     col_idx: usize,
     config: ColumnConfig,
     lang: ReadSignal<UiLanguage>,
-    search_columns: ReadSignal<Vec<bool>>,
+    visible_columns: ReadSignal<Vec<bool>>,
     on_begin_selected_drag: Callback<(usize, bool)>,
     on_drag_over_selected: Callback<(usize, leptos::ev::MouseEvent)>,
     set_entries: WriteSignal<Vec<WordBankEntry>>,
@@ -532,7 +585,7 @@ fn render_edit_cell(
         ColumnEditorKind::ReadOnly => view! {
             <td
                 class="border border-slate-800 p-1"
-                class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
             >
                 <span class="block rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-300">
                     {column_display_text(&entry, config.key, lang.get())}
@@ -543,7 +596,7 @@ fn render_edit_cell(
         ColumnEditorKind::SelectedToggle => view! {
             <td
                 class="cursor-pointer select-none border border-slate-800 p-1 text-center hover:bg-slate-800/40"
-                class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
                 on:mousedown=move |ev: leptos::ev::MouseEvent| {
                     if ev.button() == 0 {
                         ev.prevent_default();
@@ -561,7 +614,7 @@ fn render_edit_cell(
         ColumnEditorKind::PartOfSpeechSelect => view! {
             <td
                 class="border border-slate-800 p-1"
-                class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
             >
                 <select
                     prop:value=entry.part_of_speech.as_key().to_string()
@@ -619,7 +672,7 @@ fn render_edit_cell(
             view! {
                 <td
                     class="border border-slate-800 p-1"
-                    class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
+                    class:hidden=move || !visible_columns.get().get(col_idx).copied().unwrap_or(false)
                 >
                     <input
                         type="text"

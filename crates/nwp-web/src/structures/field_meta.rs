@@ -659,6 +659,14 @@ pub fn default_search_column_visibility() -> Vec<bool> {
         .collect()
 }
 
+/// 表格默认显示列：隐藏「序号」「添加时间」，其余显示。
+pub fn default_table_column_visibility() -> Vec<bool> {
+    DATA_COLUMN_KEYS
+        .iter()
+        .map(|key| *key != "id" && *key != "added_at")
+        .collect()
+}
+
 /// 搜索列分组：按 `FieldMeta.group` 归类，组顺序固定，组内保持 `DATA_COLUMN_KEYS` 顺序。
 pub fn search_column_groups() -> Vec<(&'static str, Vec<usize>)> {
     const GROUP_ORDER: [&str; 7] = [

@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 pub use crate::structures::field_meta::DATA_COLUMN_KEYS;
 use crate::structures::field_meta::{
     default_search_column_visibility as default_search_column_visibility_from_meta,
+    default_table_column_visibility as default_table_column_visibility_from_meta,
     entry_field_value, field_label, search_column_groups as search_column_groups_from_meta,
 };
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
@@ -12,6 +13,10 @@ use crate::utils::i18n::{normalize_for_compare, tr};
 
 pub fn default_search_column_visibility() -> Vec<bool> {
     default_search_column_visibility_from_meta()
+}
+
+pub fn default_table_column_visibility() -> Vec<bool> {
+    default_table_column_visibility_from_meta()
 }
 
 pub fn search_column_groups() -> Vec<(&'static str, Vec<usize>)> {

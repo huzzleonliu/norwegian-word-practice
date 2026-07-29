@@ -1,10 +1,11 @@
-//! 词库浏览器搜索面板：包含关键字输入、列可见性选择和搜索触发按钮。
+//! 词库浏览器搜索面板：关键字输入、搜索列范围选择与搜索触发。
 
 use leptos::prelude::*;
 
-use super::utils::{DATA_COLUMN_KEYS, header_name, search_column_groups};
+use super::column_groups_panel::ColumnGroupCheckboxes;
+use super::utils::DATA_COLUMN_KEYS;
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
-use crate::utils::i18n::{field_label, tr};
+use crate::utils::i18n::tr;
 use crate::utils::lexicon_file::{
     LEXICON_EXPORT_FILE_NAME, serialize_encrypted_lexicon_from_entries,
 };
@@ -140,14 +141,14 @@ pub fn LexiconSearchPanel(
                         on:click=move |_| set_search_columns.set(vec![true; DATA_COLUMN_COUNT])
                         class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
                     >
-                        {move || tr(lang.get(), "全选列", "Select all columns")}
+                        {move || tr(lang.get(), "全选搜索列", "Select all search columns")}
                     </button>
                     <button
                         type="button"
                         on:click=move |_| set_search_columns.set(vec![false; DATA_COLUMN_COUNT])
                         class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium hover:bg-slate-700 sm:w-auto"
                     >
-                        {move || tr(lang.get(), "全不选列", "Unselect all columns")}
+                        {move || tr(lang.get(), "清空搜索列", "Clear search columns")}
                     </button>
                 </div>
                 <div class="mt-3">
@@ -169,54 +170,12 @@ pub fn LexiconSearchPanel(
                     {move || {
                         if search_scope_expanded.get() {
                             view! {
-                                <div class="mt-3 space-y-3">
-                                    {search_column_groups()
-                                        .into_iter()
-                                        .map(|(group_name, indices)| {
-                                            view! {
-                                                <section class="rounded border border-slate-800 bg-slate-950/40 p-2">
-                                                    <p class="mb-2 text-xs font-semibold text-slate-400">
-                                                        {move || match group_name {
-                                                            "core" => tr(lang.get(), "基础组", "Core"),
-                                                            "verb" => tr(lang.get(), "动词变体组", "Verb Forms"),
-                                                            "noun" => tr(lang.get(), "名词变体组", "Noun Forms"),
-                                                            "adjective" => tr(lang.get(), "形容词变体组", "Adjective Forms"),
-                                                            "pronoun" => tr(lang.get(), "代词变体组", "Pronoun Forms"),
-                                                            "determinative" => tr(lang.get(), "限定词变体组", "Determinative Forms"),
-                                                            "adverb" => tr(lang.get(), "副词变体组", "Adverb Forms"),
-                                                            _ => group_name,
-                                                        }}
-                                                    </p>
-                                                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-                                                        {indices
-                                                            .into_iter()
-                                                            .map(|idx| {
-                                                                view! {
-                                                                    <label class="inline-flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-xs text-slate-300">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            prop:checked=move || {
-                                                                                search_columns.get().get(idx).copied().unwrap_or(false)
-                                                                            }
-                                                                            on:change=move |ev| {
-                                                                                let checked = event_target_checked(&ev);
-                                                                                set_search_columns.update(|cols| {
-                                                                                    if idx < cols.len() {
-                                                                                        cols[idx] = checked;
-                                                                                    }
-                                                                                });
-                                                                            }
-                                                                        />
-                                                                        <span>{move || field_label(lang.get(), header_name(idx))}</span>
-                                                                    </label>
-                                                                }
-                                                            })
-                                                            .collect_view()}
-                                                    </div>
-                                                </section>
-                                            }
-                                        })
-                                        .collect_view()}
+                                <div class="mt-3">
+                                    <ColumnGroupCheckboxes
+                                        lang=lang
+                                        columns=search_columns
+                                        set_columns=set_search_columns
+                                    />
                                 </div>
                             }
                                 .into_any()

@@ -574,7 +574,6 @@ pub fn LexiconBrowser(
                 <LexiconTablePanel
                     lang=lang
                     is_query_mode=is_query_mode
-                    search_columns=search_columns
                     col_widths=col_widths
                     sort_state=sort_state
                     row_items=row_items

@@ -5,9 +5,7 @@ use leptos::prelude::*;
 use crate::app_state::UiState;
 use crate::components::lexicon_browser::parse_word_bank_csv;
 use crate::components::lexicon_browser::table_panel::{LexiconTablePanel, TableActionKind};
-use crate::components::lexicon_browser::utils::{
-    DATA_COLUMN_KEYS, default_search_column_visibility,
-};
+use crate::components::lexicon_browser::utils::DATA_COLUMN_KEYS;
 use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::dictionary::current_added_at_timestamp;
 use crate::utils::i18n::tr;
@@ -39,8 +37,6 @@ pub fn LexiconEditorAddMulti(
         widths
     });
     let (preview_sort_state, _set_preview_sort_state) = signal(Vec::<(usize, bool)>::new());
-    let (preview_search_columns, _set_preview_search_columns) =
-        signal(default_search_column_visibility());
     let (preview_detected_count, set_preview_detected_count) = signal(0_usize);
     let (show_preview_table, set_show_preview_table) = signal(false);
     let (_preview_status, set_preview_status) = signal(String::new());
@@ -137,7 +133,6 @@ pub fn LexiconEditorAddMulti(
                             <LexiconTablePanel
                                 lang=lang
                                 is_query_mode=false
-                                search_columns=preview_search_columns
                                 col_widths=preview_col_widths
                                 sort_state=preview_sort_state
                                 row_items=preview_row_items
