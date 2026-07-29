@@ -65,4 +65,4 @@ The export control sits at the bottom of the lexicon browser, **to the left of C
 * Export uses the **committed** lexicon, not unconfirmed table drafts
 * After edits or deletions, click **Confirm Changes**, then **Export Lexicon File**
 
-You can import the file directly via **Import Lexicon File** on the practice mode selection page (it will auto-decrypt). Plain CSV import remains supported.
+You can import the file directly via **Import Dictionary File** on the practice mode selection page (it will auto-decrypt). Plain CSV cannot be imported directly; encrypt it to `.nwpdict` first.

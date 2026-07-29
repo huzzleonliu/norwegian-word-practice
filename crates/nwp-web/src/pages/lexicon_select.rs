@@ -33,8 +33,8 @@ pub fn LexiconSelectPage() -> impl IntoView {
             set_status.set(
                 tr(
                     language,
-                    "当前词库为空，请先回到首页加载或导入词库。",
-                    "Current lexicon is empty. Please load/import lexicon first.",
+                    "当前词库为空，请先回到首页加载或导入字典。",
+                    "Current lexicon is empty. Please load/import a dictionary first.",
                 )
                 .to_string(),
             );

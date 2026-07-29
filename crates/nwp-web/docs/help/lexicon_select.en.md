@@ -2,7 +2,7 @@
 
 ## Select Words to Practice
 
-Pick which words from the currently loaded lexicon to practice next, then start lexicon practice. Before entering this page, load a built-in lexicon or import a lexicon file on the practice mode selection page.
+Pick which words from the currently loaded lexicon to practice next, then start lexicon practice. Before entering this page, load a built-in lexicon or import a dictionary file on the practice mode selection page.
 
 ### Current Lexicon Status
 

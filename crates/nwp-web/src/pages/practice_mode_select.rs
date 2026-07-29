@@ -1,10 +1,10 @@
-//! 练习模式选择页：加载词库、导入词库文件，并分流到词库练习/系列练习/本地编辑器。
+//! 练习模式选择页：加载词库、导入字典文件，并分流到词库练习/系列练习/本地编辑器。
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, UiState};
-use crate::components::import_csv::ImportCsvButton;
+use crate::components::import_dictionary::ImportDictionaryButton;
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
@@ -88,8 +88,8 @@ pub fn PracticeModePage() -> impl IntoView {
         if count == 0 {
             tr(
                 language,
-                "尚未加载词库，请先在本页选择词库或导入词库文件。",
-                "No lexicon loaded. Select one or import a lexicon file first.",
+                "尚未加载词库，请先在本页选择词库或导入字典文件。",
+                "No lexicon loaded. Select one or import a dictionary file first.",
             )
             .to_string()
         } else {
@@ -130,8 +130,8 @@ pub fn PracticeModePage() -> impl IntoView {
                             {move || {
                                 tr(
                                     lang.get(),
-                                    "先选择或导入词库，再进入词库模式。",
-                                    "Select or import lexicon first, then enter lexicon mode.",
+                                    "先选择或导入字典，再进入词库模式。",
+                                    "Select or import a dictionary first, then enter lexicon mode.",
                                 )
                             }}
                         </p>
@@ -164,10 +164,10 @@ pub fn PracticeModePage() -> impl IntoView {
                             >
                                 {move || tr(lang.get(), "选择词库", "Load Lexicon")}
                             </button>
-                            <ImportCsvButton
-                                input_id="practice-mode-import-csv-input".to_string()
+                            <ImportDictionaryButton
+                                input_id="practice-mode-import-dictionary-input".to_string()
                                 label=Signal::derive(move || {
-                                    tr(lang.get(), "导入词库文件", "Import Lexicon File").to_string()
+                                    tr(lang.get(), "导入字典文件", "Import Dictionary File").to_string()
                                 })
                                 class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto".to_string()
                                 set_entries=lexicon_state.set_entries

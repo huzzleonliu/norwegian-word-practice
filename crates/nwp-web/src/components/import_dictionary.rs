@@ -1,4 +1,4 @@
-//! 通用词库导入按钮：支持明文 CSV 与加密 `.nwpdict`，读取后覆盖全局词库状态。
+//! 通用字典导入按钮：仅接受 `.nwpdict` 文件，读取后覆盖全局词库状态。
 
 use leptos::ev::Event;
 use leptos::prelude::*;
@@ -7,12 +7,12 @@ use leptos::task::spawn_local;
 
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
-use crate::utils::lexicon_file::LEXICON_FILE_INPUT_ACCEPT;
+use crate::utils::lexicon_file::DICTIONARY_IMPORT_FILE_ACCEPT;
 #[cfg(target_arch = "wasm32")]
 use crate::utils::lexicon_file::parse_lexicon_entries_from_text;
 
 #[component]
-pub fn ImportCsvButton(
+pub fn ImportDictionaryButton(
     input_id: String,
     #[prop(into)] label: Signal<String>,
     class: String,
@@ -22,8 +22,8 @@ pub fn ImportCsvButton(
     #[prop(optional)] ui_language: Option<ReadSignal<UiLanguage>>,
     #[prop(optional)] set_source_name: Option<WriteSignal<String>>,
 ) -> impl IntoView {
-    let import_csv_click = move |ev: Event| {
-        import_csv_from_file(
+    let import_dictionary_click = move |ev: Event| {
+        import_dictionary_from_file(
             ev,
             set_entries,
             set_status,
@@ -37,9 +37,9 @@ pub fn ImportCsvButton(
         <input
             id=input_id.clone()
             type="file"
-            accept=LEXICON_FILE_INPUT_ACCEPT
+            accept=DICTIONARY_IMPORT_FILE_ACCEPT
             class="hidden"
-            on:change=import_csv_click
+            on:change=import_dictionary_click
         />
         <label for=input_id class=class>
             {move || label.get()}
@@ -47,7 +47,7 @@ pub fn ImportCsvButton(
     }
 }
 
-fn import_csv_from_file(
+fn import_dictionary_from_file(
     ev: Event,
     set_entries: WriteSignal<Vec<WordBankEntry>>,
     set_status: WriteSignal<String>,
@@ -105,6 +105,18 @@ fn import_csv_from_file(
         let file_name = file.name();
         input.set_value("");
 
+        if !file_name.to_ascii_lowercase().ends_with(".nwpdict") {
+            set_status.set(
+                tr(
+                    lang,
+                    "导入失败：仅支持 .nwpdict 文件。",
+                    "Import failed: only .nwpdict files are supported.",
+                )
+                .to_string(),
+            );
+            return;
+        }
+
         spawn_local(async move {
             let content = match wasm_bindgen_futures::JsFuture::from(file.text()).await {
                 Ok(js_value) => match js_value.as_string() {
@@ -143,15 +155,15 @@ fn import_csv_from_file(
                     if let Some(set_source_name) = set_source_name {
                         set_source_name.set(format!(
                             "{}：{file_name}",
-                            tr(lang, "本地导入", "Local Import")
+                            tr(lang, "本地字典导入", "Local Dictionary Import")
                         ));
                     }
                     set_status.set(format!(
                         "{} {} {}",
                         tr(
                             lang,
-                            "词库导入成功（已覆盖），共",
-                            "Lexicon imported (overwritten),"
+                            "字典导入成功（已覆盖），共",
+                            "Dictionary imported (overwritten),"
                         ),
                         count,
                         tr(lang, "条。", "entries.")

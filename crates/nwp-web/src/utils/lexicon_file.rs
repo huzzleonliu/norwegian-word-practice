@@ -1,5 +1,5 @@
 //! 词库文件工具：
-//! - 统一导入解析（`.csv` / `.nwpdict`）
+//! - 统一导入解析（`.nwpdict`；内置加载仍兼容明文 CSV）
 //! - 统一导出封装（`WordBankEntry[]` -> 加密 `.nwpdict`）
 //! - 统一内置词库加载（URL -> 词条列表）
 
@@ -9,9 +9,8 @@ use crate::utils::dictionary_crypto::{
     parse_lexicon_import_content, serialize_encrypted_lexicon_export,
 };
 
-/// 文件输入框可接受的词库文件类型。
-pub const LEXICON_FILE_INPUT_ACCEPT: &str =
-    ".csv,.nwpdict,text/csv,application/json,text/plain";
+/// 用户导入字典时文件输入框可接受的类型。
+pub const DICTIONARY_IMPORT_FILE_ACCEPT: &str = ".nwpdict";
 
 /// 内置词库默认文件（练习模式页）。
 pub const DEFAULT_BUILTIN_WORD_BANK_FILE: &str = "word-bank.nwpdict";
