@@ -6,14 +6,12 @@ use leptos::task::spawn_local;
 use crate::app_state::UiState;
 use crate::utils::i18n::tr;
 
-use super::dictionary_search::{
-    enrich_results_with_google_translate, query_word_with_ordbok,
-    test_google_translate_connectivity,
-};
-use super::gemini_search::{query_word_with_gemini, test_gemini_connectivity};
+use super::dictionary_search::test_google_translate_connectivity;
+use super::gemini_search::test_gemini_connectivity;
+use super::search_process::{SearchRequest, run_word_search};
 use super::{
-    GeminiWordResult, WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, form_hint_label,
-    join_pipe, merge_word_result, normalize_part_of_speech, normalize_text_opt,
+    WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, form_hint_label, join_pipe,
+    normalize_part_of_speech, normalize_text_opt,
 };
 
 #[derive(Clone, Copy)]
@@ -403,212 +401,42 @@ pub fn AiResearcher(
         let set_status = set_status;
         let set_single_tags = set_single_tags;
         spawn_local(async move {
-            let (parsed_list, source_label) = match query_word_with_ordbok(&word, &hint).await {
-                Ok(mut results) if !results.is_empty() => {
-                    let mut source_label = tr(language, "Ordbok API", "Ordbok API").to_string();
-                    let can_use_google_translate =
-                        !google_translate_token.is_empty() && google_translate_verified;
-                    let mut used_google_translate = false;
+            let request = SearchRequest {
+                language,
+                word: word.clone(),
+                hint: hint.clone(),
+                gemini_token,
+                google_translate_token,
+                google_translate_verified,
+                ordbok_only,
+            };
+            let outcome = run_word_search(request, |message| {
+                set_status.set(message);
+            })
+            .await;
 
-                    if can_use_google_translate {
-                        match enrich_results_with_google_translate(
-                            &mut results,
-                            &google_translate_token,
-                        )
-                        .await
-                        {
-                            Ok(()) => {
-                                used_google_translate = true;
-                                source_label = tr(
-                                    language,
-                                    "Ordbok API + Google Translate",
-                                    "Ordbok API + Google Translate",
-                                )
-                                .to_string();
-                            }
-                            Err(err) => {
-                                set_status.set(format!(
-                                    "{} {err}",
-                                    tr(
-                                        language,
-                                        "提示：Google Translate 回填失败，改用 Gemini 补全。",
-                                        "Notice: Google Translate fill failed; falling back to Gemini fill.",
-                                    )
-                                ));
-                            }
-                        }
-                    }
-
-                    let needs_degree_fill = results_need_adjective_degree_fill(&results);
-                    let should_call_gemini = !gemini_token.is_empty()
-                        && !ordbok_only
-                        && (!used_google_translate || needs_degree_fill);
-
-                    if should_call_gemini {
-                        match query_word_with_gemini(&gemini_token, &word, &hint).await {
-                            Ok(gemini_results) => {
-                                fill_missing_fields_from_gemini(
-                                    &mut results,
-                                    &gemini_results,
-                                    &hint,
-                                );
-                                source_label = if used_google_translate {
-                                    tr(
-                                        language,
-                                        "Ordbok API + Google Translate + Gemini（补缺词形）",
-                                        "Ordbok API + Google Translate + Gemini (missing forms)",
-                                    )
-                                    .to_string()
-                                } else {
-                                    tr(
-                                        language,
-                                        "Ordbok API + Gemini（补中英与缺词形）",
-                                        "Ordbok API + Gemini (translations and missing forms)",
-                                    )
-                                    .to_string()
-                                };
-                            }
-                            Err(err) => {
-                                set_status.set(format!(
-                                    "{} {err}",
-                                    tr(
-                                        language,
-                                        "提示：Gemini 补全失败，保留词典结果。",
-                                        "Notice: Gemini fill failed; keeping dictionary result.",
-                                    )
-                                ));
-                            }
-                        }
-                    } else if !used_google_translate {
-                        source_label = tr(
-                            language,
-                            "Ordbok API（中英留空：未通过 Google 检测且未提供 Gemini Token）",
-                            "Ordbok API (Chinese/English empty: Google not verified and Gemini token missing)",
-                        )
-                        .to_string();
-                    }
-
-                    (results, source_label)
-                }
-                Ok(_) => {
-                    if ordbok_only {
+            let (parsed_list, source_label) = match outcome {
+                Ok(success) => {
+                    if success.results.is_empty() {
                         set_status.set(
                             tr(
                                 language,
-                                "Ordbok API 未命中，且已开启“仅 Ordbok”模式，不回退 Gemini。",
-                                "No Ordbok match and \"Ordbok-only\" mode is enabled; Gemini fallback skipped.",
+                                "查询失败：没有可用结果。",
+                                "Query failed: no usable result returned.",
                             )
                             .to_string(),
                         );
                         set_is_querying.set(false);
                         return;
                     }
-                    if gemini_token.is_empty() {
-                        set_status.set(
-                            tr(
-                                language,
-                                "Ordbok API 未命中，且未提供 Gemini Token，无法回退 AI 查询。",
-                                "No Ordbok match and Gemini token is missing; cannot fallback to AI.",
-                            )
-                            .to_string(),
-                        );
-                        set_is_querying.set(false);
-                        return;
-                    }
-                    match query_word_with_gemini(&gemini_token, &word, &hint).await {
-                        Ok(results) => (
-                            results,
-                            tr(
-                                language,
-                                "Gemini（Ordbok 未命中后回退）",
-                                "Gemini (fallback after no Ordbok match)",
-                            )
-                            .to_string(),
-                        ),
-                        Err(err) => {
-                            set_status.set(format!(
-                                "{} {err}",
-                                tr(
-                                    language,
-                                    "查询失败：Ordbok 未命中，Gemini 回退也失败。",
-                                    "Query failed: no Ordbok match and Gemini fallback also failed.",
-                                )
-                            ));
-                            set_is_querying.set(false);
-                            return;
-                        }
-                    }
+                    (success.results, success.source_label)
                 }
-                Err(ordbok_err) => {
-                    if ordbok_only {
-                        set_status.set(format!(
-                            "{} {ordbok_err}",
-                            tr(
-                                language,
-                                "查询失败：Ordbok API 请求失败，且已开启“仅 Ordbok”模式。",
-                                "Query failed: Ordbok API request failed and \"Ordbok-only\" mode is enabled.",
-                            )
-                        ));
-                        set_is_querying.set(false);
-                        return;
-                    }
-                    if gemini_token.is_empty() {
-                        set_status.set(format!(
-                            "{} {ordbok_err}",
-                            tr(
-                                language,
-                                "查询失败：Ordbok API 请求失败，且未提供 Gemini Token。",
-                                "Query failed: Ordbok API request failed and Gemini token is missing.",
-                            )
-                        ));
-                        set_is_querying.set(false);
-                        return;
-                    }
-                    match query_word_with_gemini(&gemini_token, &word, &hint).await {
-                        Ok(results) => (
-                            results,
-                            format!(
-                                "{} ({ordbok_err})",
-                                tr(
-                                    language,
-                                    "Gemini（Ordbok 失败后回退）",
-                                    "Gemini (fallback after Ordbok error)",
-                                )
-                            ),
-                        ),
-                        Err(ai_err) => {
-                            set_status.set(format!(
-                                "{} {ordbok_err}；{} {ai_err}",
-                                tr(
-                                    language,
-                                    "查询失败：Ordbok API 请求失败：",
-                                    "Query failed: Ordbok API request failed:",
-                                ),
-                                tr(
-                                    language,
-                                    "且 Gemini 回退失败：",
-                                    "and Gemini fallback failed:",
-                                )
-                            ));
-                            set_is_querying.set(false);
-                            return;
-                        }
-                    }
+                Err(err) => {
+                    set_status.set(err);
+                    set_is_querying.set(false);
+                    return;
                 }
             };
-
-            if parsed_list.is_empty() {
-                set_status.set(
-                    tr(
-                        language,
-                        "查询失败：没有可用结果。",
-                        "Query failed: no usable result returned.",
-                    )
-                    .to_string(),
-                );
-                set_is_querying.set(false);
-                return;
-            }
 
             if parsed_list.len() == 1 {
                 let parsed = parsed_list.first().cloned().unwrap_or_default();
@@ -831,8 +659,8 @@ pub fn AiResearcher(
                 {move || {
                     tr(
                         lang.get(),
-                        "词典优先查询（Ordbok API → Gemini）",
-                        "Dictionary-first Lookup (Ordbok API -> Gemini)",
+                        "词典优先查询（Ordbok → Google Translate → Gemini，必要时按原型二次查询）",
+                        "Dictionary-first Lookup (Ordbok -> Google Translate -> Gemini; re-query by base form when needed)",
                     )
                 }}
             </h2>
@@ -1006,53 +834,4 @@ fn maybe_set_opt(reader: ReadSignal<String>, setter: WriteSignal<String>, value:
     if let Some(value) = normalize_text_opt(value) {
         set_if_blank(reader, setter, value);
     }
-}
-
-fn fill_missing_fields_from_gemini(
-    dictionary_results: &mut [GeminiWordResult],
-    gemini_results: &[GeminiWordResult],
-    hint: &str,
-) {
-    for item in dictionary_results.iter_mut() {
-        let Some(source) = find_best_translation_source(item, gemini_results, hint) else {
-            continue;
-        };
-        merge_word_result(item, source.clone());
-    }
-}
-
-fn results_need_adjective_degree_fill(results: &[GeminiWordResult]) -> bool {
-    results.iter().any(|item| {
-        let pos = normalize_part_of_speech(item.part_of_speech.clone(), "adjective");
-        pos == "adjective"
-            && (item.adjective_comparative.is_none()
-                || item.adjective_superlative_indefinite.is_none()
-                || item.adjective_superlative_definite.is_none())
-    })
-}
-
-fn find_best_translation_source<'a>(
-    target: &GeminiWordResult,
-    candidates: &'a [GeminiWordResult],
-    hint: &str,
-) -> Option<&'a GeminiWordResult> {
-    let target_base = normalize_text_opt(target.base_form.clone()).unwrap_or_default();
-    let target_pos = normalize_part_of_speech(target.part_of_speech.clone(), hint);
-
-    candidates
-        .iter()
-        .find(|item| {
-            normalize_text_opt(item.base_form.clone())
-                .unwrap_or_default()
-                .eq_ignore_ascii_case(&target_base)
-                && normalize_part_of_speech(item.part_of_speech.clone(), hint) == target_pos
-        })
-        .or_else(|| {
-            candidates.iter().find(|item| {
-                normalize_text_opt(item.base_form.clone())
-                    .unwrap_or_default()
-                    .eq_ignore_ascii_case(&target_base)
-            })
-        })
-        .or_else(|| (candidates.len() == 1).then(|| &candidates[0]))
 }

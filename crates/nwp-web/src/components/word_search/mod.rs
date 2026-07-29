@@ -3,6 +3,7 @@
 pub mod dictionary_search;
 pub mod gemini_search;
 pub mod layout;
+pub mod search_process;
 mod shared;
 mod types;
 
