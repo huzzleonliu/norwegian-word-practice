@@ -1,6 +1,10 @@
 //! 词库浏览器编排层：维护草稿状态、搜索排序、批量选择与确认提交流程。
 
+use std::sync::{Arc, Mutex};
+
 use leptos::prelude::*;
+#[cfg(target_arch = "wasm32")]
+use leptos::ev;
 
 use super::commit_service::{CommitError, CommitRequest, prepare_commit};
 use super::search_panel::LexiconSearchPanel;
@@ -78,22 +82,96 @@ pub fn LexiconBrowser(
             .filter(|(_, entry)| entry_matches_filter(entry, &query, &columns))
             .collect::<Vec<(usize, WordBankEntry)>>()
     });
-    let min_width_for = |idx: usize| -> u16 {
+    let min_width_for = move |idx: usize| -> u16 {
         match idx {
             1 => 70,
             idx if idx == DATA_COLUMN_COUNT => 260,
-            7..=37 => 100,
-            _ => 160,
+            _ => 100,
         }
     };
-    let start_resize = move |idx: usize, ev: leptos::ev::MouseEvent| {
-        ev.prevent_default();
-        let start_x = ev.client_x();
-        let start_w = col_widths.get_untracked().get(idx).copied().unwrap_or(120);
-        set_resize_state.set(Some((idx, start_x, start_w)));
+    let resize_move_listener = Arc::new(Mutex::new(None::<WindowListenerHandle>));
+    let resize_up_listener = Arc::new(Mutex::new(None::<WindowListenerHandle>));
+    let start_resize = {
+        let resize_move_listener = Arc::clone(&resize_move_listener);
+        let resize_up_listener = Arc::clone(&resize_up_listener);
+        move |idx: usize, ev: leptos::ev::MouseEvent| {
+            ev.prevent_default();
+            let start_x = ev.client_x();
+            let start_w = col_widths.get_untracked().get(idx).copied().unwrap_or(120);
+            set_resize_state.set(Some((idx, start_x, start_w)));
+
+            #[cfg(target_arch = "wasm32")]
+            {
+                if let Some(handle) = resize_move_listener
+                    .lock()
+                    .expect("resize move listener lock")
+                    .take()
+                {
+                    handle.remove();
+                }
+                if let Some(handle) = resize_up_listener
+                    .lock()
+                    .expect("resize up listener lock")
+                    .take()
+                {
+                    handle.remove();
+                }
+
+                let move_handle =
+                    window_event_listener(ev::mousemove, move |ev: web_sys::MouseEvent| {
+                        if let Some((idx, start_x, start_w)) = resize_state.get_untracked() {
+                            let delta = ev.client_x() - start_x;
+                            let min = i32::from(min_width_for(idx));
+                            let next = (i32::from(start_w) + delta).max(min).min(900) as u16;
+                            set_col_widths.update(|cols| {
+                                if let Some(col) = cols.get_mut(idx) {
+                                    *col = next;
+                                }
+                            });
+                        }
+                    });
+                *resize_move_listener
+                    .lock()
+                    .expect("resize move listener set") = Some(move_handle);
+
+                let resize_move_listener_for_up = Arc::clone(&resize_move_listener);
+                let resize_up_listener_for_up = Arc::clone(&resize_up_listener);
+                let up_handle =
+                    window_event_listener(ev::mouseup, move |_ev: web_sys::MouseEvent| {
+                        set_resize_state.set(None);
+                        if let Some(handle) = resize_move_listener_for_up
+                            .lock()
+                            .expect("resize move up lock")
+                            .take()
+                        {
+                            handle.remove();
+                        }
+                        if let Some(handle) = resize_up_listener_for_up
+                            .lock()
+                            .expect("resize up up lock")
+                            .take()
+                        {
+                            handle.remove();
+                        }
+                    });
+                *resize_up_listener.lock().expect("resize up listener set") = Some(up_handle);
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let _ = (
+                    &resize_move_listener,
+                    &resize_up_listener,
+                    &set_col_widths,
+                    &resize_state,
+                    min_width_for(idx),
+                );
+            }
+        }
     };
+    // 非 wasm / 兜底：若 window 监听不可用，仍允许在面板内拖拽改列宽。
     let on_mouse_move = move |ev: leptos::ev::MouseEvent| {
-        if let Some((idx, start_x, start_w)) = resize_state.get() {
+        if let Some((idx, start_x, start_w)) = resize_state.get_untracked() {
             let delta = ev.client_x() - start_x;
             let min = i32::from(min_width_for(idx));
             let next = (i32::from(start_w) + delta).max(min).min(900) as u16;
@@ -104,7 +182,15 @@ pub fn LexiconBrowser(
             });
         }
     };
-    let stop_resize = move |_| {
+    let stop_pointer_drags = move |_| {
+        if selection_drag_target.get_untracked().is_some() {
+            set_selection_drag_target.set(None);
+        }
+        if delete_drag_target.get_untracked().is_some() {
+            set_delete_drag_target.set(None);
+        }
+    };
+    let stop_all_drags = move |_| {
         if resize_state.get_untracked().is_some() {
             set_resize_state.set(None);
         }
@@ -115,6 +201,26 @@ pub fn LexiconBrowser(
             set_delete_drag_target.set(None);
         }
     };
+    on_cleanup({
+        let resize_move_listener = Arc::clone(&resize_move_listener);
+        let resize_up_listener = Arc::clone(&resize_up_listener);
+        move || {
+            if let Some(handle) = resize_move_listener
+                .lock()
+                .expect("resize move cleanup lock")
+                .take()
+            {
+                handle.remove();
+            }
+            if let Some(handle) = resize_up_listener
+                .lock()
+                .expect("resize up cleanup lock")
+                .take()
+            {
+                handle.remove();
+            }
+        }
+    });
     let begin_selected_drag = move |idx: usize, current_selected: bool| {
         let target_checked = !current_selected;
         set_selection_drag_target.set(Some(target_checked));
@@ -452,8 +558,8 @@ pub fn LexiconBrowser(
             <section
                 class="mt-4 rounded-xl border border-slate-800 bg-slate-950/50 p-3 sm:p-4"
                 on:mousemove=on_mouse_move
-                on:mouseup=stop_resize
-                on:mouseleave=stop_resize
+                on:mouseup=stop_all_drags
+                on:mouseleave=stop_pointer_drags
             >
                             <LexiconSearchPanel
                     lang=lang

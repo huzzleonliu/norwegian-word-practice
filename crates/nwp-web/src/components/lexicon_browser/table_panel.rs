@@ -166,10 +166,12 @@ pub fn LexiconTablePanel(
                                                     .copied()
                                                     .unwrap_or(false)
                                         }
-                                        style=format!(
-                                            "width:{}px",
-                                            col_widths.get().get(idx).copied().unwrap_or(140)
-                                        )
+                                        style=move || {
+                                            format!(
+                                                "width:{}px",
+                                                col_widths.get().get(idx).copied().unwrap_or(140)
+                                            )
+                                        }
                                     />
                                 }
                             })
@@ -229,8 +231,12 @@ pub fn LexiconTablePanel(
                                         >
                                             {format!("{title}{indicator}")}
                                             <div
-                                                class="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-slate-700/0 hover:bg-slate-500/80"
+                                                class="absolute -right-1 top-0 z-20 h-full w-3 cursor-col-resize hover:bg-slate-500/40"
+                                                title=move || {
+                                                    tr(lang.get(), "拖拽调整列宽", "Drag to resize column")
+                                                }
                                                 on:mousedown=move |ev| {
+                                                    ev.prevent_default();
                                                     ev.stop_propagation();
                                                     on_start_resize.run((idx, ev));
                                                 }
