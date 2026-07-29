@@ -1,6 +1,6 @@
 //! 词典查询流程：Ordbok → Google Translate → Gemini，必要时按原型二次查询。
 
-use crate::structures::word_bank_entry::UiLanguage;
+use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
 
 use super::dictionary_search::{
@@ -366,6 +366,71 @@ fn primary_base_form(results: &[GeminiWordResult]) -> Option<String> {
 
 fn words_match(a: &str, b: &str) -> bool {
     a.trim().to_lowercase() == b.trim().to_lowercase()
+}
+
+/// 将查询结果的原型与词库原型比对，生成 mini-console 提示。
+pub fn lexicon_base_form_overlap_message(
+    language: UiLanguage,
+    results: &[GeminiWordResult],
+    lexicon: &[WordBankEntry],
+) -> String {
+    let queried_bases = results
+        .iter()
+        .filter_map(|item| normalize_text_opt(item.base_form.clone()))
+        .collect::<Vec<_>>();
+
+    if queried_bases.is_empty() {
+        return tr(
+            language,
+            "词库比对跳过：查询结果没有可用原型。",
+            "Lexicon check skipped: no base form in query results.",
+        )
+        .to_string();
+    }
+
+    let mut matched = Vec::<(String, usize)>::new();
+    for base in &queried_bases {
+        let count = lexicon
+            .iter()
+            .filter(|entry| words_match(&entry.base_form, base))
+            .count();
+        if count > 0 && !matched.iter().any(|(existing, _)| words_match(existing, base)) {
+            matched.push((base.clone(), count));
+        }
+    }
+
+    if matched.is_empty() {
+        let preview = queried_bases
+            .into_iter()
+            .take(5)
+            .collect::<Vec<_>>()
+            .join(" / ");
+        return format!(
+            "{} {}（{}）",
+            tr(
+                language,
+                "词库比对：未发现原型相同的词条。",
+                "Lexicon check: no entry with the same base form.",
+            ),
+            tr(language, "查询原型", "Queried base form(s)"),
+            preview
+        );
+    }
+
+    let details = matched
+        .iter()
+        .map(|(base, count)| format!("\"{base}\"×{count}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{} {}",
+        tr(
+            language,
+            "词库比对：已发现原型相同的词条：",
+            "Lexicon check: found entries with the same base form:",
+        ),
+        details
+    )
 }
 
 fn fill_missing_fields_from_gemini(

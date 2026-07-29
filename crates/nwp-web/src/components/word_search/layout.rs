@@ -3,12 +3,12 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::app_state::UiState;
+use crate::app_state::{LexiconState, UiState};
 use crate::utils::i18n::tr;
 
 use super::dictionary_search::test_google_translate_connectivity;
 use super::gemini_search::test_gemini_connectivity;
-use super::search_process::{SearchRequest, run_word_search};
+use super::search_process::{SearchRequest, lexicon_base_form_overlap_message, run_word_search};
 use super::{
     WORD_FORM_HINT_OPTIONS, build_bulk_csv_from_results, form_hint_label, join_pipe,
     normalize_part_of_speech, normalize_text_opt,
@@ -182,6 +182,7 @@ pub fn AiResearcher(
     } = single_form_state;
 
     let lang = expect_context::<UiState>().ui_language;
+    let lexicon_entries = expect_context::<LexiconState>().entries;
     let (gemini_token, set_gemini_token) = signal(String::new());
     let (google_translate_token, set_google_translate_token) = signal(String::new());
     let (form_hint, set_form_hint) = signal("unknown".to_string());
@@ -649,7 +650,17 @@ pub fn AiResearcher(
                     }
                 }
             }
+            // 先复位查询按钮，让用户可继续操作；词库原型比对放到下一轮任务，不阻塞分流。
             set_is_querying.set(false);
+            let lexicon_snapshot = lexicon_entries.get_untracked();
+            spawn_local(async move {
+                let overlap = lexicon_base_form_overlap_message(
+                    language,
+                    &parsed_list,
+                    &lexicon_snapshot,
+                );
+                set_status.set(overlap);
+            });
         });
     };
 
