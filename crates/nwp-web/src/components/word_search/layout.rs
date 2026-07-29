@@ -355,6 +355,48 @@ pub fn AiResearcher(
         let hint = form_hint.get_untracked();
         let default_tags = default_tags_confirmed.get_untracked();
         let ordbok_only = ordbok_only_mode.get_untracked();
+
+        // 新查询前复位单条/多条表单，避免旧结果通过“仅填空”逻辑污染本次分流。
+        set_single_pos.set("noun".to_string());
+        set_single_norwegian.set(String::new());
+        set_single_chinese.set(String::new());
+        set_single_english.set(String::new());
+        set_single_verb_present_tense.set(String::new());
+        set_single_verb_past_tense.set(String::new());
+        set_single_verb_imperative.set(String::new());
+        set_single_verb_present_participle.set(String::new());
+        set_single_verb_past_participle.set(String::new());
+        set_single_verb_passive_infinitive.set(String::new());
+        set_single_verb_passive_present.set(String::new());
+        set_single_verb_passive_past.set(String::new());
+        set_single_noun_plural.set(String::new());
+        set_single_noun_singular_definite.set(String::new());
+        set_single_noun_plural_definite.set(String::new());
+        set_single_noun_singular_definite_genitive.set(String::new());
+        set_single_noun_plural_definite_genitive.set(String::new());
+        set_single_noun_singular_indefinite_genitive.set(String::new());
+        set_single_noun_plural_indefinite_genitive.set(String::new());
+        set_single_adjective_feminine_form.set(String::new());
+        set_single_adjective_neuter_form.set(String::new());
+        set_single_adjective_plural_form.set(String::new());
+        set_single_adjective_comparative.set(String::new());
+        set_single_adjective_superlative_indefinite.set(String::new());
+        set_single_adjective_superlative_definite.set(String::new());
+        set_single_pronoun_object.set(String::new());
+        set_single_pronoun_reflexive.set(String::new());
+        set_single_pronoun_plural_subject.set(String::new());
+        set_single_pronoun_plural_object.set(String::new());
+        set_single_pronoun_plural_reflexive.set(String::new());
+        set_single_determinative_feminine_form.set(String::new());
+        set_single_determinative_neuter_form.set(String::new());
+        set_single_determinative_plural_form.set(String::new());
+        set_single_adverb_comparative.set(String::new());
+        set_single_adverb_superlative.set(String::new());
+        set_single_tags.set(String::new());
+        set_bulk_input.set(String::new());
+        set_bulk_errors.set(Vec::new());
+        set_bulk_success_message.set(String::new());
+
         set_is_querying.set(true);
 
         let set_is_querying = set_is_querying;
