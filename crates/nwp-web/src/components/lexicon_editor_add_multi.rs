@@ -9,6 +9,7 @@ use crate::components::lexicon_browser::utils::{
     DATA_COLUMN_KEYS, default_search_column_visibility,
 };
 use crate::structures::word_bank_entry::WordBankEntry;
+use crate::utils::dictionary::current_added_at_timestamp;
 use crate::utils::i18n::tr;
 
 #[component]
@@ -160,14 +161,19 @@ pub fn LexiconEditorAddMulti(
                                 on_unselect_visible_click=noop_click
                                 on_confirm_changes=Callback::new(move |_| {
                                     let marks = preview_delete_marks.get_untracked();
+                                    let now = current_added_at_timestamp();
                                     let rows = preview_entries
                                         .get_untracked()
                                         .into_iter()
                                         .enumerate()
-                                        .filter_map(|(idx, entry)| {
+                                        .filter_map(|(idx, mut entry)| {
                                             if marks.get(idx).copied().unwrap_or(false) {
                                                 None
                                             } else {
+                                                // 批量新增：空添加时间统一写入本批次时间戳
+                                                if entry.added_at.trim().is_empty() {
+                                                    entry.added_at = now.clone();
+                                                }
                                                 Some(entry)
                                             }
                                         })

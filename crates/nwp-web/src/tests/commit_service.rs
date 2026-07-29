@@ -15,6 +15,7 @@ fn base_entry(id: &str, base_form: &str) -> WordBankEntry {
         english: vec!["know".to_string()],
         chinese: vec!["知道".to_string()],
         base_form: base_form.to_string(),
+        added_at: String::new(),
         verb_present_tense: Some("vet".to_string()),
         verb_past_tense: Some("visste".to_string()),
         verb_imperative: Some("vit".to_string()),

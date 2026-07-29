@@ -535,7 +535,7 @@ fn render_edit_cell(
                 class:hidden=move || !search_columns.get().get(col_idx).copied().unwrap_or(false)
             >
                 <span class="block rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-slate-300">
-                    {entry.id.clone()}
+                    {column_display_text(&entry, config.key, lang.get())}
                 </span>
             </td>
         }
@@ -661,6 +661,7 @@ fn build_column_configs() -> Vec<ColumnConfig> {
 fn editor_kind_for_key(key: &str) -> ColumnEditorKind {
     match key {
         "id" => ColumnEditorKind::ReadOnly,
+        "added_at" => ColumnEditorKind::ReadOnly,
         "selected" => ColumnEditorKind::SelectedToggle,
         "part_of_speech" => ColumnEditorKind::PartOfSpeechSelect,
         "tags" | "english" | "chinese" => ColumnEditorKind::PipeListText,

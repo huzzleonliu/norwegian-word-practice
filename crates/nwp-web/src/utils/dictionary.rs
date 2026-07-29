@@ -7,6 +7,205 @@ use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech, W
 
 pub type SingleEntryDraft = WordBankEntry;
 
+/// 生成当前添加时间（ISO-8601 UTC，用于存储）。
+pub fn current_added_at_timestamp() -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        String::from(js_sys::Date::new_0().to_iso_string())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        format_iso8601_utc_millis(millis)
+    }
+}
+
+/// 将添加时间规范为 ISO-8601 UTC（存储用）。
+/// 兼容：
+/// - ISO：`2026-07-29T20:35:36.990Z`
+/// - 旧错误格式：`1785357336.990Z`
+/// - 显示格式：`2026.07.29 - 20:35`
+pub fn normalize_added_at(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    if let Some(millis) = parse_added_at_to_millis(trimmed) {
+        return format_iso8601_utc_millis(millis);
+    }
+    trimmed.to_string()
+}
+
+/// 表格展示用：`YYYY.MM.DD - HH:MM`（UTC）。
+pub fn format_added_at_for_display(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    if let Some(millis) = parse_added_at_to_millis(trimmed) {
+        return format_added_at_display_millis(millis);
+    }
+    trimmed.to_string()
+}
+
+fn parse_added_at_to_millis(raw: &str) -> Option<u128> {
+    let trimmed = raw.trim();
+    // 显示格式：2026.07.29 - 20:35
+    if let Some((date_part, time_part)) = trimmed.split_once(" - ") {
+        let date_bits: Vec<_> = date_part.split('.').collect();
+        let time_bits: Vec<_> = time_part.split(':').collect();
+        if date_bits.len() == 3 && time_bits.len() >= 2 {
+            let y = date_bits[0].parse::<i64>().ok()?;
+            let m = date_bits[1].parse::<u32>().ok()?;
+            let d = date_bits[2].parse::<u32>().ok()?;
+            let hour = time_bits[0].parse::<u32>().ok()?;
+            let minute = time_bits[1].parse::<u32>().ok()?;
+            let second = time_bits.get(2).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+            return Some(civil_to_utc_millis(y, m, d, hour, minute, second, 0)?);
+        }
+    }
+
+    // ISO：2026-07-29T20:35:36.990Z / 2026-07-29T20:35:36Z
+    if trimmed.contains('T') {
+        let core = trimmed.trim_end_matches('Z');
+        let (date_part, time_part) = core.split_once('T')?;
+        let date_bits: Vec<_> = date_part.split('-').collect();
+        if date_bits.len() != 3 {
+            return None;
+        }
+        let y = date_bits[0].parse::<i64>().ok()?;
+        let m = date_bits[1].parse::<u32>().ok()?;
+        let d = date_bits[2].parse::<u32>().ok()?;
+        let (hms, ms) = match time_part.split_once('.') {
+            Some((hms, frac)) => {
+                let mut ms = 0_u32;
+                for i in 0..3 {
+                    let digit = frac.as_bytes().get(i).copied().unwrap_or(b'0');
+                    if !digit.is_ascii_digit() {
+                        return None;
+                    }
+                    ms = ms * 10 + u32::from(digit - b'0');
+                }
+                (hms, ms)
+            }
+            None => (time_part, 0),
+        };
+        let time_bits: Vec<_> = hms.split(':').collect();
+        if time_bits.len() < 2 {
+            return None;
+        }
+        let hour = time_bits[0].parse::<u32>().ok()?;
+        let minute = time_bits[1].parse::<u32>().ok()?;
+        let second = time_bits.get(2).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+        return Some(civil_to_utc_millis(y, m, d, hour, minute, second, ms)?);
+    }
+
+    // 旧错误格式：1785357336.990Z
+    let without_z = trimmed.trim_end_matches('Z');
+    if let Some((secs_str, frac_str)) = without_z.split_once('.') {
+        let secs = secs_str.parse::<u128>().ok()?;
+        let frac = frac_str.as_bytes();
+        let mut ms: u128 = 0;
+        for i in 0..3 {
+            let digit = frac.get(i).copied().unwrap_or(b'0');
+            if !digit.is_ascii_digit() {
+                return None;
+            }
+            ms = ms * 10 + u128::from(digit - b'0');
+        }
+        Some(secs * 1000 + ms)
+    } else {
+        let secs = without_z.parse::<u128>().ok()?;
+        Some(secs * 1000)
+    }
+}
+
+fn format_iso8601_utc_millis(millis: u128) -> String {
+    let (y, m, d, hour, minute, second, ms) = utc_millis_to_civil(millis);
+    format!("{y:04}-{m:02}-{d:02}T{hour:02}:{minute:02}:{second:02}.{ms:03}Z")
+}
+
+fn format_added_at_display_millis(millis: u128) -> String {
+    let (y, m, d, hour, minute, _second, _ms) = utc_millis_to_civil(millis);
+    format!("{y:04}.{m:02}.{d:02} - {hour:02}:{minute:02}")
+}
+
+fn utc_millis_to_civil(millis: u128) -> (i64, u32, u32, u32, u32, u32, u32) {
+    let total_secs = (millis / 1000) as i64;
+    let ms = (millis % 1000) as u32;
+    let days = total_secs.div_euclid(86_400);
+    let time_of_day = total_secs.rem_euclid(86_400) as u32;
+    let hour = time_of_day / 3600;
+    let minute = (time_of_day % 3600) / 60;
+    let second = time_of_day % 60;
+
+    // Howard Hinnant civil-from-days
+    let z = days + 719_468;
+    let era = if z >= 0 {
+        z
+    } else {
+        z - 146_096
+    } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+
+    (y, m as u32, d as u32, hour, minute, second, ms)
+}
+
+fn civil_to_utc_millis(
+    y: i64,
+    m: u32,
+    d: u32,
+    hour: u32,
+    minute: u32,
+    second: u32,
+    ms: u32,
+) -> Option<u128> {
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) || hour > 23 || minute > 59 || second > 59 {
+        return None;
+    }
+    // Howard Hinnant days-from-civil
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = (y - era * 400) as u64;
+    let mp = if m > 2 { m - 3 } else { m + 9 };
+    let doy = (153 * mp as u64 + 2) / 5 + d as u64 - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = (era * 146_097 + doe as i64) - 719_468;
+    let secs = days * 86_400 + i64::from(hour) * 3600 + i64::from(minute) * 60 + i64::from(second);
+    if secs < 0 {
+        return None;
+    }
+    Some(secs as u128 * 1000 + u128::from(ms))
+}
+
+/// 若 `added_at` 为空则写入当前时间；非空则规范化格式。
+#[allow(dead_code)]
+pub fn stamp_added_at_if_empty(entry: &mut WordBankEntry) {
+    if entry.added_at.trim().is_empty() {
+        entry.added_at = current_added_at_timestamp();
+    } else {
+        entry.added_at = normalize_added_at(&entry.added_at);
+    }
+}
+
+/// 批量规范化词条的添加时间（用于加载旧缓存）。
+pub fn normalize_entries_added_at(entries: &mut [WordBankEntry]) {
+    for entry in entries {
+        entry.added_at = normalize_added_at(&entry.added_at);
+    }
+}
+
 /// 解析并校验词性字符串，失败时返回带可选项列表的错误信息。
 pub fn parse_part_of_speech(raw: &str) -> Result<PartOfSpeech, String> {
     PartOfSpeech::from_key(raw).map_err(|_| {
@@ -178,6 +377,7 @@ fn prepare_entry_for_storage(draft: SingleEntryDraft) -> Result<WordBankEntry, S
         english: normalize_vec(draft.english),
         chinese,
         base_form,
+        added_at: normalize_added_at(draft.added_at.trim()),
         verb_present_tense: normalize_optional(draft.verb_present_tense),
         verb_past_tense: normalize_optional(draft.verb_past_tense),
         verb_imperative: normalize_optional(draft.verb_imperative),

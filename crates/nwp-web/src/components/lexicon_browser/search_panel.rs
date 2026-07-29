@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use super::utils::{DATA_COLUMN_KEYS, header_name};
+use super::utils::{DATA_COLUMN_KEYS, header_name, search_column_groups};
 use crate::structures::word_bank_entry::{UiLanguage, WordBankEntry};
 use crate::utils::i18n::{field_label, tr};
 use crate::utils::lexicon_file::{
@@ -170,15 +170,7 @@ pub fn LexiconSearchPanel(
                         if search_scope_expanded.get() {
                             view! {
                                 <div class="mt-3 space-y-3">
-                                    {[
-                                        ("core", vec![0, 1, 2, 3, 4, 5, 6]),
-                                        ("verb", vec![7, 8, 9, 20, 21, 22, 23, 24]),
-                                        ("noun", vec![10, 11, 12, 25, 26, 27, 28]),
-                                        ("adjective", vec![29, 13, 14, 15, 16, 17]),
-                                        ("pronoun", vec![30, 31, 32, 33, 34]),
-                                        ("determinative", vec![35, 36, 37]),
-                                        ("adverb", vec![18, 19]),
-                                    ]
+                                    {search_column_groups()
                                         .into_iter()
                                         .map(|(group_name, indices)| {
                                             view! {

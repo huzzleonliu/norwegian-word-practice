@@ -1,6 +1,7 @@
 //! 当前词库持久化：写入 / 读取 localStorage，刷新后仍可用。
 
 use crate::structures::word_bank_entry::WordBankEntry;
+use crate::utils::dictionary::normalize_entries_added_at;
 use crate::utils::dictionary_crypto::{
     decrypt_lexicon_storage_payload, encrypt_lexicon_storage_payload,
 };
@@ -12,7 +13,11 @@ pub const DEFAULT_SOURCE_NAME: &str = "尚未加载词库";
 pub fn load_stored_lexicon() -> Option<(Vec<WordBankEntry>, String)> {
     let storage = local_storage()?;
     let raw = storage.get_item(LEXICON_STORAGE_KEY).ok().flatten()?;
-    decrypt_lexicon_storage_payload(&raw).ok()
+    let (mut entries, source_name) = decrypt_lexicon_storage_payload(&raw).ok()?;
+    // 兼容早期错误时间戳格式，并写回规范化结果
+    normalize_entries_added_at(&mut entries);
+    save_stored_lexicon(&entries, &source_name);
+    Some((entries, source_name))
 }
 
 /// 将当前词库写入 localStorage（选择/导入/编辑后由根 Effect 调用）。

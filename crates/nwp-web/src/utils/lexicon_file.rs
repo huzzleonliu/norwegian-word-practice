@@ -26,7 +26,9 @@ pub const LEXICON_EXPORT_FILE_NAME: &str = "word-bank.nwpdict";
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub fn parse_lexicon_entries_from_text(raw: &str) -> Result<Vec<WordBankEntry>, String> {
     let csv_text = parse_lexicon_import_content(raw)?;
-    parse_word_bank_csv(&csv_text)
+    let mut entries = parse_word_bank_csv(&csv_text)?;
+    crate::utils::dictionary::normalize_entries_added_at(&mut entries);
+    Ok(entries)
 }
 
 /// 把当前词条列表导出为加密 `.nwpdict` 文本。

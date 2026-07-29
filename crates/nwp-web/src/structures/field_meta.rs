@@ -20,7 +20,7 @@ pub struct FieldMeta {
     pub en_label: &'static str,
 }
 
-pub const DATA_COLUMN_KEYS: [&str; 38] = [
+pub const DATA_COLUMN_KEYS: [&str; 39] = [
     "id",
     "selected",
     "part_of_speech",
@@ -28,6 +28,7 @@ pub const DATA_COLUMN_KEYS: [&str; 38] = [
     "english",
     "chinese",
     "base_form",
+    "added_at",
     "verb_present_tense",
     "verb_past_tense",
     "verb_imperative",
@@ -197,7 +198,7 @@ pub const ANSWER_FIELD_GROUPS: [(&str, &[&str]); 7] = [
     ("adverb", &["adverb_comparative", "adverb_superlative"]),
 ];
 
-pub const FIELD_META: [FieldMeta; 38] = [
+pub const FIELD_META: [FieldMeta; 39] = [
     FieldMeta {
         key: "id",
         group: "core",
@@ -274,6 +275,17 @@ pub const FIELD_META: [FieldMeta; 38] = [
         default_answer_selected: true,
         zh_label: "原型",
         en_label: "Base Form",
+    },
+    FieldMeta {
+        key: "added_at",
+        group: "core",
+        hash_relevant: false,
+        practice_prompt: false,
+        practice_answer: false,
+        default_search_visible: true,
+        default_answer_selected: false,
+        zh_label: "添加时间",
+        en_label: "Added At",
     },
     FieldMeta {
         key: "verb_present_tense",
@@ -647,6 +659,35 @@ pub fn default_search_column_visibility() -> Vec<bool> {
         .collect()
 }
 
+/// 搜索列分组：按 `FieldMeta.group` 归类，组顺序固定，组内保持 `DATA_COLUMN_KEYS` 顺序。
+pub fn search_column_groups() -> Vec<(&'static str, Vec<usize>)> {
+    const GROUP_ORDER: [&str; 7] = [
+        "core",
+        "verb",
+        "noun",
+        "adjective",
+        "pronoun",
+        "determinative",
+        "adverb",
+    ];
+
+    let mut groups: Vec<(&'static str, Vec<usize>)> = GROUP_ORDER
+        .iter()
+        .map(|name| (*name, Vec::new()))
+        .collect();
+
+    for (idx, key) in DATA_COLUMN_KEYS.iter().enumerate() {
+        let Some(meta) = field_meta(key) else {
+            continue;
+        };
+        if let Some((_, indices)) = groups.iter_mut().find(|(name, _)| *name == meta.group) {
+            indices.push(idx);
+        }
+    }
+
+    groups.into_iter().filter(|(_, indices)| !indices.is_empty()).collect()
+}
+
 pub fn default_answer_fields() -> Vec<String> {
     ANSWER_FIELD_OPTIONS
         .iter()
@@ -673,6 +714,7 @@ pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
         "english" => entry.english.join(" | "),
         "chinese" => entry.chinese.join(" | "),
         "base_form" => entry.base_form.clone(),
+        "added_at" => crate::utils::dictionary::format_added_at_for_display(&entry.added_at),
         "verb_present_tense" => entry.verb_present_tense.clone().unwrap_or_default(),
         "verb_past_tense" => entry.verb_past_tense.clone().unwrap_or_default(),
         "verb_imperative" => entry.verb_imperative.clone().unwrap_or_default(),

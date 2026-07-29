@@ -160,7 +160,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     });
 
     // 单条新增：构造草稿 -> 校验规范化 -> 写入全局词库并 bump 版本。
-    let add_single_entry = Callback::new(move |ev: SubmitEvent| {
+    let add_single_entry = Callback::new(move |(ev, added_at): (SubmitEvent, String)| {
         let language = lang.get_untracked();
         ev.prevent_default();
 
@@ -181,6 +181,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
             english: parse_csv_list(&single_english.get()),
             chinese: parse_csv_list(&single_chinese.get()),
             base_form: single_norwegian.get(),
+            added_at,
             verb_present_tense: parse_optional_input(&single_verb_present_tense.get()),
             verb_past_tense: parse_optional_input(&single_past_tense.get()),
             verb_imperative: parse_optional_input(&single_imperative.get()),

@@ -1,15 +1,15 @@
 //! 单条词库新增表单：根据词性动态展示字段并提交到页面层回调。
 
-use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 
 use crate::app_state::UiState;
 use crate::structures::word_bank_entry::{PART_OF_SPEECH_OPTIONS, PartOfSpeech};
+use crate::utils::dictionary::current_added_at_timestamp;
 use crate::utils::i18n::{field_label, tr};
 
 #[component]
 pub fn LexiconEditorAddSingle(
-    on_submit: Callback<SubmitEvent>,
+    on_submit: Callback<(leptos::ev::SubmitEvent, String)>,
     on_clear: Callback<()>,
     single_selected: ReadSignal<bool>,
     set_single_selected: WriteSignal<bool>,
@@ -89,7 +89,10 @@ pub fn LexiconEditorAddSingle(
     let lang = expect_context::<UiState>().ui_language;
     view! {
         <form
-            on:submit=move |ev| on_submit.run(ev)
+            on:submit=move |ev| {
+                // 单条提交时生成添加时间，交给父组件写入草稿
+                on_submit.run((ev, current_added_at_timestamp()));
+            }
             class="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
         >
             <h2 class="mb-3 text-lg font-semibold">{move || tr(lang.get(), "单条添加", "Single Add")}</h2>

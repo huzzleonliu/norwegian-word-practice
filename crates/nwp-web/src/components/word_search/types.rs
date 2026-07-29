@@ -139,6 +139,7 @@ impl TryFrom<(&GeminiWordResult, &str)> for WordBankEntry {
             english: normalize_text_list(&value.english),
             chinese: normalize_text_list(&value.chinese),
             base_form: normalize_text_opt(value.base_form.clone()).unwrap_or_default(),
+            added_at: String::new(),
             verb_present_tense: normalize_text_opt(value.verb_present_tense.clone()),
             verb_past_tense: normalize_text_opt(value.verb_past_tense.clone()),
             verb_imperative: normalize_text_opt(value.verb_imperative.clone()),

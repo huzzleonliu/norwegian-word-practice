@@ -1,7 +1,9 @@
 //! 字典工具测试：覆盖哈希稳定性、差异性与重复词条校验行为。
 
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
-use crate::utils::dictionary::{compute_word_entry_id, validate_and_prepare_single_entry};
+use crate::utils::dictionary::{
+    compute_word_entry_id, normalize_added_at, validate_and_prepare_single_entry,
+};
 
 fn base_entry() -> WordBankEntry {
     WordBankEntry {
@@ -12,6 +14,7 @@ fn base_entry() -> WordBankEntry {
         english: vec!["know".to_string()],
         chinese: vec!["知道".to_string()],
         base_form: "vite".to_string(),
+        added_at: String::new(),
         verb_present_tense: Some("vet".to_string()),
         verb_past_tense: Some("visste".to_string()),
         verb_imperative: Some("vit".to_string()),
@@ -111,4 +114,34 @@ fn reject_duplicate_lexeme_combination() {
     let duplicate = validate_and_prepare_single_entry(base_entry(), &[first])
         .expect_err("same lexeme fields should be considered duplicate");
     assert!(duplicate.contains("词条重复"));
+}
+
+#[test]
+fn normalize_added_at_converts_legacy_unix_format() {
+    assert_eq!(
+        normalize_added_at("1785357336.990Z"),
+        "2026-07-29T20:35:36.990Z"
+    );
+    assert_eq!(
+        normalize_added_at("2026-07-29T20:36:10.664Z"),
+        "2026-07-29T20:36:10.664Z"
+    );
+    assert_eq!(
+        normalize_added_at("2026.07.29 - 20:35"),
+        "2026-07-29T20:35:00.000Z"
+    );
+    assert_eq!(normalize_added_at(""), "");
+}
+
+#[test]
+fn format_added_at_for_display_uses_dot_date() {
+    use crate::utils::dictionary::format_added_at_for_display;
+    assert_eq!(
+        format_added_at_for_display("2026-07-29T20:35:36.990Z"),
+        "2026.07.29 - 20:35"
+    );
+    assert_eq!(
+        format_added_at_for_display("1785357336.990Z"),
+        "2026.07.29 - 20:35"
+    );
 }

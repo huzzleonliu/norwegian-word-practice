@@ -4,3 +4,4 @@ mod commit_service;
 mod csv_schema;
 mod dictionary;
 mod practice_buttons;
+mod stamp_lexicon_added_at;

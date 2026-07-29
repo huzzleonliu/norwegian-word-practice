@@ -20,6 +20,8 @@ struct CsvWordEntry {
     chinese: String,
     norwegian_base: String,
     #[serde(default)]
+    added_at: String,
+    #[serde(default)]
     verb_present_tense: String,
     #[serde(alias = "past_tense")]
     verb_past_tense: String,
@@ -90,6 +92,7 @@ impl TryFrom<CsvWordEntry> for WordBankEntry {
             english: parse_pipe_list(&value.english),
             chinese: parse_pipe_list(&value.chinese),
             base_form: value.norwegian_base,
+            added_at: crate::utils::dictionary::normalize_added_at(&value.added_at),
             verb_present_tense: parse_optional_text(&value.verb_present_tense),
             verb_past_tense: parse_optional_text(&value.verb_past_tense),
             verb_imperative: parse_optional_text(&value.verb_imperative),
@@ -149,6 +152,7 @@ impl From<&WordBankEntry> for CsvWordEntry {
             english: value.english.join("|"),
             chinese: value.chinese.join("|"),
             norwegian_base: value.base_form.clone(),
+            added_at: value.added_at.clone(),
             verb_present_tense: optional_to_text(&value.verb_present_tense),
             verb_past_tense: optional_to_text(&value.verb_past_tense),
             verb_imperative: optional_to_text(&value.verb_imperative),
@@ -221,6 +225,7 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
             "english",
             "chinese",
             "norwegian_base",
+            "added_at",
             "verb_present_tense",
             "verb_past_tense",
             "verb_imperative",
@@ -266,6 +271,7 @@ pub fn serialize_word_bank_csv(entries: &[WordBankEntry]) -> Result<String, Stri
                 csv_entry.english.as_str(),
                 csv_entry.chinese.as_str(),
                 csv_entry.norwegian_base.as_str(),
+                csv_entry.added_at.as_str(),
                 csv_entry.verb_present_tense.as_str(),
                 csv_entry.verb_past_tense.as_str(),
                 csv_entry.verb_imperative.as_str(),

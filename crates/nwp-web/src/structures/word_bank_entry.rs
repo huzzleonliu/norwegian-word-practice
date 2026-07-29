@@ -150,6 +150,9 @@ pub struct WordBankEntry {
     pub chinese: Vec<String>,
     // 原型：不可为空
     pub base_form: String,
+    // 添加时间：ISO-8601 字符串；旧数据可为空
+    #[serde(default)]
+    pub added_at: String,
     // 现在时：可为空（动词时必填）
     pub verb_present_tense: Option<String>,
     // 过去式：可为空
