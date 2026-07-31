@@ -696,6 +696,7 @@ pub fn search_column_groups() -> Vec<(&'static str, Vec<usize>)> {
     groups.into_iter().filter(|(_, indices)| !indices.is_empty()).collect()
 }
 
+#[allow(dead_code)]
 pub fn default_answer_fields() -> Vec<String> {
     ANSWER_FIELD_OPTIONS
         .iter()
