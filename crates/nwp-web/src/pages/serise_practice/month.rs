@@ -10,7 +10,7 @@ use crate::components::practice_engine::{
     AbortPracticeButton, CheckAnswersError, FinishPracticeButton, PracticeEntry,
     RestartPracticeButton, RestartTempBehavior, apply_check_results,
     clear_practice_round_local_state, evaluate_check_answers, merge_solved_question_ids,
-    refill_active_question_ids, retain_unsolved_answer_inputs,
+    prepare_post_check_input_state, refill_active_question_ids,
 };
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
@@ -33,6 +33,8 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
     let (answer_fields, _) = signal(vec!["base_form".to_string()]);
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
+    let (wrong_answer_feedback, set_wrong_answer_feedback) =
+        signal(HashMap::<String, String>::new());
     let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
     let (solved_question_ids, set_solved_question_ids) = signal(Vec::<String>::new());
 
@@ -105,13 +107,16 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
                 apply_check_results(temp_result, &check_result.field_results);
             });
 
+        let (cleared_inputs, wrong_feedback) = prepare_post_check_input_state(
+            &check_result.field_results,
+            &check_result.newly_solved_ids,
+        );
+        set_answer_inputs.set(cleared_inputs);
+        set_wrong_answer_feedback.set(wrong_feedback);
+
         if !check_result.newly_solved_ids.is_empty() {
             set_solved_question_ids.update(|solved_ids| {
                 merge_solved_question_ids(solved_ids, &check_result.newly_solved_ids);
-            });
-
-            set_answer_inputs.update(|inputs| {
-                retain_unsolved_answer_inputs(inputs, &check_result.newly_solved_ids);
             });
         }
 
@@ -147,6 +152,7 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
             set_active_question_ids,
             None,
         );
+        set_wrong_answer_feedback.set(HashMap::new());
     });
 
     view! {
@@ -201,6 +207,8 @@ pub fn MonthSerisePracticePage() -> impl IntoView {
                         allow_answer_reveal=None
                         revealed_answer_keys=None
                         set_revealed_answer_keys=None
+                        wrong_answer_feedback=Some(wrong_answer_feedback)
+                        set_wrong_answer_feedback=Some(set_wrong_answer_feedback)
                     />
                 </section>
 

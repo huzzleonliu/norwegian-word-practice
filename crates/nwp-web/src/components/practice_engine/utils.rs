@@ -130,6 +130,7 @@ pub fn merge_solved_question_ids(solved_ids: &mut Vec<String>, newly_solved_ids:
 }
 
 /// 清理已完成题目的输入缓存，避免已通过题目残留文本污染下一轮。
+#[allow(dead_code)]
 pub fn retain_unsolved_answer_inputs(
     inputs: &mut HashMap<String, String>,
     newly_solved_ids: &[String],
@@ -139,6 +140,44 @@ pub fn retain_unsolved_answer_inputs(
         .cloned()
         .collect::<HashSet<String>>();
     inputs.retain(|key, _| {
+        !solved_set
+            .iter()
+            .any(|entry_id| key.starts_with(&format!("{entry_id}::")))
+    });
+}
+
+/// 检查后：清空输入，并为未整题通过的错误字段生成“错误拼写”反馈。
+pub fn prepare_post_check_input_state(
+    field_results: &[FieldCheckResult],
+    newly_solved_ids: &[String],
+) -> (HashMap<String, String>, HashMap<String, String>) {
+    let solved_set = newly_solved_ids
+        .iter()
+        .cloned()
+        .collect::<HashSet<String>>();
+    let mut wrong_feedback = HashMap::<String, String>::new();
+    for result in field_results {
+        if result.is_correct || solved_set.contains(&result.entry_id) {
+            continue;
+        }
+        let key = answer_input_key(&result.entry_id, &result.field);
+        // 空答案也记一笔，便于标红输入框
+        wrong_feedback.insert(key, result.actual.clone());
+    }
+    (HashMap::new(), wrong_feedback)
+}
+
+/// 清理已完成题目的错误拼写反馈。
+#[allow(dead_code)]
+pub fn retain_unsolved_wrong_feedback(
+    feedback: &mut HashMap<String, String>,
+    newly_solved_ids: &[String],
+) {
+    let solved_set = newly_solved_ids
+        .iter()
+        .cloned()
+        .collect::<HashSet<String>>();
+    feedback.retain(|key, _| {
         !solved_set
             .iter()
             .any(|entry_id| key.starts_with(&format!("{entry_id}::")))

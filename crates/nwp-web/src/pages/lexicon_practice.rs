@@ -10,8 +10,8 @@ use crate::components::practice_engine::{
     AbortPracticeButton, CheckAnswersError, FinishPracticeButton, PracticeEntry, PracticeSettings,
     RestartPracticeButton, RestartTempBehavior, apply_check_results,
     clear_practice_round_local_state, create_temp_practice_result, default_answer_fields,
-    evaluate_check_answers, merge_solved_question_ids, refill_active_question_ids,
-    retain_unsolved_answer_inputs, retain_unsolved_revealed_keys,
+    evaluate_check_answers, merge_solved_question_ids, prepare_post_check_input_state,
+    refill_active_question_ids, retain_unsolved_revealed_keys,
 };
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
@@ -42,6 +42,8 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let (revealed_answer_keys, set_revealed_answer_keys) = signal(HashSet::<String>::new());
     let (status, set_status) = signal(String::new());
     let (answer_inputs, set_answer_inputs) = signal(HashMap::<String, String>::new());
+    let (wrong_answer_feedback, set_wrong_answer_feedback) =
+        signal(HashMap::<String, String>::new());
     let (active_question_ids, set_active_question_ids) = signal(Vec::<String>::new());
     let (solved_question_ids, set_solved_question_ids) = signal(Vec::<String>::new());
 
@@ -112,14 +114,18 @@ pub fn LexiconPracticePage() -> impl IntoView {
                 apply_check_results(temp_result, &check_result.field_results);
             });
 
+        let (cleared_inputs, wrong_feedback) = prepare_post_check_input_state(
+            &check_result.field_results,
+            &check_result.newly_solved_ids,
+        );
+        set_answer_inputs.set(cleared_inputs);
+        set_wrong_answer_feedback.set(wrong_feedback);
+
         if !check_result.newly_solved_ids.is_empty() {
             set_solved_question_ids.update(|solved_ids| {
                 merge_solved_question_ids(solved_ids, &check_result.newly_solved_ids);
             });
 
-            set_answer_inputs.update(|inputs| {
-                retain_unsolved_answer_inputs(inputs, &check_result.newly_solved_ids);
-            });
             set_revealed_answer_keys.update(|keys| {
                 retain_unsolved_revealed_keys(keys, &check_result.newly_solved_ids);
             });
@@ -157,6 +163,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
             set_active_question_ids,
             Some(set_revealed_answer_keys),
         );
+        set_wrong_answer_feedback.set(HashMap::new());
     });
 
     let hide_all_revealed_answers = Callback::new(move |_| {
@@ -237,6 +244,8 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         allow_answer_reveal=Some(allow_answer_reveal)
                         revealed_answer_keys=Some(revealed_answer_keys)
                         set_revealed_answer_keys=Some(set_revealed_answer_keys)
+                        wrong_answer_feedback=Some(wrong_answer_feedback)
+                        set_wrong_answer_feedback=Some(set_wrong_answer_feedback)
                     />
                 </section>
 

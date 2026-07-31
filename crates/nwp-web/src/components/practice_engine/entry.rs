@@ -2,6 +2,7 @@
 //! - 题目列表渲染与输入控件
 //! - 输入键生成与可答性判断
 //! - 按 active id 稳定构建题目顺序
+//! - 焦点激活词条并滚动到视口中心
 
 use std::collections::{HashMap, HashSet};
 
@@ -48,8 +49,12 @@ pub fn PracticeEntry(
     allow_answer_reveal: Option<ReadSignal<bool>>,
     revealed_answer_keys: Option<ReadSignal<HashSet<String>>>,
     set_revealed_answer_keys: Option<WriteSignal<HashSet<String>>>,
+    wrong_answer_feedback: Option<ReadSignal<HashMap<String, String>>>,
+    set_wrong_answer_feedback: Option<WriteSignal<HashMap<String, String>>>,
 ) -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
+    let (active_entry_id, set_active_entry_id) = signal(None::<String>);
+
     view! {
         <div class="mt-4 space-y-4">
             <For
@@ -62,8 +67,34 @@ pub fn PracticeEntry(
                 children=move |(index, entry)| {
                     let entry_for_prompt = entry.clone();
                     let entry_for_answers = entry.clone();
+                    let entry_id_for_focus = entry.id.clone();
+                    let entry_id_for_active = entry.id.clone();
+                    let entry_dom_id = practice_entry_dom_id(&entry.id);
                     view! {
-                        <article class="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                        <article
+                            id=entry_dom_id.clone()
+                            class=move || {
+                                let is_active = active_entry_id
+                                    .get()
+                                    .as_ref()
+                                    .is_some_and(|id| id == &entry_id_for_active);
+                                if is_active {
+                                    "rounded-lg border border-emerald-500 bg-slate-900/80 p-4 ring-1 ring-emerald-500/40 transition-colors"
+                                        .to_string()
+                                } else {
+                                    "rounded-lg border border-slate-800 bg-slate-900/50 p-4 transition-colors"
+                                        .to_string()
+                                }
+                            }
+                            on:focusin=move |_| {
+                                let id = entry_id_for_focus.clone();
+                                let prev = active_entry_id.get_untracked();
+                                if prev.as_ref() != Some(&id) {
+                                    set_active_entry_id.set(Some(id.clone()));
+                                    scroll_practice_entry_into_center(&id);
+                                }
+                            }
+                        >
                             <p class="text-sm font-semibold text-slate-200">
                                 {move || {
                                     format!(
@@ -156,6 +187,9 @@ pub fn PracticeEntry(
                                                 let key_for_reveal_toggle = key_for_value.clone();
                                                 let key_for_value_read = key_for_value.clone();
                                                 let key_for_value_revealed = key_for_value.clone();
+                                                let key_for_wrong = key_for_value.clone();
+                                                let key_for_wrong_class = key_for_value.clone();
+                                                let key_for_wrong_clear = key_for_value.clone();
                                                 view! {
                                                     <label class="flex flex-col gap-1 text-xs text-slate-300">
                                                         <div class="flex items-center justify-between gap-2">
@@ -177,6 +211,7 @@ pub fn PracticeEntry(
                                                                     view! {
                                                                         <button
                                                                             type="button"
+                                                                            tabindex="-1"
                                                                             on:click=move |_| {
                                                                                 let reveal_key = toggle_key.clone();
                                                                                 if let Some(set_signal) = set_revealed_answer_keys {
@@ -214,10 +249,51 @@ pub fn PracticeEntry(
                                                                 set_answer_inputs.update(|inputs| {
                                                                     inputs.insert(key_for_input.clone(), value);
                                                                 });
+                                                                if let Some(set_feedback) = set_wrong_answer_feedback {
+                                                                    set_feedback.update(|feedback| {
+                                                                        feedback.remove(&key_for_wrong_clear);
+                                                                    });
+                                                                }
                                                             }
                                                             placeholder=move || tr(lang.get(), "填写答案", "Type your answer")
-                                                            class="rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                            class=move || {
+                                                                let has_wrong = wrong_answer_feedback
+                                                                    .map(|signal| signal.get().contains_key(&key_for_wrong_class))
+                                                                    .unwrap_or(false);
+                                                                if has_wrong {
+                                                                    "rounded border border-red-500 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                                        .to_string()
+                                                                } else {
+                                                                    "rounded border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-100"
+                                                                        .to_string()
+                                                                }
+                                                            }
                                                         />
+                                                        {move || {
+                                                            let wrong_text = wrong_answer_feedback
+                                                                .and_then(|signal| {
+                                                                    signal.get().get(&key_for_wrong).cloned()
+                                                                });
+                                                            if let Some(wrong) = wrong_text {
+                                                                let display = if wrong.trim().is_empty() {
+                                                                    tr(lang.get(), "（空）", "(empty)").to_string()
+                                                                } else {
+                                                                    wrong
+                                                                };
+                                                                view! {
+                                                                    <span class="text-[11px] text-red-400">
+                                                                        {format!(
+                                                                            "{}: {}",
+                                                                            tr(lang.get(), "错误拼写", "Wrong spelling"),
+                                                                            display
+                                                                        )}
+                                                                    </span>
+                                                                }
+                                                                    .into_any()
+                                                            } else {
+                                                                view! { <></> }.into_any()
+                                                            }
+                                                        }}
                                                         {move || {
                                                             let allow_reveal = allow_answer_reveal
                                                                 .map(|signal| signal.get())
@@ -281,6 +357,39 @@ pub fn PracticeEntry(
                 class="w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto".to_string()
             />
         </div>
+    }
+}
+
+fn practice_entry_dom_id(entry_id: &str) -> String {
+    format!("practice-entry-{entry_id}")
+}
+
+fn scroll_practice_entry_into_center(entry_id: &str) {
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::JsCast;
+
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let Some(document) = window.document() else {
+            return;
+        };
+        let Some(element) = document.get_element_by_id(&practice_entry_dom_id(entry_id)) else {
+            return;
+        };
+        let options = js_sys::Object::new();
+        let _ = js_sys::Reflect::set(&options, &"block".into(), &"center".into());
+        let _ = js_sys::Reflect::set(&options, &"behavior".into(), &"smooth".into());
+        if let Ok(func) = js_sys::Reflect::get(&element, &"scrollIntoView".into()) {
+            if let Ok(func) = func.dyn_into::<js_sys::Function>() {
+                let _ = func.call1(&element, &options);
+            }
+        }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = entry_id;
     }
 }
 

@@ -20,6 +20,6 @@ pub use entry::{
 pub use settings::{PracticeSettings, default_answer_fields};
 pub use utils::{
     CheckAnswersError, apply_check_results, clear_practice_round_local_state,
-    evaluate_check_answers, merge_solved_question_ids, refill_active_question_ids,
-    retain_unsolved_answer_inputs, retain_unsolved_revealed_keys,
+    evaluate_check_answers, merge_solved_question_ids, prepare_post_check_input_state,
+    refill_active_question_ids, retain_unsolved_revealed_keys,
 };
