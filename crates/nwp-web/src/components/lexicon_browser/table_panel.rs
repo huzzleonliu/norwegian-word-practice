@@ -80,6 +80,8 @@ pub fn LexiconTablePanel(
     let header_column_configs = column_configs.clone();
     let row_column_configs = column_configs.clone();
     let (visible_columns, set_visible_columns) = signal(default_table_column_visibility());
+    let (column_order, set_column_order) =
+        signal((0..DATA_COLUMN_COUNT).collect::<Vec<usize>>());
     let (visibility_expanded, set_visibility_expanded) = signal(false);
     let (current_page, set_current_page) = signal(1_usize);
     let (page_target, set_page_target) = signal("1".to_string());
@@ -175,7 +177,10 @@ pub fn LexiconTablePanel(
                 </button>
                 <button
                     type="button"
-                    on:click=move |_| set_visible_columns.set(default_table_column_visibility())
+                    on:click=move |_| {
+                        set_visible_columns.set(default_table_column_visibility());
+                        set_column_order.set((0..DATA_COLUMN_COUNT).collect());
+                    }
                     class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium hover:bg-slate-700 sm:w-auto"
                 >
                     {move || tr(lang.get(), "恢复默认列", "Reset default columns")}
@@ -189,6 +194,8 @@ pub fn LexiconTablePanel(
                                 lang=lang
                                 columns=visible_columns
                                 set_columns=set_visible_columns
+                                column_order=column_order
+                                set_column_order=set_column_order
                             />
                         </div>
                     }
@@ -202,57 +209,78 @@ pub fn LexiconTablePanel(
             <table class="w-max min-w-full border-collapse table-fixed whitespace-nowrap text-sm">
                 <colgroup>
                     {move || {
-                        let total_columns = if is_query_mode {
-                            DATA_COLUMN_COUNT
-                        } else {
-                            DATA_COLUMN_COUNT + 1
-                        };
-                        (0..total_columns)
-                            .map(|idx| {
+                        let order = column_order.get();
+                        let mut cols = order
+                            .into_iter()
+                            .map(|data_idx| {
                                 view! {
                                     <col
                                         class:hidden=move || {
-                                            idx < DATA_COLUMN_COUNT
-                                                && !visible_columns
-                                                    .get()
-                                                    .get(idx)
-                                                    .copied()
-                                                    .unwrap_or(false)
+                                            !visible_columns
+                                                .get()
+                                                .get(data_idx)
+                                                .copied()
+                                                .unwrap_or(false)
                                         }
                                         style=move || {
                                             format!(
                                                 "width:{}px",
-                                                col_widths.get().get(idx).copied().unwrap_or(140)
+                                                col_widths.get().get(data_idx).copied().unwrap_or(140)
                                             )
                                         }
                                     />
                                 }
+                                    .into_any()
                             })
-                            .collect_view()
+                            .collect::<Vec<_>>();
+                        if !is_query_mode {
+                            cols.push(
+                                view! {
+                                    <col
+                                        style=move || {
+                                            format!(
+                                                "width:{}px",
+                                                col_widths
+                                                    .get()
+                                                    .get(DATA_COLUMN_COUNT)
+                                                    .copied()
+                                                    .unwrap_or(140)
+                                            )
+                                        }
+                                    />
+                                }
+                                    .into_any(),
+                            );
+                        }
+                        cols.collect_view()
                     }}
                 </colgroup>
                 <thead>
                     <tr class="sticky top-0 z-10 bg-slate-900/95 text-left text-slate-300">
                         {move || {
                             let current_sort = sort_state.get();
-                            let mut headers = header_column_configs
-                                .iter()
-                                .map(|config| config.key)
+                            let order = column_order.get();
+                            let mut header_specs = order
+                                .into_iter()
+                                .filter_map(|data_idx| {
+                                    header_column_configs
+                                        .get(data_idx)
+                                        .map(|config| (data_idx, config.key))
+                                })
                                 .collect::<Vec<_>>();
                             if !is_query_mode {
-                                headers.push("delete");
+                                header_specs.push((DATA_COLUMN_COUNT, "delete"));
                             }
 
-                            headers
-                                .iter()
-                                .enumerate()
-                                .map(|(idx, key)| {
-                                    let sortable = idx < DATA_COLUMN_COUNT;
+                            header_specs
+                                .into_iter()
+                                .map(|(data_idx, key)| {
+                                    let sortable = data_idx < DATA_COLUMN_COUNT;
                                     let indicator = current_sort
                                         .iter()
                                         .enumerate()
                                         .find_map(|(order_idx, (sort_idx, asc))| {
-                                            if *sort_idx == idx {
+                                            if *sort_idx == data_idx {
                                                 Some(format!(
                                                     " {}{}",
                                                     order_idx + 1,
@@ -269,16 +297,16 @@ pub fn LexiconTablePanel(
                                             class="relative border border-slate-800 px-2 py-2"
                                             class:cursor-pointer=sortable
                                             class:hidden=move || {
-                                                idx < DATA_COLUMN_COUNT
+                                                data_idx < DATA_COLUMN_COUNT
                                                     && !visible_columns
                                                         .get()
-                                                        .get(idx)
+                                                        .get(data_idx)
                                                         .copied()
                                                         .unwrap_or(false)
                                             }
                                             on:click=move |ev: leptos::ev::MouseEvent| {
                                                 if sortable {
-                                                    on_sort_by_column.run((idx, ev.shift_key()));
+                                                    on_sort_by_column.run((data_idx, ev.shift_key()));
                                                 }
                                             }
                                         >
@@ -291,7 +319,7 @@ pub fn LexiconTablePanel(
                                                 on:mousedown=move |ev| {
                                                     ev.prevent_default();
                                                     ev.stop_propagation();
-                                                    on_start_resize.run((idx, ev));
+                                                    on_start_resize.run((data_idx, ev));
                                                 }
                                                 on:click=move |ev| ev.stop_propagation()
                                             ></div>
@@ -304,14 +332,30 @@ pub fn LexiconTablePanel(
                 </thead>
                 <tbody>
                     <For
-                        each=move || paged_row_items.get()
-                        key=|(idx, entry)| format!("{}-{}-{}", idx, entry.id, entry.selected)
-                        children=move |(idx, entry)| {
-                            let data_cells = row_column_configs
+                        each=move || {
+                            let order_key = column_order
+                                .get()
                                 .iter()
-                                .enumerate()
+                                .map(|i| i.to_string())
+                                .collect::<Vec<_>>()
+                                .join("-");
+                            paged_row_items
+                                .get()
+                                .into_iter()
+                                .map(|(idx, entry)| (idx, entry, order_key.clone()))
+                                .collect::<Vec<_>>()
+                        }
+                        key=|(idx, entry, order_key)| {
+                            format!("{}-{}-{}-{}", idx, entry.id, entry.selected, order_key)
+                        }
+                        children=move |(idx, entry, _order_key)| {
+                            let order = column_order.get();
+                            let data_cells = order
+                                .into_iter()
+                                .filter_map(|col_idx| {
+                                    row_column_configs.get(col_idx).copied().map(|config| (col_idx, config))
+                                })
                                 .map(|(col_idx, config)| {
-                                    let config = *config;
                                     if is_query_mode {
                                         render_query_cell(
                                             idx,

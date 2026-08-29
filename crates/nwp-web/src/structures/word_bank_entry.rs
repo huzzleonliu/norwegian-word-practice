@@ -30,6 +30,23 @@ impl UiLanguage {
             UiLanguage::En => UiLanguage::Zh,
         }
     }
+
+    /// URL 路由语言前缀：`ch` / `en`。
+    pub fn route_code(self) -> &'static str {
+        match self {
+            UiLanguage::Zh => "ch",
+            UiLanguage::En => "en",
+        }
+    }
+
+    /// 从路由前缀解析界面语言。
+    pub fn from_route_code(code: &str) -> Option<Self> {
+        match code.trim().to_ascii_lowercase().as_str() {
+            "ch" | "zh" => Some(Self::Zh),
+            "en" => Some(Self::En),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]

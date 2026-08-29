@@ -16,4 +16,4 @@ serde_json = "1"
 sha2 = "0.10"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Blob", "Document", "DomTokenList", "Element", "File", "FileList", "History", "HtmlAnchorElement", "HtmlElement", "HtmlInputElement", "Location", "Storage", "Url", "Window"] }
+web-sys = { version = "0.3", features = ["Blob", "DataTransfer", "Document", "DomRect", "DomTokenList", "DragEvent", "Element", "File", "FileList", "History", "HtmlAnchorElement", "HtmlElement", "HtmlInputElement", "Location", "Storage", "Url", "Window"] }

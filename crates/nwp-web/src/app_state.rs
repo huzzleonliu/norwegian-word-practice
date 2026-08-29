@@ -53,6 +53,7 @@ pub struct PracticeState {
 #[derive(Clone, Copy)]
 pub struct UiState {
     pub ui_language: ReadSignal<UiLanguage>,
+    pub set_ui_language: WriteSignal<UiLanguage>,
     #[allow(dead_code)]
     pub ui_theme: ReadSignal<UiTheme>,
 }

@@ -4,4 +4,4 @@
 pub const MINT_ROUTE_PATH: &str = "/mint";
 
 /// NFT 门禁失败时回退路径。
-pub const GATE_FALLBACK_ROUTE_PATH: &str = "/practice";
+pub const GATE_FALLBACK_ROUTE_PATH: &str = "/ch/practice";
