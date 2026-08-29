@@ -420,12 +420,40 @@ pub fn answer_input_key(entry_id: &str, field: &str) -> String {
     format!("{entry_id}::{field}")
 }
 
-/// 判断字段在当前词条上是否可作答（目标值非空）。
+/// 字段值是否可作为练习目标：非空，且不是占位符 `NULL`（须全大写）。
+pub fn is_practiceable_field_value(raw: &str) -> bool {
+    let trimmed = raw.trim();
+    !trimmed.is_empty() && trimmed != "NULL"
+}
+
+/// 判断字段在当前词条上是否可作答（有可练习目标值）。
 pub fn is_answer_field_available(entry: &WordBankEntry, field: &str) -> bool {
-    !entry_field_value(entry, field).trim().is_empty()
+    is_practiceable_field_value(&entry_field_value(entry, field))
 }
 
 /// 按字段 key 读取词条值，统一返回字符串用于显示与判题。
 pub fn entry_field_value(entry: &WordBankEntry, field: &str) -> String {
     entry_field_value_from_meta(entry, field)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_practiceable_field_value;
+
+    #[test]
+    fn practiceable_rejects_empty_and_null_sentinel() {
+        assert!(!is_practiceable_field_value(""));
+        assert!(!is_practiceable_field_value("   "));
+        assert!(!is_practiceable_field_value("NULL"));
+        assert!(!is_practiceable_field_value("  NULL  "));
+    }
+
+    #[test]
+    fn practiceable_keeps_real_values_and_non_exact_null() {
+        assert!(is_practiceable_field_value("går"));
+        assert!(is_practiceable_field_value("null"));
+        assert!(is_practiceable_field_value("Null"));
+        assert!(is_practiceable_field_value("NULLABLE"));
+        assert!(is_practiceable_field_value("a | NULL"));
+    }
 }
