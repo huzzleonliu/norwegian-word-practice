@@ -11,21 +11,36 @@ use super::{
 };
 
 const ORDBOK_GRAPHQL_ENDPOINT: &str = "https://api.ordbokapi.org/graphql";
-const ORDBOK_LOOKUP_QUERY: &str = r#"
+/// 第一步：只取条目 id / 词典 / 词性 / 原型，避免嵌套 paradigms 触发 QUERY_TOO_COMPLEX。
+const ORDBOK_SUGGESTIONS_QUERY: &str = r#"
 query LookUp($word: String!) {
   suggestions(word: $word) {
     exact {
       word
       articles {
+        id
+        dictionary
         wordClass
         lemmas {
           lemma
-          paradigms {
-            inflections {
-              tags
-              wordForm
-            }
-          }
+        }
+      }
+    }
+  }
+}
+"#;
+/// 第二步：按 article id + dictionary 拉取词形变化。
+const ORDBOK_ARTICLE_QUERY: &str = r#"
+query ArticleForms($id: Int!, $dictionary: Dictionary!) {
+  article(id: $id, dictionary: $dictionary) {
+    id
+    wordClass
+    lemmas {
+      lemma
+      paradigms {
+        inflections {
+          tags
+          wordForm
         }
       }
     }
@@ -35,8 +50,8 @@ query LookUp($word: String!) {
 const GOOGLE_TRANSLATE_ENDPOINT: &str = "https://translation.googleapis.com/language/translate/v2";
 
 #[derive(Debug, Deserialize)]
-struct OrdbokGraphQlResponse {
-    data: Option<OrdbokGraphQlData>,
+struct OrdbokGraphQlResponse<T> {
+    data: Option<T>,
     #[serde(default)]
     errors: Vec<OrdbokGraphQlError>,
 }
@@ -47,8 +62,13 @@ struct OrdbokGraphQlError {
 }
 
 #[derive(Debug, Deserialize)]
-struct OrdbokGraphQlData {
+struct OrdbokSuggestionsData {
     suggestions: OrdbokSuggestions,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokArticleData {
+    article: Option<OrdbokArticle>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,25 +81,41 @@ struct OrdbokSuggestions {
 struct OrdbokExactSuggestion {
     word: String,
     #[serde(default)]
-    articles: Vec<OrdbokArticle>,
+    articles: Vec<OrdbokArticleRef>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OrdbokArticleRef {
+    id: i64,
+    dictionary: String,
+    word_class: Option<String>,
+    #[serde(default)]
+    lemmas: Vec<OrdbokLemmaLite>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrdbokLemmaLite {
+    lemma: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct OrdbokArticle {
+    #[serde(default)]
     word_class: Option<String>,
     #[serde(default)]
     lemmas: Vec<OrdbokLemma>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct OrdbokLemma {
     lemma: String,
     #[serde(default)]
     paradigms: Vec<OrdbokParadigm>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 struct OrdbokParadigm {
     #[serde(default)]
     inflections: Vec<OrdbokInflection>,
@@ -121,12 +157,95 @@ pub(crate) async fn query_word_with_ordbok(
     word: &str,
     hint: &str,
 ) -> Result<Vec<GeminiWordResult>, String> {
-    // 请求 Ordbok GraphQL，并转换为项目统一的 `GeminiWordResult` 结构。
-    let payload_body = serde_json::json!({
-        "query": ORDBOK_LOOKUP_QUERY,
-        "variables": {
-            "word": word
+    // Ordbok 当前对「suggestions + paradigms」单次查询会报 QUERY_TOO_COMPLEX，
+    // 因此拆成：suggestions 定位条目 → article(id, dictionary) 拉词形。
+    let suggestions = ordbok_graphql::<OrdbokSuggestionsData>(
+        ORDBOK_SUGGESTIONS_QUERY,
+        serde_json::json!({ "word": word }),
+    )
+    .await?;
+
+    let Some(data) = suggestions else {
+        return Ok(Vec::new());
+    };
+
+    let mut article_refs = data
+        .suggestions
+        .exact
+        .into_iter()
+        .flat_map(|exact| {
+            let exact_word = exact.word;
+            exact
+                .articles
+                .into_iter()
+                .map(move |article| (exact_word.clone(), article))
+        })
+        .collect::<Vec<_>>();
+
+    // 优先 Bokmål；若有 Bokmål 条目则只拉 Bokmål，避免多词典重复请求。
+    let has_bokmal = article_refs
+        .iter()
+        .any(|(_, article)| article.dictionary == "Bokmaalsordboka");
+    if has_bokmal {
+        article_refs.retain(|(_, article)| article.dictionary == "Bokmaalsordboka");
+    } else {
+        article_refs.sort_by_key(|(_, article)| article.dictionary.clone());
+    }
+    let mut merged = Vec::<GeminiWordResult>::new();
+    let mut seen_ids = std::collections::HashSet::<(i64, String)>::new();
+    for (exact_word, article_ref) in article_refs {
+        let key = (article_ref.id, article_ref.dictionary.clone());
+        if !seen_ids.insert(key) {
+            continue;
         }
+
+        let article_data = ordbok_graphql::<OrdbokArticleData>(
+            ORDBOK_ARTICLE_QUERY,
+            serde_json::json!({
+                "id": article_ref.id,
+                "dictionary": article_ref.dictionary,
+            }),
+        )
+        .await?;
+
+        let fallback_lemmas = article_ref
+            .lemmas
+            .iter()
+            .map(|lemma| OrdbokLemma {
+                lemma: lemma.lemma.clone(),
+                paradigms: Vec::new(),
+            })
+            .collect::<Vec<_>>();
+
+        let mut article = match article_data.and_then(|data| data.article) {
+            Some(article) => article,
+            None => OrdbokArticle {
+                word_class: article_ref.word_class.clone(),
+                lemmas: fallback_lemmas.clone(),
+            },
+        };
+        if article.word_class.is_none() {
+            article.word_class = article_ref.word_class.clone();
+        }
+        if article.lemmas.is_empty() {
+            article.lemmas = fallback_lemmas;
+        }
+
+        if let Some(item) = convert_ordbok_article(&exact_word, &article, hint) {
+            merge_or_insert_word_result(&mut merged, item);
+        }
+    }
+
+    Ok(filter_results_by_hint(merged, hint))
+}
+
+async fn ordbok_graphql<T>(query: &str, variables: serde_json::Value) -> Result<Option<T>, String>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let payload_body = serde_json::json!({
+        "query": query,
+        "variables": variables,
     })
     .to_string();
     let request = Request::post(ORDBOK_GRAPHQL_ENDPOINT)
@@ -147,7 +266,7 @@ pub(crate) async fn query_word_with_ordbok(
     }
 
     let parsed = response
-        .json::<OrdbokGraphQlResponse>()
+        .json::<OrdbokGraphQlResponse<T>>()
         .await
         .map_err(|err| format!("Ordbok response parse failed: {err}"))?;
     if !parsed.errors.is_empty() {
@@ -159,11 +278,24 @@ pub(crate) async fn query_word_with_ordbok(
             .join(" | ");
         return Err(format!("Ordbok GraphQL error: {message}"));
     }
+    Ok(parsed.data)
+}
 
-    let Some(data) = parsed.data else {
-        return Ok(Vec::new());
+fn filter_results_by_hint(merged: Vec<GeminiWordResult>, hint: &str) -> Vec<GeminiWordResult> {
+    let Some(expected_pos) = hint_to_part_of_speech(hint).map(|pos| pos.as_key().to_string())
+    else {
+        return merged;
     };
-    Ok(parse_ordbok_results(data, hint))
+    let filtered = merged
+        .iter()
+        .filter(|item| normalize_part_of_speech(item.part_of_speech.clone(), hint) == expected_pos)
+        .cloned()
+        .collect::<Vec<_>>();
+    if filtered.is_empty() {
+        merged
+    } else {
+        filtered
+    }
 }
 
 /// 使用 Google Translate 回填中英文释义（不改词形字段）。
@@ -248,33 +380,6 @@ fn decode_html_entities(value: &str) -> String {
         .replace("&amp;", "&")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
-}
-
-fn parse_ordbok_results(data: OrdbokGraphQlData, hint: &str) -> Vec<GeminiWordResult> {
-    // 先聚合同词条，再按 hint 词性做过滤（如果过滤后为空则回退原集合）。
-    let mut merged = Vec::<GeminiWordResult>::new();
-    for exact in data.suggestions.exact {
-        for article in exact.articles {
-            if let Some(item) = convert_ordbok_article(&exact.word, &article, hint) {
-                merge_or_insert_word_result(&mut merged, item);
-            }
-        }
-    }
-
-    let Some(expected_pos) = hint_to_part_of_speech(hint).map(|pos| pos.as_key().to_string())
-    else {
-        return merged;
-    };
-    let filtered = merged
-        .iter()
-        .filter(|item| normalize_part_of_speech(item.part_of_speech.clone(), hint) == expected_pos)
-        .cloned()
-        .collect::<Vec<_>>();
-    if filtered.is_empty() {
-        merged
-    } else {
-        filtered
-    }
 }
 
 fn convert_ordbok_article(
