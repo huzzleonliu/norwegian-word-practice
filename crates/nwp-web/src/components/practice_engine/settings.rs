@@ -83,6 +83,8 @@ pub fn PracticeSettings(
     set_prompt_field_a: WriteSignal<String>,
     prompt_field_b: ReadSignal<String>,
     set_prompt_field_b: WriteSignal<String>,
+    prompt_field_c: ReadSignal<String>,
+    set_prompt_field_c: WriteSignal<String>,
     answer_fields: ReadSignal<Vec<String>>,
     set_answer_fields: WriteSignal<Vec<String>>,
     allow_answer_reveal: ReadSignal<bool>,
@@ -94,7 +96,7 @@ pub fn PracticeSettings(
     let (answer_preset, set_answer_preset) = signal(AnswerPreset::Common.as_key().to_string());
 
     view! {
-        <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <label class="flex flex-col gap-1 text-sm">
                 <span class="text-slate-300">
                     {move || tr(lang.get(), "一页练习（词条数）", "Entries per page")}
@@ -138,6 +140,24 @@ pub fn PracticeSettings(
                 <select
                     prop:value=move || prompt_field_b.get()
                     on:change=move |ev| set_prompt_field_b.set(event_target_value(&ev))
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                >
+                    {PROMPT_FIELD_OPTIONS
+                        .iter()
+                        .map(|key| {
+                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
+                        })
+                        .collect_view()}
+                </select>
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="text-slate-300">
+                    {move || tr(lang.get(), "根据（下拉框 3）", "Prompt field (select 3)")}
+                </span>
+                <select
+                    prop:value=move || prompt_field_c.get()
+                    on:change=move |ev| set_prompt_field_c.set(event_target_value(&ev))
                     class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
                 >
                     {PROMPT_FIELD_OPTIONS

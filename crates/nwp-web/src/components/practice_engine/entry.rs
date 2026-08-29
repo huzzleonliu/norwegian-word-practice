@@ -43,6 +43,8 @@ pub fn PracticeEntry(
     entries: ReadSignal<Vec<WordBankEntry>>,
     prompt_field_a: ReadSignal<String>,
     prompt_field_b: ReadSignal<String>,
+    #[prop(optional)]
+    prompt_field_c: Option<ReadSignal<String>>,
     answer_fields: ReadSignal<Vec<String>>,
     answer_inputs: ReadSignal<HashMap<String, String>>,
     set_answer_inputs: WriteSignal<HashMap<String, String>>,
@@ -107,9 +109,11 @@ pub fn PracticeEntry(
 
                             <div class="mt-2 space-y-1 text-sm text-slate-300">
                                 {move || {
-                                    let field_a = prompt_field_a.get();
-                                    let field_b = prompt_field_b.get();
-                                    let prompts = [field_a, field_b]
+                                    let mut fields = vec![prompt_field_a.get(), prompt_field_b.get()];
+                                    if let Some(field_c) = prompt_field_c {
+                                        fields.push(field_c.get());
+                                    }
+                                    let prompts = fields
                                         .into_iter()
                                         .filter(|field| field.as_str() != NONE_FIELD_KEY)
                                         .map(|field| {

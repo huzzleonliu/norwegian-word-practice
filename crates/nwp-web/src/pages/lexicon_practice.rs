@@ -37,6 +37,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
     let (questions_per_page, set_questions_per_page) = signal(10_usize);
     let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
     let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
+    let (prompt_field_c, set_prompt_field_c) = signal("part_of_speech".to_string());
     let (answer_fields, set_answer_fields) = signal(default_answer_fields());
     let (allow_answer_reveal, set_allow_answer_reveal) = signal(true);
     let (revealed_answer_keys, set_revealed_answer_keys) = signal(HashSet::<String>::new());
@@ -220,6 +221,8 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         set_prompt_field_a=set_prompt_field_a
                         prompt_field_b=prompt_field_b
                         set_prompt_field_b=set_prompt_field_b
+                        prompt_field_c=prompt_field_c
+                        set_prompt_field_c=set_prompt_field_c
                         answer_fields=answer_fields
                         set_answer_fields=set_answer_fields
                         allow_answer_reveal=allow_answer_reveal
@@ -238,6 +241,7 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         entries=lexicon_state.entries
                         prompt_field_a=prompt_field_a
                         prompt_field_b=prompt_field_b
+                        prompt_field_c=prompt_field_c
                         answer_fields=answer_fields
                         answer_inputs=answer_inputs
                         set_answer_inputs=set_answer_inputs

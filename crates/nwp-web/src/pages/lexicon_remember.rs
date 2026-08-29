@@ -17,12 +17,8 @@ use crate::utils::shuffle::pick_index;
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct RememberRow {
     entry_id: String,
-    prompt_a_label: String,
-    prompt_a_value: String,
-    prompt_b_label: String,
-    prompt_b_value: String,
-    show_prompt_a: bool,
-    show_prompt_b: bool,
+    /// (label, value) 提示字段，跳过「无」。
+    prompts: Vec<(String, String)>,
     variant_label: String,
     answer_value: String,
 }
@@ -36,6 +32,7 @@ pub fn LexiconRememberPage() -> impl IntoView {
     let (questions_per_page, set_questions_per_page) = signal(10_usize);
     let (prompt_field_a, set_prompt_field_a) = signal("chinese".to_string());
     let (prompt_field_b, set_prompt_field_b) = signal("english".to_string());
+    let (prompt_field_c, set_prompt_field_c) = signal("part_of_speech".to_string());
     let (answer_fields, set_answer_fields) = signal(default_answer_fields());
     let (allow_answer_reveal, set_allow_answer_reveal) = signal(true);
     let (status, set_status) = signal(String::new());
@@ -77,6 +74,7 @@ pub fn LexiconRememberPage() -> impl IntoView {
         let language = lang.get();
         let field_a = prompt_field_a.get();
         let field_b = prompt_field_b.get();
+        let field_c = prompt_field_c.get();
         let fields = answer_fields.get();
         let all_entries = lexicon_state.entries.get();
         let start = current_page.saturating_mul(page_size);
@@ -86,7 +84,9 @@ pub fn LexiconRememberPage() -> impl IntoView {
             .skip(start)
             .take(page_size)
             .filter_map(|id| all_entries.iter().find(|entry| entry.id == id).cloned())
-            .map(|entry| build_remember_row(entry, &field_a, &field_b, &fields, language))
+            .map(|entry| {
+                build_remember_row(entry, &[&field_a, &field_b, &field_c], &fields, language)
+            })
             .collect::<Vec<_>>();
 
         set_page_rows.set(rows);
@@ -144,6 +144,8 @@ pub fn LexiconRememberPage() -> impl IntoView {
                         set_prompt_field_a=set_prompt_field_a
                         prompt_field_b=prompt_field_b
                         set_prompt_field_b=set_prompt_field_b
+                        prompt_field_c=prompt_field_c
+                        set_prompt_field_c=set_prompt_field_c
                         answer_fields=answer_fields
                         set_answer_fields=set_answer_fields
                         allow_answer_reveal=allow_answer_reveal
@@ -179,32 +181,25 @@ pub fn LexiconRememberPage() -> impl IntoView {
                                             each=move || page_rows.get()
                                             key=|row| row.entry_id.clone()
                                             children=move |row| {
-                                                let prompts = match (row.show_prompt_a, row.show_prompt_b) {
-                                                    (true, true) => view! {
+                                                let prompts = if row.prompts.is_empty() {
+                                                    view! { <></> }.into_any()
+                                                } else {
+                                                    view! {
                                                         <p class="flex flex-wrap items-baseline justify-end gap-x-3 gap-y-1">
-                                                            <span>
-                                                                <span class="text-slate-400">{row.prompt_a_label}{": "}</span>
-                                                                <span>{row.prompt_a_value}</span>
-                                                            </span>
-                                                            <span>
-                                                                <span class="text-slate-400">{row.prompt_b_label}{": "}</span>
-                                                                <span>{row.prompt_b_value}</span>
-                                                            </span>
+                                                            {row.prompts
+                                                                .into_iter()
+                                                                .map(|(label, value)| {
+                                                                    view! {
+                                                                        <span>
+                                                                            <span class="text-slate-400">{label}{": "}</span>
+                                                                            <span>{value}</span>
+                                                                        </span>
+                                                                    }
+                                                                })
+                                                                .collect_view()}
                                                         </p>
-                                                    }.into_any(),
-                                                    (true, false) => view! {
-                                                        <p>
-                                                            <span class="text-slate-400">{row.prompt_a_label}{": "}</span>
-                                                            <span>{row.prompt_a_value}</span>
-                                                        </p>
-                                                    }.into_any(),
-                                                    (false, true) => view! {
-                                                        <p>
-                                                            <span class="text-slate-400">{row.prompt_b_label}{": "}</span>
-                                                            <span>{row.prompt_b_value}</span>
-                                                        </p>
-                                                    }.into_any(),
-                                                    (false, false) => view! { <></> }.into_any(),
+                                                    }
+                                                        .into_any()
                                                 };
                                                 let variant_label = row.variant_label;
                                                 let answer_value = row.answer_value;
@@ -320,23 +315,21 @@ pub fn LexiconRememberPage() -> impl IntoView {
 
 fn build_remember_row(
     entry: WordBankEntry,
-    field_a: &str,
-    field_b: &str,
+    prompt_fields: &[&str],
     answer_fields: &[String],
     language: UiLanguage,
 ) -> RememberRow {
-    let show_prompt_a = field_a != NONE_FIELD_KEY;
-    let show_prompt_b = field_b != NONE_FIELD_KEY;
-    let (prompt_a_label, prompt_a_value) = if show_prompt_a {
-        (field_label(language, field_a).to_string(), prompt_value(&entry, field_a, language))
-    } else {
-        (String::new(), String::new())
-    };
-    let (prompt_b_label, prompt_b_value) = if show_prompt_b {
-        (field_label(language, field_b).to_string(), prompt_value(&entry, field_b, language))
-    } else {
-        (String::new(), String::new())
-    };
+    let prompts = prompt_fields
+        .iter()
+        .copied()
+        .filter(|field| *field != NONE_FIELD_KEY)
+        .map(|field| {
+            (
+                field_label(language, field).to_string(),
+                prompt_value(&entry, field, language),
+            )
+        })
+        .collect::<Vec<_>>();
 
     let available = answer_fields
         .iter()
@@ -359,12 +352,7 @@ fn build_remember_row(
 
     RememberRow {
         entry_id: entry.id,
-        prompt_a_label,
-        prompt_a_value,
-        prompt_b_label,
-        prompt_b_value,
-        show_prompt_a,
-        show_prompt_b,
+        prompts,
         variant_label,
         answer_value,
     }
