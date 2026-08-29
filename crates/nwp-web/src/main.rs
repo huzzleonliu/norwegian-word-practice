@@ -240,6 +240,10 @@ fn AppChrome(
                         path=path!("/series/interrogative")
                         view=pages::serise_practice::interrogative::InterrogativeSerisePracticePage
                     />
+                    <Route
+                        path=path!("/series/country")
+                        view=pages::serise_practice::country::CountrySerisePracticePage
+                    />
                 </ParentRoute>
                 // 兼容旧无前缀 URL → 默认中文
                 <Route path=path!("/") view=|| view! { <Redirect path="/ch"/> }/>
@@ -256,6 +260,10 @@ fn AppChrome(
                 <Route
                     path=path!("/series/interrogative")
                     view=|| view! { <Redirect path="/ch/series/interrogative"/> }
+                />
+                <Route
+                    path=path!("/series/country")
+                    view=|| view! { <Redirect path="/ch/series/country"/> }
                 />
             </Routes>
         </div>

@@ -78,6 +78,19 @@ pub fn SeriseSelectPage() -> impl IntoView {
             lang,
         );
     };
+    let country_click = move |_| {
+        load_series_word_bank(
+            &["country"],
+            "国家",
+            "Country",
+            AppPage::SeriseCountryPractice,
+            lexicon_state,
+            practice_state,
+            set_status,
+            set_current_page,
+            lang,
+        );
+    };
 
     view! {
         <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
@@ -93,7 +106,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
                     })
                 />
 
-                <div class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <button
                         type="button"
                         on:click=cardinal_click
@@ -121,6 +134,13 @@ pub fn SeriseSelectPage() -> impl IntoView {
                         class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
                     >
                         {move || tr(lang.get(), "疑问词", "Interrogative")}
+                    </button>
+                    <button
+                        type="button"
+                        on:click=country_click
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-6 text-center text-base font-semibold text-slate-100 hover:bg-slate-700"
+                    >
+                        {move || tr(lang.get(), "国家", "Country")}
                     </button>
                 </div>
             </section>

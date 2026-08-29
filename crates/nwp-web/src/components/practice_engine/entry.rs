@@ -53,6 +53,9 @@ pub fn PracticeEntry(
     set_revealed_answer_keys: Option<WriteSignal<HashSet<String>>>,
     wrong_answer_feedback: Option<ReadSignal<HashMap<String, String>>>,
     set_wrong_answer_feedback: Option<WriteSignal<HashMap<String, String>>>,
+    /// 为 false 时不渲染底部「检查」按钮（用于外部分组后统一检查）。
+    #[prop(optional, default = true)]
+    show_check_button: bool,
 ) -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
     let (active_entry_id, set_active_entry_id) = signal(None::<String>);
@@ -355,12 +358,21 @@ pub fn PracticeEntry(
             }
         }}
 
-        <div class="mt-4 flex justify-center">
-            <CheckPracticeButton
-                on_check=on_check
-                class="w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto".to_string()
-            />
-        </div>
+        {move || {
+            if show_check_button {
+                view! {
+                    <div class="mt-4 flex justify-center">
+                        <CheckPracticeButton
+                            on_check=on_check
+                            class="w-full rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 sm:w-auto".to_string()
+                        />
+                    </div>
+                }
+                    .into_any()
+            } else {
+                view! { <></> }.into_any()
+            }
+        }}
     }
 }
 

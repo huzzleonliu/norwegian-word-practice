@@ -75,102 +75,18 @@ const ANSWER_FIELDS_COMMON: &[&str] = &[
     "adverb_superlative",
 ];
 
+/// 仅「回答字段」设置：预设 + 可展开自定义勾选。
 #[component]
-pub fn PracticeSettings(
-    questions_per_page: ReadSignal<usize>,
-    set_questions_per_page: WriteSignal<usize>,
-    prompt_field_a: ReadSignal<String>,
-    set_prompt_field_a: WriteSignal<String>,
-    prompt_field_b: ReadSignal<String>,
-    set_prompt_field_b: WriteSignal<String>,
-    prompt_field_c: ReadSignal<String>,
-    set_prompt_field_c: WriteSignal<String>,
+pub fn AnswerFieldsSettings(
     answer_fields: ReadSignal<Vec<String>>,
     set_answer_fields: WriteSignal<Vec<String>>,
-    allow_answer_reveal: ReadSignal<bool>,
-    set_allow_answer_reveal: WriteSignal<bool>,
-    hide_all_revealed_answers: Callback<()>,
 ) -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
     let (answers_expanded, set_answers_expanded) = signal(false);
     let (answer_preset, set_answer_preset) = signal(AnswerPreset::Common.as_key().to_string());
 
     view! {
-        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <label class="flex flex-col gap-1 text-sm">
-                <span class="text-slate-300">
-                    {move || tr(lang.get(), "一页练习（词条数）", "Entries per page")}
-                </span>
-                <input
-                    type="number"
-                    min="1"
-                    prop:value=move || questions_per_page.get().to_string()
-                    on:input=move |ev| {
-                        let raw = event_target_value(&ev);
-                        if let Ok(value) = raw.parse::<usize>() {
-                            set_questions_per_page.set(value.max(1));
-                        }
-                    }
-                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                />
-            </label>
-
-            <label class="flex flex-col gap-1 text-sm">
-                <span class="text-slate-300">
-                    {move || tr(lang.get(), "根据（下拉框 1）", "Prompt field (select 1)")}
-                </span>
-                <select
-                    prop:value=move || prompt_field_a.get()
-                    on:change=move |ev| set_prompt_field_a.set(event_target_value(&ev))
-                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                >
-                    {PROMPT_FIELD_OPTIONS
-                        .iter()
-                        .map(|key| {
-                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
-                        })
-                        .collect_view()}
-                </select>
-            </label>
-
-            <label class="flex flex-col gap-1 text-sm">
-                <span class="text-slate-300">
-                    {move || tr(lang.get(), "根据（下拉框 2）", "Prompt field (select 2)")}
-                </span>
-                <select
-                    prop:value=move || prompt_field_b.get()
-                    on:change=move |ev| set_prompt_field_b.set(event_target_value(&ev))
-                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                >
-                    {PROMPT_FIELD_OPTIONS
-                        .iter()
-                        .map(|key| {
-                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
-                        })
-                        .collect_view()}
-                </select>
-            </label>
-
-            <label class="flex flex-col gap-1 text-sm">
-                <span class="text-slate-300">
-                    {move || tr(lang.get(), "根据（下拉框 3）", "Prompt field (select 3)")}
-                </span>
-                <select
-                    prop:value=move || prompt_field_c.get()
-                    on:change=move |ev| set_prompt_field_c.set(event_target_value(&ev))
-                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-                >
-                    {PROMPT_FIELD_OPTIONS
-                        .iter()
-                        .map(|key| {
-                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
-                        })
-                        .collect_view()}
-                </select>
-            </label>
-        </div>
-
-        <div class="mt-4">
+        <div>
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <p class="text-sm text-slate-300">
                     {move || {
@@ -305,6 +221,108 @@ pub fn PracticeSettings(
                     view! { <></> }.into_any()
                 }
             }}
+        </div>
+    }
+}
+
+#[component]
+pub fn PracticeSettings(
+    questions_per_page: ReadSignal<usize>,
+    set_questions_per_page: WriteSignal<usize>,
+    prompt_field_a: ReadSignal<String>,
+    set_prompt_field_a: WriteSignal<String>,
+    prompt_field_b: ReadSignal<String>,
+    set_prompt_field_b: WriteSignal<String>,
+    prompt_field_c: ReadSignal<String>,
+    set_prompt_field_c: WriteSignal<String>,
+    answer_fields: ReadSignal<Vec<String>>,
+    set_answer_fields: WriteSignal<Vec<String>>,
+    allow_answer_reveal: ReadSignal<bool>,
+    set_allow_answer_reveal: WriteSignal<bool>,
+    hide_all_revealed_answers: Callback<()>,
+) -> impl IntoView {
+    let lang = expect_context::<UiState>().ui_language;
+
+    view! {
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="text-slate-300">
+                    {move || tr(lang.get(), "一页练习（词条数）", "Entries per page")}
+                </span>
+                <input
+                    type="number"
+                    min="1"
+                    prop:value=move || questions_per_page.get().to_string()
+                    on:input=move |ev| {
+                        let raw = event_target_value(&ev);
+                        if let Ok(value) = raw.parse::<usize>() {
+                            set_questions_per_page.set(value.max(1));
+                        }
+                    }
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                />
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="text-slate-300">
+                    {move || tr(lang.get(), "根据（下拉框 1）", "Prompt field (select 1)")}
+                </span>
+                <select
+                    prop:value=move || prompt_field_a.get()
+                    on:change=move |ev| set_prompt_field_a.set(event_target_value(&ev))
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                >
+                    {PROMPT_FIELD_OPTIONS
+                        .iter()
+                        .map(|key| {
+                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
+                        })
+                        .collect_view()}
+                </select>
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="text-slate-300">
+                    {move || tr(lang.get(), "根据（下拉框 2）", "Prompt field (select 2)")}
+                </span>
+                <select
+                    prop:value=move || prompt_field_b.get()
+                    on:change=move |ev| set_prompt_field_b.set(event_target_value(&ev))
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                >
+                    {PROMPT_FIELD_OPTIONS
+                        .iter()
+                        .map(|key| {
+                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
+                        })
+                        .collect_view()}
+                </select>
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm">
+                <span class="text-slate-300">
+                    {move || tr(lang.get(), "根据（下拉框 3）", "Prompt field (select 3)")}
+                </span>
+                <select
+                    prop:value=move || prompt_field_c.get()
+                    on:change=move |ev| set_prompt_field_c.set(event_target_value(&ev))
+                    class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+                >
+                    {PROMPT_FIELD_OPTIONS
+                        .iter()
+                        .map(|key| {
+                            view! { <option value=*key>{move || field_label(lang.get(), key)}</option> }
+                        })
+                        .collect_view()}
+                </select>
+            </label>
+        </div>
+
+        <div class="mt-4">
+            <AnswerFieldsSettings
+                answer_fields=answer_fields
+                set_answer_fields=set_answer_fields
+            />
         </div>
 
         <div class="mt-4 rounded border border-slate-800 bg-slate-950/40 p-3">

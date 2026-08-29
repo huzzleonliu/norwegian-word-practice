@@ -17,7 +17,7 @@ pub use entry::{
     CheckPracticeButton, PracticeEntry, answer_input_key, entry_field_value,
     is_answer_field_available,
 };
-pub use settings::{PracticeSettings, default_answer_fields};
+pub use settings::{AnswerFieldsSettings, PracticeSettings, default_answer_fields};
 pub use utils::{
     CheckAnswersError, apply_check_results, clear_practice_round_local_state,
     evaluate_check_answers, merge_solved_question_ids, prepare_post_check_input_state,

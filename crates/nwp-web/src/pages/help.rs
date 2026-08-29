@@ -131,5 +131,11 @@ fn help_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
             view! { {markdown_view!(file = "docs/help/serise_practice_interrogative.en.md")} }
                 .into_any()
         }
+        (AppPage::SeriseCountryPractice, UiLanguage::Zh) => {
+            view! { {markdown_view!(file = "docs/help/serise_practice_country.zh.md")} }.into_any()
+        }
+        (AppPage::SeriseCountryPractice, UiLanguage::En) => {
+            view! { {markdown_view!(file = "docs/help/serise_practice_country.en.md")} }.into_any()
+        }
     }
 }

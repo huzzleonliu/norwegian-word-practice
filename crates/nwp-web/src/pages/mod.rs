@@ -28,6 +28,7 @@ pub enum AppPage {
     SeriseMonthPractice,
     SerisePronounPractice,
     SeriseInterrogativePractice,
+    SeriseCountryPractice,
 }
 
 impl AppPage {
@@ -46,6 +47,7 @@ impl AppPage {
             Self::SeriseMonthPractice => "/series/month",
             Self::SerisePronounPractice => "/series/pronoun",
             Self::SeriseInterrogativePractice => "/series/interrogative",
+            Self::SeriseCountryPractice => "/series/country",
         }
     }
 
@@ -98,6 +100,7 @@ impl AppPage {
             "/series/month" => Some(Self::SeriseMonthPractice),
             "/series/pronoun" => Some(Self::SerisePronounPractice),
             "/series/interrogative" => Some(Self::SeriseInterrogativePractice),
+            "/series/country" => Some(Self::SeriseCountryPractice),
             _ => None,
         }
     }
@@ -139,6 +142,7 @@ mod tests {
             AppPage::SeriseMonthPractice,
             AppPage::SerisePronounPractice,
             AppPage::SeriseInterrogativePractice,
+            AppPage::SeriseCountryPractice,
         ];
         for page in pages {
             assert_eq!(AppPage::from_logical_path(page.path()), Some(page));
