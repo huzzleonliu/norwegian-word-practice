@@ -2,6 +2,7 @@
 name = "solana-gate"
 version = "0.1.0"
 edition = "2024"
+license = "Apache-2.0"
 
 [dependencies]
 leptos = { version = "0.8.20", features = ["csr"] }
