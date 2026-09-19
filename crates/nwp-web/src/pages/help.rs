@@ -28,17 +28,17 @@ pub fn HelpOverlay(
                     on:click=move |_| set_open.set(false)
                 >
                     <div
-                        class="relative flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+                        class="relative flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900"
                         on:click=move |ev| ev.stop_propagation()
                     >
                         <div class="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-                            <h2 class="text-base font-semibold text-slate-100 sm:text-lg">
+                            <h2 class="text-base text-slate-100 sm:text-lg">
                                 {move || tr(lang.get(), "使用说明", "Instructions")}
                             </h2>
                             <button
                                 type="button"
                                 on:click=move |_| set_open.set(false)
-                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-lg leading-none text-slate-100 hover:bg-slate-700"
+                                class="ui-chrome h-8 w-8 px-0"
                                 aria-label=move || tr(lang.get(), "关闭", "Close")
                             >
                                 "×"
@@ -136,6 +136,12 @@ fn help_markdown_view(page: AppPage, language: UiLanguage) -> AnyView {
         }
         (AppPage::SeriseCountryPractice, UiLanguage::En) => {
             view! { {markdown_view!(file = "docs/help/serise_practice_country.en.md")} }.into_any()
+        }
+        (AppPage::Player, UiLanguage::Zh) => {
+            view! { {markdown_view!(file = "docs/help/player.zh.md")} }.into_any()
+        }
+        (AppPage::Player, UiLanguage::En) => {
+            view! { {markdown_view!(file = "docs/help/player.en.md")} }.into_any()
         }
     }
 }

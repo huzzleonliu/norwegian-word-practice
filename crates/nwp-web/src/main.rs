@@ -150,7 +150,7 @@ fn AppChrome(
                 <button
                     type="button"
                     on:click=move |_| set_ui_theme.update(|theme| *theme = theme.toggle())
-                    class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
+                    class="ui-chrome"
                 >
                     {move || {
                         let lang = ui_language.get();
@@ -175,7 +175,7 @@ fn AppChrome(
                             UiLanguage::En => "Language: English. Switch to Chinese",
                         }
                     }
-                    class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2"
+                    class="ui-chrome"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -193,7 +193,7 @@ fn AppChrome(
                         <path d="M12 3a15 15 0 0 1 0 18"></path>
                         <path d="M12 3a15 15 0 0 0 0 18"></path>
                     </svg>
-                    <span class="text-[11px] font-semibold tracking-wide sm:text-xs">
+                    <span class="text-xs tracking-wide">
                         {move || match ui_language.get() {
                             UiLanguage::Zh => "中",
                             UiLanguage::En => "EN",
@@ -205,7 +205,7 @@ fn AppChrome(
                 <button
                     type="button"
                     on:click=move |_| set_help_open.set(true)
-                    class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
+                    class="ui-chrome"
                 >
                     {move || tr(ui_language.get(), "使用说明", "Instructions")}
                 </button>
@@ -213,7 +213,7 @@ fn AppChrome(
                     href="https://discord.gg/U2z3FeUrmA"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="rounded-lg border border-slate-700 bg-slate-900/90 px-2.5 py-1.5 text-[11px] text-slate-100 hover:bg-slate-800 sm:px-3 sm:py-2 sm:text-xs"
+                    class="ui-chrome"
                 >
                     {move || tr(ui_language.get(), "问题反馈", "Feedback")}
                 </a>
@@ -244,6 +244,7 @@ fn AppChrome(
                         path=path!("/series/country")
                         view=pages::serise_practice::country::CountrySerisePracticePage
                     />
+                    <Route path=path!("/player") view=pages::player::PlayerPage/>
                 </ParentRoute>
                 // 兼容旧无前缀 URL → 默认中文
                 <Route path=path!("/") view=|| view! { <Redirect path="/ch"/> }/>
@@ -265,6 +266,7 @@ fn AppChrome(
                     path=path!("/series/country")
                     view=|| view! { <Redirect path="/ch/series/country"/> }
                 />
+                <Route path=path!("/player") view=|| view! { <Redirect path="/ch/player"/> }/>
             </Routes>
         </div>
     }

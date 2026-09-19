@@ -74,6 +74,7 @@ docker run --rm -p 8080:80 norwegian-word-practice:latest
 | 新页面 / 路由 | `pages/mod.rs`、`main.rs`、`docs/help/` |
 | 练习判题 / 回答预设 | `components/practice_engine/` |
 | 新系列练习 | `pages/serise_practice/`、`serise_select.rs`、系列词库 tag |
+| 跟读播放器 | `pages/player.rs`、`components/web_player/`、`data/audio/` |
 | 词库字段 / CSV | `structures/`、`utils/csv_schema.rs`、`field_meta` |
 | 加密导入导出 | `utils/dictionary_crypto.rs`、`lexicon_file.rs` |
 | 门禁 / Mint | `solana-gate`、`solana-leptos-component` |

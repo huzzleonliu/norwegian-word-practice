@@ -77,12 +77,21 @@ pub fn HomePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-start justify-center p-3 sm:p-6">
-            <section class="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-8 shadow-xl">
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">"Norwegian Word Practice"</h1>
-                <p class="mt-3 text-xs text-slate-400">{move || current_lexicon_line.get()}</p>
+        <main class="ui-page">
+            <section class="ui-shell ui-shell-narrow">
+                <p class="ui-eyebrow">
+                    {move || tr(lang.get(), "拼写练习", "spelling + inflection")}
+                </p>
+                <h1 class="ui-brand">
+                    <span class="brand-read">"Norwegian"</span>
+                    " "
+                    <span class="brand-er">"Word"</span>
+                    " "
+                    <span class="brand-err">"Practice"</span>
+                </h1>
+                <p class="ui-muted">{move || current_lexicon_line.get()}</p>
                 <MiniConsole message=console_status_line max_entries=80/>
-                <p class="mt-4 text-slate-300">
+                <p class="ui-copy">
                     {move || {
                         tr(
                             lang.get(),
@@ -100,23 +109,18 @@ pub fn HomePage() -> impl IntoView {
                     on:change=import_pracresult_change
                 />
 
-                <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div class="ui-card-actions mt-6">
                     <button
                         type="button"
                         on:click=direct_start_practice_click
-                        class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 sm:w-auto"
+                        class="ui-btn-primary"
                     >
                         {move || tr(lang.get(), "直接开始练习", "Start Practice")}
                     </button>
 
-                    <label
-                        for="pracresult-input"
-                        class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
-                    >
+                    <label for="pracresult-input" class="ui-btn-ghost cursor-pointer">
                         {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
                     </label>
-
-
                 </div>
             </section>
         </main>

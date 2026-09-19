@@ -112,21 +112,29 @@ pub fn PracticeModePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 flex items-start justify-center p-3 sm:p-6">
-            <section class="relative w-full max-w-5xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-8 shadow-xl">
-                <ReturnButton target_page=AppPage::Home/>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                    {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
-                </h1>
-                <p class="mt-3 text-xs text-slate-400">{move || current_lexicon_line.get()}</p>
+        <main class="ui-page">
+            <section class="ui-shell">
+                <div class="ui-topbar">
+                    <div>
+                        <p class="ui-eyebrow">
+                            {move || tr(lang.get(), "练习", "practice")}
+                        </p>
+                        <h1 class="ui-title">
+                            {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
+                        </h1>
+                    </div>
+                    <ReturnButton target_page=AppPage::Home/>
+                </div>
+                <p class="ui-muted">{move || current_lexicon_line.get()}</p>
                 <MiniConsole message=console_status_line max_entries=80/>
 
-                <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <section class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                        <h2 class="text-lg font-semibold">
-                            {move || tr(lang.get(), "词库练习", "Lexicon Practice")}
-                        </h2>
-                        <p class="mt-2 text-sm text-slate-400">
+                <div class="ui-grid ui-grid-3">
+                    <section class="ui-card">
+                        <p class="ui-eyebrow">
+                            {move || tr(lang.get(), "词库", "lexicon")}
+                        </p>
+                        <h2>{move || tr(lang.get(), "词库练习", "Lexicon Practice")}</h2>
+                        <p>
                             {move || {
                                 tr(
                                     lang.get(),
@@ -135,11 +143,11 @@ pub fn PracticeModePage() -> impl IntoView {
                                 )
                             }}
                         </p>
-                        <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+                        <div class="mt-1 grid grid-cols-1 gap-2">
                             <select
                                 prop:value=move || selected_word_bank.get()
                                 on:change=move |ev| set_selected_word_bank.set(event_target_value(&ev))
-                                class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+                                class="ui-field"
                             >
                                 {if LEXICON_WORD_BANK_FILES.is_empty() {
                                     view! {
@@ -156,43 +164,46 @@ pub fn PracticeModePage() -> impl IntoView {
                                         .into_any()
                                 }}
                             </select>
-                            <button
-                                type="button"
-                                on:click=choose_word_bank_click
-                                disabled=LEXICON_WORD_BANK_FILES.is_empty()
-                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto"
-                            >
-                                {move || tr(lang.get(), "选择词库", "Load Lexicon")}
-                            </button>
-                            <ImportDictionaryButton
-                                input_id="practice-mode-import-dictionary-input".to_string()
-                                label=Signal::derive(move || {
-                                    tr(lang.get(), "导入字典文件", "Import Dictionary File").to_string()
-                                })
-                                class="inline-flex w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 md:w-auto".to_string()
-                                set_entries=lexicon_state.set_entries
-                                set_status=set_status
-                                set_data_version=lexicon_state.set_data_version
-                                ui_language=lang
-                                set_source_name=lexicon_state.set_source_name
-                            />
+                            <div class="ui-card-actions">
+                                <button
+                                    type="button"
+                                    on:click=choose_word_bank_click
+                                    disabled=LEXICON_WORD_BANK_FILES.is_empty()
+                                    class="ui-btn-ghost"
+                                >
+                                    {move || tr(lang.get(), "选择词库", "Load Lexicon")}
+                                </button>
+                                <ImportDictionaryButton
+                                    input_id="practice-mode-import-dictionary-input".to_string()
+                                    label=Signal::derive(move || {
+                                        tr(lang.get(), "导入字典文件", "Import Dictionary File").to_string()
+                                    })
+                                    class="ui-btn-ghost cursor-pointer".to_string()
+                                    set_entries=lexicon_state.set_entries
+                                    set_status=set_status
+                                    set_data_version=lexicon_state.set_data_version
+                                    ui_language=lang
+                                    set_source_name=lexicon_state.set_source_name
+                                />
+                            </div>
                         </div>
-                        <div class="mt-4">
+                        <div class="ui-card-actions">
                             <button
                                 type="button"
                                 on:click=move |_| set_current_page.set(AppPage::LexiconMode)
-                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                                class="ui-btn-primary"
                             >
                                 {move || tr(lang.get(), "词库模式", "Lexicon Mode")}
                             </button>
                         </div>
                     </section>
 
-                    <section class="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                        <h2 class="text-lg font-semibold">
-                            {move || tr(lang.get(), "单词系列练习", "Series Practice")}
-                        </h2>
-                        <p class="mt-2 text-sm text-slate-400">
+                    <section class="ui-card">
+                        <p class="ui-eyebrow">
+                            {move || tr(lang.get(), "系列", "series")}
+                        </p>
+                        <h2>{move || tr(lang.get(), "单词系列练习", "Series Practice")}</h2>
+                        <p>
                             {move || {
                                 tr(
                                     lang.get(),
@@ -201,22 +212,47 @@ pub fn PracticeModePage() -> impl IntoView {
                                 )
                             }}
                         </p>
-                        <div class="mt-4">
+                        <div class="ui-card-actions">
                             <button
                                 type="button"
                                 on:click=move |_| set_current_page.set(AppPage::SeriseSelect)
-                                class="inline-flex w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 sm:w-auto"
+                                class="ui-btn-primary"
                             >
                                 {move || tr(lang.get(), "单词系列模式", "Series Mode")}
                             </button>
                         </div>
                     </section>
+
+                    <section class="ui-card">
+                        <p class="ui-eyebrow">
+                            {move || tr(lang.get(), "跟读", "listen")}
+                        </p>
+                        <h2>{move || tr(lang.get(), "跟读练习", "Read along")}</h2>
+                        <p>
+                            {move || {
+                                tr(
+                                    lang.get(),
+                                    "音频与歌词按文件名配对，边听边跟读。",
+                                    "Audio and lyrics matched by filename. Read along as the track plays.",
+                                )
+                            }}
+                        </p>
+                        <div class="ui-card-actions">
+                            <button
+                                type="button"
+                                class="ui-btn-primary"
+                                on:click=move |_| set_current_page.set(AppPage::Player)
+                            >
+                                {move || tr(lang.get(), "打开播放器", "Open player")}
+                            </button>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="mt-10 text-left sm:text-right">
+                <div class="mt-8 text-left sm:text-right">
                     <button
                         type="button"
-                        class="text-sm text-slate-400 underline underline-offset-4 hover:text-slate-300"
+                        class="ui-link"
                         on:click=move |_| set_current_page.set(AppPage::LocalLexiconEditor)
                     >
                         {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}

@@ -134,10 +134,7 @@ pub fn MiniConsole(
     });
 
     view! {
-        <section
-            class="mt-3 rounded-lg border border-emerald-800/70 bg-black px-3 py-2 font-mono text-sm text-emerald-400 shadow-inner shadow-emerald-950/40"
-            on:mouseup=stop_resize
-        >
+        <section class="ui-console" on:mouseup=stop_resize>
             <div
                 node_ref=panel_ref
                 class="overflow-y-auto overflow-x-hidden whitespace-pre-wrap leading-6 pr-1"
@@ -165,7 +162,7 @@ pub fn MiniConsole(
                 class="mt-1 flex h-3 cursor-ns-resize items-center justify-center select-none"
                 title="拖拽调整高度"
             >
-                <span class="h-1 w-10 rounded-full bg-emerald-800/70"></span>
+                <span class="ui-console-grip h-1 w-10 rounded-full"></span>
             </div>
         </section>
     }

@@ -30,8 +30,10 @@ CSV 有 schema 版本行（如 `#schema_version=1`）；解析与序列化见 `u
 crates/nwp-web/data/
 ├─ lexicon-word-bank/          # 通用词库练习
 │  └─ *.nwpdict
-└─ series-word-bank/
-   └─ series-word-bank.nwpdict # 系列统一词库（按 tag 选题）
+├─ series-word-bank/
+│  └─ series-word-bank.nwpdict # 系列统一词库（按 tag 选题）
+└─ audio/                      # 跟读音频书
+   └─ byen-er-bergen/          # mp3 + lrc，按文件名配对
 ```
 
 系列选择页加载统一文件后，用 tag 过滤，例如：

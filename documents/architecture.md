@@ -63,6 +63,7 @@ src/
 | `/editor` | 本地词库编辑 |
 | `/series` | 系列选择 |
 | `/series/number` 等 | 各系列练习页 |
+| `/player` | 跟读播放器 |
 
 完整地址形如 `/ch/series/country`、`/en/lexicon/practice`。无前缀的旧路径会重定向到默认中文前缀。
 

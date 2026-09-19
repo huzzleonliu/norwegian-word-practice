@@ -19,14 +19,21 @@ For fixed series practice. Currently includes numbers, months, pronouns, interro
 * These exercises use built-in series content and generally do not depend on the general lexicon loaded on this page.
 * Click **Series Mode**, then choose a specific series to start practicing.
 
-### 3 Load Built-in Lexicon
+### 3 Listen / Read along
+
+Opens the audio player. It matches audio with lyrics by filename so you can read along.
+
+* Click **Open player** to enter the player page.
+* Load the built-in book (Byen Er Bergen) or open a local folder of audio and `.lrc` / `.srt` files.
+
+### 4 Load Built-in Lexicon
 
 Choose a built-in encrypted lexicon from the dropdown (for example `word-bank.nwpdict`), then click **Load Lexicon**.
 
 * A successful load overwrites the current lexicon, and the entry count appears in the status line above and in the console.
 * If no lexicon is loaded yet, complete this step first, or use the import option below instead.
 
-### 4 Import Dictionary File
+### 5 Import Dictionary File
 
 Click **Import Dictionary File** and select a dictionary file from your computer.
 
@@ -34,7 +41,7 @@ Click **Import Dictionary File** and select a dictionary file from your computer
 * Import also overwrites the current lexicon. This is useful for word lists you exported or edited yourself.
 * Results appear in the mini console in the middle of the page.
 
-### 5 Local Lexicon Editor
+### 6 Local Lexicon Editor
 
 The **Local Lexicon Editor** link at the bottom right opens the lexicon editor page.
 
@@ -42,4 +49,4 @@ The **Local Lexicon Editor** link at the bottom right opens the lexicon editor p
 * On the editor page you can customize a private lexicon and export encrypted lexicon files (`.nwpdict`) from the lexicon browser; import is still done on this page
 * Exported files can be loaded here with **Import Dictionary File** before practicing
 
-Use **Back to previous page** in the top left to return to the home page.
+Use **Back** at the top of the page to return to the home page.

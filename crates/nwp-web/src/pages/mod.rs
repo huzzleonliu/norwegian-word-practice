@@ -9,6 +9,7 @@ pub mod lexicon_remember;
 pub mod lexicon_select;
 pub mod practice_mode_select;
 pub mod practice_result;
+pub mod player;
 pub mod serise_practice;
 pub mod serise_select;
 
@@ -29,6 +30,7 @@ pub enum AppPage {
     SerisePronounPractice,
     SeriseInterrogativePractice,
     SeriseCountryPractice,
+    Player,
 }
 
 impl AppPage {
@@ -48,6 +50,7 @@ impl AppPage {
             Self::SerisePronounPractice => "/series/pronoun",
             Self::SeriseInterrogativePractice => "/series/interrogative",
             Self::SeriseCountryPractice => "/series/country",
+            Self::Player => "/player",
         }
     }
 
@@ -101,6 +104,7 @@ impl AppPage {
             "/series/pronoun" => Some(Self::SerisePronounPractice),
             "/series/interrogative" => Some(Self::SeriseInterrogativePractice),
             "/series/country" => Some(Self::SeriseCountryPractice),
+            "/player" => Some(Self::Player),
             _ => None,
         }
     }
@@ -143,6 +147,7 @@ mod tests {
             AppPage::SerisePronounPractice,
             AppPage::SeriseInterrogativePractice,
             AppPage::SeriseCountryPractice,
+            AppPage::Player,
         ];
         for page in pages {
             assert_eq!(AppPage::from_logical_path(page.path()), Some(page));
