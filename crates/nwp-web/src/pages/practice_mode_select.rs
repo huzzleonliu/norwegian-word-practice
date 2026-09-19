@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, UiState};
 use crate::components::import_dictionary::ImportDictionaryButton;
+use crate::layout::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar};
 use crate::components::mini_console::MiniConsole;
 use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
@@ -112,21 +113,20 @@ pub fn PracticeModePage() -> impl IntoView {
     });
 
     view! {
-        <main class="ui-page">
-            <section class="ui-shell">
-                <div class="ui-topbar">
-                    <div>
-                        <p class="ui-eyebrow">
-                            {move || tr(lang.get(), "练习", "practice")}
-                        </p>
-                        <h1 class="ui-title">
-                            {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
-                        </h1>
-                    </div>
-                    <ReturnButton target_page=AppPage::Home/>
-                </div>
-                <p class="ui-muted">{move || current_lexicon_line.get()}</p>
-                <MiniConsole message=console_status_line max_entries=80/>
+        <PageShell>
+            <PageTopbar>
+                <PageHeading>
+                    <PageEyebrow>
+                        {move || tr(lang.get(), "练习", "practice")}
+                    </PageEyebrow>
+                    <PageTitle>
+                        {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
+                    </PageTitle>
+                </PageHeading>
+                <ReturnButton target_page=AppPage::Home/>
+            </PageTopbar>
+            <p class="ui-muted">{move || current_lexicon_line.get()}</p>
+            <MiniConsole message=console_status_line max_entries=80/>
 
                 <div class="ui-grid ui-grid-3">
                     <section class="ui-card">
@@ -258,7 +258,6 @@ pub fn PracticeModePage() -> impl IntoView {
                         {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}
                     </button>
                 </div>
-            </section>
-        </main>
+        </PageShell>
     }
 }

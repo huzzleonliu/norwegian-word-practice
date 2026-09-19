@@ -54,6 +54,6 @@ pub struct PracticeState {
 pub struct UiState {
     pub ui_language: ReadSignal<UiLanguage>,
     pub set_ui_language: WriteSignal<UiLanguage>,
-    #[allow(dead_code)]
     pub ui_theme: ReadSignal<UiTheme>,
+    pub set_ui_theme: WriteSignal<UiTheme>,
 }

@@ -2,7 +2,6 @@
 //! 实际 URL 带语言前缀（`/ch/...` 或 `/en/...`）。
 
 pub mod dictionary_editor;
-pub mod help;
 pub mod home;
 pub mod lexicon_practice;
 pub mod lexicon_remember;

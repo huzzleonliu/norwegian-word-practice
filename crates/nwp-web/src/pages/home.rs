@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
+use crate::layout::PageShell;
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
@@ -77,53 +78,51 @@ pub fn HomePage() -> impl IntoView {
     });
 
     view! {
-        <main class="ui-page">
-            <section class="ui-shell ui-shell-narrow">
-                <p class="ui-eyebrow">
-                    {move || tr(lang.get(), "拼写练习", "spelling + inflection")}
-                </p>
-                <h1 class="ui-brand">
-                    <span class="brand-read">"Norwegian"</span>
-                    " "
-                    <span class="brand-er">"Word"</span>
-                    " "
-                    <span class="brand-err">"Practice"</span>
-                </h1>
-                <p class="ui-muted">{move || current_lexicon_line.get()}</p>
-                <MiniConsole message=console_status_line max_entries=80/>
-                <p class="ui-copy">
-                    {move || {
-                        tr(
-                            lang.get(),
-                            "导入你的练习结果（.pracresult）后开始练习。",
-                            "Import your practice result (.pracresult) and start practicing.",
-                        )
-                    }}
-                </p>
+        <PageShell narrow=true>
+            <p class="ui-eyebrow">
+                {move || tr(lang.get(), "拼写练习", "spelling + inflection")}
+            </p>
+            <h1 class="ui-brand">
+                <span class="brand-read">"Norwegian"</span>
+                " "
+                <span class="brand-er">"Word"</span>
+                " "
+                <span class="brand-err">"Practice"</span>
+            </h1>
+            <p class="ui-muted">{move || current_lexicon_line.get()}</p>
+            <MiniConsole message=console_status_line max_entries=80/>
+            <p class="ui-copy">
+                {move || {
+                    tr(
+                        lang.get(),
+                        "导入你的练习结果（.pracresult）后开始练习。",
+                        "Import your practice result (.pracresult) and start practicing.",
+                    )
+                }}
+            </p>
 
-                <input
-                    id="pracresult-input"
-                    type="file"
-                    accept=".pracresult"
-                    class="hidden"
-                    on:change=import_pracresult_change
-                />
+            <input
+                id="pracresult-input"
+                type="file"
+                accept=".pracresult"
+                class="hidden"
+                on:change=import_pracresult_change
+            />
 
-                <div class="ui-card-actions mt-6">
-                    <button
-                        type="button"
-                        on:click=direct_start_practice_click
-                        class="ui-btn-primary"
-                    >
-                        {move || tr(lang.get(), "直接开始练习", "Start Practice")}
-                    </button>
+            <div class="ui-card-actions mt-6">
+                <button
+                    type="button"
+                    on:click=direct_start_practice_click
+                    class="ui-btn-primary"
+                >
+                    {move || tr(lang.get(), "直接开始练习", "Start Practice")}
+                </button>
 
-                    <label for="pracresult-input" class="ui-btn-ghost cursor-pointer">
-                        {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
-                    </label>
-                </div>
-            </section>
-        </main>
+                <label for="pracresult-input" class="ui-btn-ghost cursor-pointer">
+                    {move || tr(lang.get(), "导入练习结果", "Import Practice Result")}
+                </label>
+            </div>
+        </PageShell>
     }
 }
 

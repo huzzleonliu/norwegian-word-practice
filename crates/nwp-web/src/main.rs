@@ -7,16 +7,16 @@ use leptos_router::path;
 
 mod app_state;
 mod components;
+mod layout;
 mod pages;
 mod structures;
 #[cfg(test)]
 mod tests;
 mod utils;
 
-use app_state::NavigateToPage;
+use layout::MasterLayout;
 use pages::AppPage;
-use structures::word_bank_entry::{UiLanguage, UiTheme};
-use utils::i18n::tr;
+use structures::word_bank_entry::UiLanguage;
 use utils::lexicon_storage::{load_stored_lexicon, save_stored_lexicon, DEFAULT_SOURCE_NAME};
 use utils::theme::{apply_theme, load_stored_theme};
 
@@ -56,8 +56,6 @@ fn App() -> impl IntoView {
         signal(structures::pracresult::PracticeResult::default());
     let (summary_return_page, set_summary_return_page) = signal(AppPage::LexiconPractice);
 
-    let (help_open, set_help_open) = signal(false);
-
     Effect::new(move |_| {
         apply_theme(ui_theme.get());
     });
@@ -93,182 +91,59 @@ fn App() -> impl IntoView {
         ui_language,
         set_ui_language,
         ui_theme,
+        set_ui_theme,
     });
 
     view! {
         <Router>
-            <AppChrome
-                ui_language=ui_language
-                set_ui_language=set_ui_language
-                ui_theme=ui_theme
-                set_ui_theme=set_ui_theme
-                help_open=help_open
-                set_help_open=set_help_open
-            />
-        </Router>
-    }
-}
-
-#[component]
-fn AppChrome(
-    ui_language: ReadSignal<UiLanguage>,
-    set_ui_language: WriteSignal<UiLanguage>,
-    ui_theme: ReadSignal<UiTheme>,
-    set_ui_theme: WriteSignal<UiTheme>,
-    help_open: ReadSignal<bool>,
-    set_help_open: WriteSignal<bool>,
-) -> impl IntoView {
-    let navigate = use_navigate();
-    let navigate_to_page = NavigateToPage(Callback::new({
-        let navigate = navigate.clone();
-        move |page: AppPage| {
-            let lang = ui_language.get_untracked();
-            navigate(&page.localized_path(lang), Default::default());
-        }
-    }));
-    provide_context(navigate_to_page);
-
-    let location = use_location();
-    let current_page = Signal::derive(move || {
-        AppPage::from_path(&location.pathname.get()).unwrap_or(AppPage::Home)
-    });
-
-    let toggle_language = {
-        let navigate = navigate.clone();
-        move |_| {
-            let pathname = location.pathname.get_untracked();
-            let page = AppPage::from_path(&pathname).unwrap_or(AppPage::Home);
-            let next = ui_language.get_untracked().toggle();
-            set_ui_language.set(next);
-            navigate(&page.localized_path(next), Default::default());
-        }
-    };
-
-    view! {
-        <div>
-            <div class="fixed right-2 top-2 z-[100] flex items-center gap-2 sm:right-4 sm:top-4">
-                <button
-                    type="button"
-                    on:click=move |_| set_ui_theme.update(|theme| *theme = theme.toggle())
-                    class="ui-chrome"
-                >
-                    {move || {
-                        let lang = ui_language.get();
-                        match ui_theme.get() {
-                            UiTheme::Dark => tr(lang, "黑夜模式", "Dark Mode"),
-                            UiTheme::Light => tr(lang, "白天模式", "Light Mode"),
-                        }
-                    }}
-                </button>
-                <button
-                    type="button"
-                    on:click=toggle_language
-                    title=move || {
-                        match ui_language.get() {
-                            UiLanguage::Zh => "Switch to English",
-                            UiLanguage::En => "切换到中文",
-                        }
-                    }
-                    aria-label=move || {
-                        match ui_language.get() {
-                            UiLanguage::Zh => "Language: Chinese. Switch to English",
-                            UiLanguage::En => "Language: English. Switch to Chinese",
-                        }
-                    }
-                    class="ui-chrome"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="h-4 w-4"
-                        aria-hidden="true"
-                    >
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M3 12h18"></path>
-                        <path d="M12 3a15 15 0 0 1 0 18"></path>
-                        <path d="M12 3a15 15 0 0 0 0 18"></path>
-                    </svg>
-                    <span class="text-xs tracking-wide">
-                        {move || match ui_language.get() {
-                            UiLanguage::Zh => "中",
-                            UiLanguage::En => "EN",
-                        }}
-                    </span>
-                </button>
-            </div>
-            <div class="fixed bottom-2 right-2 z-[100] flex items-center gap-2 sm:bottom-4 sm:right-4">
-                <button
-                    type="button"
-                    on:click=move |_| set_help_open.set(true)
-                    class="ui-chrome"
-                >
-                    {move || tr(ui_language.get(), "使用说明", "Instructions")}
-                </button>
-                <a
-                    href="https://discord.gg/U2z3FeUrmA"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="ui-chrome"
-                >
-                    {move || tr(ui_language.get(), "问题反馈", "Feedback")}
-                </a>
-            </div>
-            <pages::help::HelpOverlay
-                open=help_open
-                set_open=set_help_open
-                page=current_page
-            />
-            <Routes fallback=|| view! { <Redirect path="/ch"/> }>
-                <ParentRoute path=path!("/:lang") view=LocalizedLayout>
-                    <Route path=path!("") view=pages::home::HomePage/>
-                    <Route path=path!("/practice") view=pages::practice_mode_select::PracticeModePage/>
-                    <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
-                    <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
-                    <Route path=path!("/lexicon/remember") view=pages::lexicon_remember::LexiconRememberPage/>
-                    <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
-                    <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
-                    <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>
-                    <Route path=path!("/series/number") view=pages::serise_practice::number::NumberSerisePracticePage/>
-                    <Route path=path!("/series/month") view=pages::serise_practice::month::MonthSerisePracticePage/>
-                    <Route path=path!("/series/pronoun") view=pages::serise_practice::pronoun::PronounSerisePracticePage/>
+            <MasterLayout>
+                <Routes fallback=|| view! { <Redirect path="/ch"/> }>
+                    <ParentRoute path=path!("/:lang") view=LocalizedLayout>
+                        <Route path=path!("") view=pages::home::HomePage/>
+                        <Route path=path!("/practice") view=pages::practice_mode_select::PracticeModePage/>
+                        <Route path=path!("/lexicon") view=pages::lexicon_select::LexiconSelectPage/>
+                        <Route path=path!("/lexicon/practice") view=pages::lexicon_practice::LexiconPracticePage/>
+                        <Route path=path!("/lexicon/remember") view=pages::lexicon_remember::LexiconRememberPage/>
+                        <Route path=path!("/lexicon/summary") view=pages::practice_result::LexiconSummaryPage/>
+                        <Route path=path!("/editor") view=pages::dictionary_editor::LocalLexiconEditorPage/>
+                        <Route path=path!("/series") view=pages::serise_select::SeriseSelectPage/>
+                        <Route path=path!("/series/number") view=pages::serise_practice::number::NumberSerisePracticePage/>
+                        <Route path=path!("/series/month") view=pages::serise_practice::month::MonthSerisePracticePage/>
+                        <Route path=path!("/series/pronoun") view=pages::serise_practice::pronoun::PronounSerisePracticePage/>
+                        <Route
+                            path=path!("/series/interrogative")
+                            view=pages::serise_practice::interrogative::InterrogativeSerisePracticePage
+                        />
+                        <Route
+                            path=path!("/series/country")
+                            view=pages::serise_practice::country::CountrySerisePracticePage
+                        />
+                        <Route path=path!("/player") view=pages::player::PlayerPage/>
+                    </ParentRoute>
+                    // 兼容旧无前缀 URL → 默认中文
+                    <Route path=path!("/") view=|| view! { <Redirect path="/ch"/> }/>
+                    <Route path=path!("/practice") view=|| view! { <Redirect path="/ch/practice"/> }/>
+                    <Route path=path!("/lexicon") view=|| view! { <Redirect path="/ch/lexicon"/> }/>
+                    <Route path=path!("/lexicon/practice") view=|| view! { <Redirect path="/ch/lexicon/practice"/> }/>
+                    <Route path=path!("/lexicon/remember") view=|| view! { <Redirect path="/ch/lexicon/remember"/> }/>
+                    <Route path=path!("/lexicon/summary") view=|| view! { <Redirect path="/ch/lexicon/summary"/> }/>
+                    <Route path=path!("/editor") view=|| view! { <Redirect path="/ch/editor"/> }/>
+                    <Route path=path!("/series") view=|| view! { <Redirect path="/ch/series"/> }/>
+                    <Route path=path!("/series/number") view=|| view! { <Redirect path="/ch/series/number"/> }/>
+                    <Route path=path!("/series/month") view=|| view! { <Redirect path="/ch/series/month"/> }/>
+                    <Route path=path!("/series/pronoun") view=|| view! { <Redirect path="/ch/series/pronoun"/> }/>
                     <Route
                         path=path!("/series/interrogative")
-                        view=pages::serise_practice::interrogative::InterrogativeSerisePracticePage
+                        view=|| view! { <Redirect path="/ch/series/interrogative"/> }
                     />
                     <Route
                         path=path!("/series/country")
-                        view=pages::serise_practice::country::CountrySerisePracticePage
+                        view=|| view! { <Redirect path="/ch/series/country"/> }
                     />
-                    <Route path=path!("/player") view=pages::player::PlayerPage/>
-                </ParentRoute>
-                // 兼容旧无前缀 URL → 默认中文
-                <Route path=path!("/") view=|| view! { <Redirect path="/ch"/> }/>
-                <Route path=path!("/practice") view=|| view! { <Redirect path="/ch/practice"/> }/>
-                <Route path=path!("/lexicon") view=|| view! { <Redirect path="/ch/lexicon"/> }/>
-                <Route path=path!("/lexicon/practice") view=|| view! { <Redirect path="/ch/lexicon/practice"/> }/>
-                <Route path=path!("/lexicon/remember") view=|| view! { <Redirect path="/ch/lexicon/remember"/> }/>
-                <Route path=path!("/lexicon/summary") view=|| view! { <Redirect path="/ch/lexicon/summary"/> }/>
-                <Route path=path!("/editor") view=|| view! { <Redirect path="/ch/editor"/> }/>
-                <Route path=path!("/series") view=|| view! { <Redirect path="/ch/series"/> }/>
-                <Route path=path!("/series/number") view=|| view! { <Redirect path="/ch/series/number"/> }/>
-                <Route path=path!("/series/month") view=|| view! { <Redirect path="/ch/series/month"/> }/>
-                <Route path=path!("/series/pronoun") view=|| view! { <Redirect path="/ch/series/pronoun"/> }/>
-                <Route
-                    path=path!("/series/interrogative")
-                    view=|| view! { <Redirect path="/ch/series/interrogative"/> }
-                />
-                <Route
-                    path=path!("/series/country")
-                    view=|| view! { <Redirect path="/ch/series/country"/> }
-                />
-                <Route path=path!("/player") view=|| view! { <Redirect path="/ch/player"/> }/>
-            </Routes>
-        </div>
+                    <Route path=path!("/player") view=|| view! { <Redirect path="/ch/player"/> }/>
+                </Routes>
+            </MasterLayout>
+        </Router>
     }
 }
 
