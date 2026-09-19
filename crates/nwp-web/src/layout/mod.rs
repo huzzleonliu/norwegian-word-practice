@@ -5,7 +5,9 @@ mod help;
 mod page_shell;
 
 pub use chrome::MasterChrome;
-pub use page_shell::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar};
+pub use page_shell::{
+    PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach,
+};
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;

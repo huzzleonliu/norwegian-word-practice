@@ -2,10 +2,8 @@
 
 use leptos::prelude::*;
 
-use crate::layout::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar};
-use crate::components::return_button::ReturnButton;
+use crate::layout::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::components::web_player::WebPlayer;
-use crate::pages::AppPage;
 use crate::app_state::UiState;
 use crate::utils::i18n::tr;
 
@@ -13,7 +11,7 @@ use crate::utils::i18n::tr;
 pub fn PlayerPage() -> impl IntoView {
     let lang = expect_context::<UiState>().ui_language;
     view! {
-        <PageShell>
+        <PageShell attach=ShellAttach::Fill>
             <PageTopbar>
                 <PageHeading>
                     <PageEyebrow>
@@ -23,7 +21,6 @@ pub fn PlayerPage() -> impl IntoView {
                         {move || tr(lang.get(), "跟读练习", "Read along")}
                     </PageTitle>
                 </PageHeading>
-                <ReturnButton target_page=AppPage::PracticeModeSelect/>
             </PageTopbar>
             <WebPlayer/>
         </PageShell>

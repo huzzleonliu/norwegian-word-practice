@@ -10,7 +10,7 @@ use crate::components::practice_engine::{
     AbortPracticeButton, CheckPracticeButton, FinishPracticeButton, RestartPracticeButton,
     RestartTempBehavior, answer_input_key, normalize_for_compare, record_field_check_result,
 };
-use crate::components::return_button::ReturnButton;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::{PartOfSpeech, WordBankEntry};
 use crate::utils::i18n::tr;
@@ -88,12 +88,14 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                    {move || tr(lang.get(), "数词系列练习", "Number Series Practice")}
-                </h1>
+        <PageShell attach=ShellAttach::Content>
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
+                        {move || tr(lang.get(), "数词系列练习", "Number Series Practice")}
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
@@ -424,8 +426,7 @@ pub fn NumberSerisePracticePage() -> impl IntoView {
                         />
                     </div>
                 </section>
-            </section>
-        </main>
+        </PageShell>
     }
 }
 

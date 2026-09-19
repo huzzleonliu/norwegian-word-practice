@@ -12,7 +12,7 @@ use crate::components::practice_engine::{
     apply_check_results, default_answer_fields, evaluate_check_answers, merge_solved_question_ids,
     prepare_post_check_input_state, retain_unsolved_revealed_keys,
 };
-use crate::components::return_button::ReturnButton;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::{PartOfSpeech, UiLanguage, WordBankEntry};
 use crate::utils::i18n::tr;
@@ -188,12 +188,14 @@ pub fn CountrySerisePracticePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::SeriseSelect/>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                    {move || tr(lang.get(), "国家系列练习", "Country Series Practice")}
-                </h1>
+        <PageShell attach=ShellAttach::Content>
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
+                        {move || tr(lang.get(), "国家系列练习", "Country Series Practice")}
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
@@ -380,8 +382,7 @@ pub fn CountrySerisePracticePage() -> impl IntoView {
                         />
                     </div>
                 </section>
-            </section>
-        </main>
+        </PageShell>
     }
 }
 

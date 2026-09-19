@@ -88,6 +88,27 @@ impl AppPage {
         Self::from_logical_path(&normalize_path(path))
     }
 
+    /// 导航树上的上一级页面；首页没有上一级。
+    /// 总结页的实际返回目标由练习状态决定，这里给出静态默认父级。
+    pub fn parent(self) -> Option<Self> {
+        match self {
+            Self::Home => None,
+            Self::PracticeModeSelect => Some(Self::Home),
+            Self::LexiconMode
+            | Self::SeriseSelect
+            | Self::LocalLexiconEditor
+            | Self::Player => Some(Self::PracticeModeSelect),
+            Self::LexiconPractice | Self::LexiconRemember | Self::LexiconSummary => {
+                Some(Self::LexiconMode)
+            }
+            Self::SeriseNumberPractice
+            | Self::SeriseMonthPractice
+            | Self::SerisePronounPractice
+            | Self::SeriseInterrogativePractice
+            | Self::SeriseCountryPractice => Some(Self::SeriseSelect),
+        }
+    }
+
     fn from_logical_path(path: &str) -> Option<Self> {
         match path {
             "/" => Some(Self::Home),
@@ -150,6 +171,11 @@ mod tests {
         ];
         for page in pages {
             assert_eq!(AppPage::from_logical_path(page.path()), Some(page));
+            if page == AppPage::Home {
+                assert_eq!(page.parent(), None);
+            } else {
+                assert!(page.parent().is_some());
+            }
             for lang in [UiLanguage::Zh, UiLanguage::En] {
                 let localized = page.localized_path(lang);
                 assert_eq!(
@@ -183,6 +209,27 @@ mod tests {
         assert_eq!(
             AppPage::from_localized_path("/ch"),
             Some((UiLanguage::Zh, AppPage::Home))
+        );
+    }
+
+    #[test]
+    fn parent_follows_nav_tree() {
+        assert_eq!(AppPage::Home.parent(), None);
+        assert_eq!(
+            AppPage::PracticeModeSelect.parent(),
+            Some(AppPage::Home)
+        );
+        assert_eq!(
+            AppPage::Player.parent(),
+            Some(AppPage::PracticeModeSelect)
+        );
+        assert_eq!(
+            AppPage::LexiconPractice.parent(),
+            Some(AppPage::LexiconMode)
+        );
+        assert_eq!(
+            AppPage::SeriseNumberPractice.parent(),
+            Some(AppPage::SeriseSelect)
         );
     }
 }

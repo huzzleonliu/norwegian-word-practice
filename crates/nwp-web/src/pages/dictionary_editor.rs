@@ -11,9 +11,8 @@ use crate::components::lexicon_file_crypto_panel::LexiconFileCryptoPanel;
 use crate::components::lexicon_editor_add_multi::LexiconEditorAddMulti;
 use crate::components::lexicon_editor_add_single::LexiconEditorAddSingle;
 use crate::components::mini_console::MiniConsole;
-use crate::components::return_button::ReturnButton;
 use crate::components::word_search::{AiResearcher, AiResearcherActions, SingleEntryFormState};
-use crate::pages::AppPage;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::structures::word_bank_entry::WordBankEntry;
 use crate::utils::dictionary::{
     SingleEntryDraft, draft_from_word_entry, parse_part_of_speech,
@@ -457,14 +456,14 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::PracticeModeSelect/>
-                <header class="mb-6 flex items-center gap-4">
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
+        <PageShell attach=ShellAttach::Fill>
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
                         {move || tr(lang.get(), "本地词库修改器", "Local Lexicon Editor")}
-                    </h1>
-                </header>
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
 
                 <MiniConsole
                     message=Signal::derive(move || {
@@ -609,8 +608,7 @@ pub fn LocalLexiconEditorPage() -> impl IntoView {
                     mode=LexiconBrowserMode::Edit
                 />
                 <LexiconFileCryptoPanel set_status=set_status/>
-            </section>
-        </main>
+        </PageShell>
     }
 }
 

@@ -5,7 +5,7 @@ use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
-use crate::components::return_button::ReturnButton;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::pages::AppPage;
 use crate::structures::word_bank_entry::UiLanguage;
 use crate::utils::i18n::tr;
@@ -93,12 +93,14 @@ pub fn SeriseSelectPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::PracticeModeSelect/>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                    {move || tr(lang.get(), "单词系列练习", "Series Practice")}
-                </h1>
+        <PageShell attach=ShellAttach::Fill>
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
+                        {move || tr(lang.get(), "单词系列练习", "Series Practice")}
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let current = status.get();
@@ -143,8 +145,7 @@ pub fn SeriseSelectPage() -> impl IntoView {
                         {move || tr(lang.get(), "国家", "Country")}
                     </button>
                 </div>
-            </section>
-        </main>
+        </PageShell>
     }
 }
 

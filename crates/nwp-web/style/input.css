@@ -197,21 +197,56 @@ html.theme-dark .hover\:bg-cyan-600:hover {
 .ui-page {
   min-height: 100vh;
   display: flex;
-  align-items: flex-start;
   justify-content: center;
   padding: 64px 18px 72px;
   background: var(--bg);
   color: var(--sub);
+  box-sizing: border-box;
+}
+
+.ui-page-attach-content {
+  --ui-shell-width: 100%;
+  --ui-shell-max-width: 72rem;
+  --ui-shell-min-height: auto;
+  align-items: flex-start;
+
+}
+
+.ui-page-attach-fill {
+  --ui-shell-width: 100%;
+  --ui-shell-max-width: 72rem;
+  --ui-shell-min-height: 0;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .ui-shell {
   position: relative;
-  width: 100%;
-  max-width: 72rem;
+  box-sizing: border-box;
+  width: var(--ui-shell-width, 100%);
+  max-width: var(--ui-shell-max-width, 72rem);
+  min-height: var(--ui-shell-min-height, auto);
   padding: 24px 24px 28px;
   background: var(--bg-raise);
   border: 1px solid var(--line);
   border-radius: 12px;
+}
+
+.ui-page-attach-fill .ui-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ui-page-attach-fill .web-player {
+  flex: 1 1 auto;
 }
 
 @media (min-width: 640px) {
@@ -220,8 +255,24 @@ html.theme-dark .hover\:bg-cyan-600:hover {
   }
 }
 
-.ui-shell-narrow {
-  max-width: 42rem;
+.ui-shell-back {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
+.ui-shell-has-back .ui-topbar,
+.ui-shell-has-back > .ui-eyebrow,
+.ui-shell-has-back > .ui-brand {
+  padding-right: 10.5rem;
+}
+
+@media (min-width: 640px) {
+  .ui-shell-back {
+    top: 20px;
+    right: 24px;
+  }
 }
 
 .ui-topbar {

@@ -5,9 +5,8 @@ use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, UiState};
 use crate::components::import_dictionary::ImportDictionaryButton;
-use crate::layout::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar};
+use crate::layout::{PageEyebrow, PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::components::mini_console::MiniConsole;
-use crate::components::return_button::ReturnButton;
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
 use crate::utils::lexicon_file::{DEFAULT_BUILTIN_WORD_BANK_FILE, load_lexicon_entries_from_url};
@@ -113,7 +112,7 @@ pub fn PracticeModePage() -> impl IntoView {
     });
 
     view! {
-        <PageShell>
+        <PageShell attach=ShellAttach::Fill>
             <PageTopbar>
                 <PageHeading>
                     <PageEyebrow>
@@ -123,7 +122,6 @@ pub fn PracticeModePage() -> impl IntoView {
                         {move || tr(lang.get(), "请选择练习模式", "Choose Practice Mode")}
                     </PageTitle>
                 </PageHeading>
-                <ReturnButton target_page=AppPage::Home/>
             </PageTopbar>
             <p class="ui-muted">{move || current_lexicon_line.get()}</p>
             <MiniConsole message=console_status_line max_entries=80/>

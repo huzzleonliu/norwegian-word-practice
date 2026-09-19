@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
 use crate::components::mini_console::MiniConsole;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::structures::field_meta::for_each_answer_stats;
 use crate::structures::pracresult::{PracticeResult, PracticedWordEntryResult};
 use crate::structures::word_bank_entry::{PartOfSpeech, UiLanguage, WordBankEntry};
@@ -24,9 +25,6 @@ pub fn LexiconSummaryPage() -> impl IntoView {
         let target_page = summary_return_page.get_untracked();
         set_temp_practice_result.set(PracticeResult::default());
         set_current_page.set(target_page);
-    };
-    let return_back_click = move |_| {
-        set_current_page.set(summary_return_page.get_untracked());
     };
     let export_result_click = move |_| {
         let language = lang.get_untracked();
@@ -55,16 +53,17 @@ pub fn LexiconSummaryPage() -> impl IntoView {
     };
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <button
-                    type="button"
-                    on:click=return_back_click
-                    class="mb-4 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 hover:bg-slate-700 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:w-auto"
-                >
-                    {move || tr(lang.get(), "返回上一级页面", "Back")}
-                </button>
-                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">{move || tr(lang.get(), "练习总结", "Practice Summary")}</h1>
+        <PageShell
+            attach=ShellAttach::Fill
+            back_to=summary_return_page.get_untracked()
+        >
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
+                        {move || tr(lang.get(), "练习总结", "Practice Summary")}
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
                 <MiniConsole
                     message=Signal::derive(move || {
                         let language = lang.get();
@@ -225,8 +224,7 @@ pub fn LexiconSummaryPage() -> impl IntoView {
                         </button>
                     </div>
                 </section>
-            </section>
-        </main>
+        </PageShell>
     }
 }
 

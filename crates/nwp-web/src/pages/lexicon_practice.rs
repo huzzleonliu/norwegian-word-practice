@@ -13,7 +13,7 @@ use crate::components::practice_engine::{
     evaluate_check_answers, merge_solved_question_ids, prepare_post_check_input_state,
     refill_active_question_ids, retain_unsolved_revealed_keys,
 };
-use crate::components::return_button::ReturnButton;
+use crate::layout::{PageHeading, PageShell, PageTitle, PageTopbar, ShellAttach};
 use crate::pages::AppPage;
 use crate::utils::i18n::tr;
 
@@ -172,14 +172,14 @@ pub fn LexiconPracticePage() -> impl IntoView {
     });
 
     view! {
-        <main class="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6">
-            <section class="relative mx-auto w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
-                <ReturnButton target_page=AppPage::LexiconMode/>
-                <header class="mb-6 flex items-center gap-4">
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">
+        <PageShell attach=ShellAttach::Content>
+            <PageTopbar>
+                <PageHeading>
+                    <PageTitle>
                         {move || tr(lang.get(), "词库练习", "Lexicon Practice")}
-                    </h1>
-                </header>
+                    </PageTitle>
+                </PageHeading>
+            </PageTopbar>
 
                 <MiniConsole
                     message=Signal::derive(move || {
@@ -284,7 +284,6 @@ pub fn LexiconPracticePage() -> impl IntoView {
                         />
                     </div>
                 </section>
-            </section>
-        </main>
+        </PageShell>
     }
 }

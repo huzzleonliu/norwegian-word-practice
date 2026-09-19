@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::app_state::{LexiconState, NavigateToPage, PracticeState, UiState};
-use crate::layout::PageShell;
+use crate::layout::{PageShell, ShellAttach};
 use crate::components::mini_console::MiniConsole;
 use crate::pages::AppPage;
 use crate::structures::pracresult::PracticeResult;
@@ -78,7 +78,7 @@ pub fn HomePage() -> impl IntoView {
     });
 
     view! {
-        <PageShell narrow=true>
+        <PageShell attach=ShellAttach::Fill>
             <p class="ui-eyebrow">
                 {move || tr(lang.get(), "拼写练习", "spelling + inflection")}
             </p>
